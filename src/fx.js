@@ -23,7 +23,8 @@ export class Particles {
         vx: Math.cos(a) * sp, vy: rand(0.5, 1) * (o.up ?? 3), vz: Math.sin(a) * sp,
         g: o.gravity ?? 9, life: rand(0.6, 1) * (o.life ?? 0.7), t: 0,
         s: rand(0.6, 1.1) * (o.size ?? 0.12), c: cols[(Math.random() * cols.length) | 0],
-        rx: rand(0, 6), rs: rand(-10, 10), drag: o.drag ?? 1.5,
+        rx: rand(0, 6), rs: rand(-10, 10) * (o.spin ?? 1), drag: o.drag ?? 1.5,
+        kx: o.shape === 'bill' ? 1.7 : 1, ky: o.shape === 'bill' ? 0.08 : 1, kz: o.shape === 'bill' ? 0.85 : 1, flut: o.shape === 'bill' ? rand(2, 5) : 0,
       });
     }
   }
@@ -38,13 +39,14 @@ export class Particles {
     for (const p of L) {
       const d = Math.exp(-p.drag * dt);
       p.vx *= d; p.vz *= d; p.vy -= p.g * dt;
+      if (p.flut) { p.vy = Math.max(p.vy, -0.9); p.vx += Math.sin(p.t * p.flut * 2) * dt * 1.5; }
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       if (p.y < 0.03) { p.y = 0.03; p.vy *= -0.4; p.vx *= 0.7; p.vz *= 0.7; }
       p.rx += p.rs * dt;
       const k = 1 - p.t / p.life, s = p.s * Math.min(1, k * 2.5);
       _o.position.set(p.x, p.y, p.z);
-      _o.rotation.set(p.rx, p.rx * 0.7, 0);
-      _o.scale.set(s, s, s);
+      _o.rotation.set(p.flut ? Math.sin(p.rx) * 0.8 : p.rx, p.rx * 0.7, p.flut ? Math.cos(p.rx * 0.7) * 0.6 : 0);
+      _o.scale.set(s * p.kx, s * p.ky, s * p.kz);
       _o.updateMatrix();
       this.mesh.setMatrixAt(n, _o.matrix);
       this.mesh.setColorAt(n, _c.setHex(p.c));

@@ -3,27 +3,40 @@ import { Scene, PerspectiveCamera, Group, Mesh, MeshLambertMaterial, HemisphereL
 import { GeoBuilder } from './geo.js';
 import { damp, clamp } from './util.js';
 
-const SLEEVE = 0x17c3a2, CUFF = 0x10a888, GLOVE = 0x2a2c3d;
+const SLEEVE = 0x2fa89a, SLEEVE2 = 0x268c80, CUFF = 0x1f6f66, GLOVE = 0x2a2c3d, GLOVE2 = 0x3a3d52;
 
 export class ViewModel {
   constructor() {
     this.scene = new Scene();
     this.camera = new PerspectiveCamera(60, 1, 0.01, 10);
-    this.scene.add(new HemisphereLight(0xffffff, 0x8f96c0, 2.1));
-    const sun = new DirectionalLight(0xffffff, 1.3);
+    this.hemi = new HemisphereLight(0xffe6c8, 0x6a5878, 2.4);
+    this.scene.add(this.hemi);
+    const sun = new DirectionalLight(0xffe0b8, 1.5);
     sun.position.set(-1, 2, 1.5);
     this.scene.add(sun);
     const mat = (this.mat = new MeshLambertMaterial({ vertexColors: true }));
     this.root = new Group();
     this.scene.add(this.root);
 
-    const armGeo = (palmOpen) => {
+    const armGeo = (left) => {
       const g = new GeoBuilder();
-      g.box(0, -0.07, -0.22, 0.13, 0.13, 0.46, SLEEVE, { faces: 63 });
-      g.box(0, -0.075, -0.47, 0.145, 0.145, 0.07, CUFF, { faces: 63 });
-      g.box(0, -0.07, -0.57, palmOpen ? 0.15 : 0.12, 0.12, 0.14, GLOVE, { faces: 63 });
-      if (palmOpen) for (let k = 0; k < 4; k++) g.box(-0.055 + k * 0.037, -0.04, -0.67, 0.03, 0.06, 0.08, GLOVE, { faces: 63 });
-      else g.box(0.06, -0.04, -0.56, 0.05, 0.05, 0.08, GLOVE, { faces: 63 });
+      // hoodie sleeve with folds
+      g.box(0, -0.075, -0.16, 0.14, 0.14, 0.34, SLEEVE, { faces: 63 });
+      g.box(0, -0.082, -0.24, 0.152, 0.152, 0.05, SLEEVE2, { faces: 63 });
+      g.box(0, -0.08, -0.36, 0.148, 0.148, 0.1, SLEEVE, { faces: 63 });
+      g.box(0, -0.082, -0.44, 0.155, 0.155, 0.07, CUFF, { faces: 63 });
+      g.box(0, -0.082, -0.448, 0.158, 0.02, 0.05, 0xf2b134, { faces: 63 });
+      if (left) {
+        g.box(0, -0.065, -0.5, 0.12, 0.13, 0.05, GLOVE, { faces: 63 });
+        g.box(0, -0.0, -0.5, 0.05, 0.03, 0.055, 0xd9b45a, { faces: 63 });
+        g.box(0, -0.07, -0.57, 0.15, 0.06, 0.13, GLOVE, { faces: 63, top: GLOVE2 });
+        for (let k = 0; k < 4; k++) g.box(-0.055 + k * 0.037, -0.072, -0.67, 0.032, 0.05, 0.09, GLOVE, { faces: 63, top: GLOVE2 });
+        g.box(0.09, -0.07, -0.56, 0.045, 0.05, 0.08, GLOVE, { faces: 63, ry: -0.5 });
+      } else {
+        g.box(0, -0.07, -0.56, 0.13, 0.12, 0.14, GLOVE, { faces: 63, top: GLOVE2 });
+        for (let k = 0; k < 4; k++) g.box(-0.045 + k * 0.03, -0.01, -0.6, 0.027, 0.03, 0.05, GLOVE2, { faces: 63 });
+        g.box(-0.07, -0.04, -0.55, 0.04, 0.05, 0.08, GLOVE, { faces: 63 });
+      }
       return g.build();
     };
     // right arm + crowbar
@@ -33,11 +46,17 @@ export class ViewModel {
     this.root.add(this.R);
     this.R.add(new Mesh(armGeo(false), mat));
     const bar = new GeoBuilder();
-    bar.box(0, -0.12, 0, 0.04, 0.16, 0.04, 0x9aa4b8, { faces: 63 });
-    bar.box(0, 0.03, 0, 0.045, 0.34, 0.045, 0xff4f5a, { faces: 63 });
-    bar.box(0, 0.37, 0, 0.04, 0.06, 0.04, 0x9aa4b8, { faces: 63 });
-    bar.box(0, 0.41, -0.05, 0.04, 0.04, 0.12, 0x9aa4b8, { faces: 63 });
-    bar.box(0, 0.37, -0.11, 0.04, 0.06, 0.03, 0x9aa4b8, { faces: 63 });
+    const red = 0xd8333a, steel = 0xb8c2d0, dark = 0x7a8496;
+    bar.box(0, -0.2, 0, 0.034, 0.08, 0.034, steel, { faces: 63 });
+    bar.box(0, -0.235, 0.012, 0.03, 0.04, 0.02, dark, { faces: 63 });
+    bar.box(0, -0.12, 0, 0.042, 0.42, 0.042, red, { faces: 63 });
+    bar.box(0, -0.1, 0, 0.046, 0.12, 0.046, 0x22242f, { faces: 63 });
+    bar.box(0, 0.3, 0, 0.038, 0.06, 0.038, steel, { faces: 63 });
+    bar.box(0, 0.35, -0.025, 0.036, 0.04, 0.07, steel, { faces: 63 });
+    bar.box(0, 0.37, -0.075, 0.034, 0.04, 0.06, steel, { faces: 63 });
+    bar.box(0, 0.335, -0.11, 0.032, 0.05, 0.03, steel, { faces: 63 });
+    bar.box(0.0, 0.31, -0.123, 0.028, 0.03, 0.02, dark, { faces: 63 });
+    bar.box(0.02, -0.05, 0.022, 0.006, 0.3, 0.002, 0xff8a8a, { faces: 16 });
     this.bar = new Mesh(bar.build(), mat);
     this.bar.position.set(0, -0.02, -0.57);
     this.bar.rotation.set(-0.35, 0, -0.25);

@@ -1,245 +1,684 @@
-// Builds the static level as ONE merged vertex-colored mesh, plus a few dynamic props (safe, van, loot).
-import { Mesh, Group, MeshLambertMaterial, OctahedronGeometry } from 'three';
-import { GeoBuilder, PX, NX, PY, PZ, NZ } from './geo.js';
-import { mulberry32, shade } from './util.js';
+// Static level builder: procedural textured low-poly interior with BAKED warm lighting + AO in vertex colors.
+// Each material is one merged mesh (~15 draw calls for the whole house). Unlit (MeshBasic) = cheap on mobile.
+import {
+  Mesh, Group, MeshLambertMaterial, MeshBasicMaterial, OctahedronGeometry, Points, PointsMaterial,
+  BufferGeometry, BufferAttribute, AdditiveBlending, DoubleSide,
+} from 'three';
+import { GeoBuilder, PX, NX, PY, NY, PZ, NZ } from './geo.js';
+import { mulberry32, shade, clamp } from './util.js';
+import { textures } from './textures.js';
 
 export const WALL_H = 1.9;
-const C = {
-  wallIn: 0xf4eee4, wallOut: 0xd2694c, wallTop: 0x2d3150, base: 0x2d3150, window: 0x9fd8ff, frame: 0xf4eee4, ceil: 0xf2eef8, lamp: 0xfffbe0, trim: 0xa8754a,
-  wood: [0xe0a96e, 0xd59b5d], carpet: [0x8090ec, 0x7a8ae6], tile: [0xf1f5f8, 0xd6e1ea],
-  grass: [0x78cc5c, 0x6fc354, 0x82d466], walk: 0xc8ced8, asphalt: 0x4a5162, line: 0xffe066,
-  trunk: 0x8b5a3c, leaf: [0x4fb04a, 0x5cc254, 0x3e9e45], fence: 0xffffff,
-};
-export const lootMat = () => new MeshLambertMaterial({ vertexColors: true, emissive: 0x262626 });
+const TRIM = 0x6e4a32, CROWN = 0xf6f0e6, RAIL = 0xf3ece0;
+const ROOMS = [
+  { wall: 0xf6e3c4, panel: 0x7f9e8a, curtain: 0xc65a4a }, // cream / sage panels
+  { wall: 0xd8e4cf, panel: 0x6f8f7a, curtain: 0xe0a33a },
+  { wall: 0xf1cfcb, panel: 0xb5767a, curtain: 0x6a5fa8 },
+  { wall: 0xcfdeea, panel: 0x5e7896, curtain: 0xe07b5a },
+  { wall: 0xd3ebe0, panel: 0x6aa58e, curtain: 0x3f8fa0 },
+  { wall: 0xf4e7b6, panel: 0xb59a5a, curtain: 0x8a5a9a },
+];
+const BOOKS = [0xc8483f, 0x3e6fa8, 0xe8a33d, 0x4f9a5a, 0x7b5ea7, 0xe8dcc4, 0x2f4858, 0xd8735a, 0x8a6a4a];
+const LEAF = [0x4c9a46, 0x5cb054, 0x3f8a48, 0x6cbf5a];
+export const lootMat = () => new MeshLambertMaterial({ vertexColors: true, emissive: 0x2a2010 });
 
-function furniture(g, f, rng) {
-  const { x0, y0, w, d } = f;
-  const cx = x0 + w / 2, cz = y0 + d / 2;
-  switch (f.type) {
-    case 'shelf': {
-      g.box(cx, 0, cz, w - 0.08, 1.3, d - 0.12, 0x8a5a3b, { top: 0x6e4630 });
-      const books = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0x6c7bf0, 0xff9f43];
-      for (let k = 0; k < 3; k++) g.box(cx, 0.15 + k * 0.4, cz, w - 0.02, 0.22, d - 0.06, books[(k + x0) % 5], { faces: PX | NX | PZ | NZ });
-      break;
+// ---------------------------------------------------------------- props
+function propFrame(L, f, B, forceBack) {
+  const { W: GW, H: GH, ch } = L;
+  const isWall = (x, y) => x < 0 || y < 0 || x >= GW || y >= GH || ch[y * GW + x] === '#';
+  let back = forceBack;
+  if (!back) {
+    let best = 0;
+    back = [0, -1];
+    const sides = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    for (const s of sides) {
+      let n = 0;
+      if (s[1]) { const y = s[1] < 0 ? f.y0 - 1 : f.y0 + f.d; for (let x = f.x0; x < f.x0 + f.w; x++) n += isWall(x, y); n /= f.w; }
+      else { const x = s[0] < 0 ? f.x0 - 1 : f.x0 + f.w; for (let y = f.y0; y < f.y0 + f.d; y++) n += isWall(x, y); n /= f.d; }
+      if (n > best + 0.01) { best = n; back = s; }
     }
-    case 'fridge':
-      g.box(cx, 0, cz, w - 0.1, 1.4, d - 0.1, 0xe9f1f7, { top: 0xcfdbe4 });
-      g.box(cx + 0.25, 0.6, cz + d / 2 - 0.04, 0.06, 0.4, 0.06, 0x5a6075);
-      break;
-    case 'bed':
-      g.box(cx, 0, cz, w - 0.1, 0.3, d - 0.05, 0x9a6440);
-      g.box(cx, 0.3, cz, w - 0.16, 0.16, d - 0.12, 0xffffff);
-      g.box(cx, 0.32, cz + 0.4, w - 0.12, 0.18, d - 1.0, 0x5aa9e6, { top: 0x6fb8f0 });
-      g.box(cx, 0.46, y0 + 0.35, w - 0.5, 0.12, 0.4, 0xfdfdfd);
-      g.box(cx, 0, y0 + 0.05, w - 0.05, 0.85, 0.1, 0x7d4f33);
-      break;
-    case 'desk':
-      g.box(cx, 0.6, cz, w - 0.1, 0.08, d - 0.15, 0xb07a4a);
-      for (const sx of [-1, 1]) g.box(cx + sx * (w / 2 - 0.15), 0, cz, 0.12, 0.6, d - 0.3, 0x7d5535);
-      g.box(cx - 0.2, 0.68, cz - 0.2, 0.6, 0.38, 0.06, 0x262a3b);
-      g.box(cx - 0.2, 0.72, cz - 0.16, 0.52, 0.3, 0.02, 0x59d2ff, { faces: PZ });
-      g.box(cx + 0.45, 0.68, cz + 0.2, 0.3, 0.05, 0.22, 0xffffff);
-      break;
-    case 'counter':
-      g.box(cx, 0, cz, w - 0.02, 0.82, d - 0.1, 0xf1ebe0, { top: 0x4b5068 });
-      g.box(cx, 0.1, cz + d / 2 - 0.04, w - 0.1, 0.02, 0.02, 0xc9c0b0, { faces: PZ });
-      g.box(cx - 0.6, 0.82, cz - 0.05, 0.6, 0.04, 0.5, 0x9aa8b8);
-      break;
-    case 'couch':
-      g.box(cx, 0, cz, w - 0.1, 0.38, d - 0.1, 0xee5a52, { top: 0xff6f66 });
-      g.box(cx, 0.38, cz + d / 2 - 0.2, w - 0.1, 0.4, 0.25, 0xd9473f);
-      for (const sx of [-1, 1]) g.box(cx + sx * (w / 2 - 0.15), 0.38, cz, 0.24, 0.22, d - 0.1, 0xd9473f);
-      for (let k = 0; k < 3; k++) g.box(x0 + 0.9 + k * 1.6, 0.38, cz - 0.05, 0.4, 0.22, 0.12, 0xffd166, { ry: 0.2 });
-      break;
-    case 'tv':
-      g.box(cx, 0, cz, w - 0.1, 0.45, d - 0.3, 0x5b3d2c, { top: 0x48301f });
-      g.box(cx, 0.45, cz - 0.1, w - 0.5, 0.75, 0.1, 0x1d2030);
-      g.box(cx, 0.5, cz - 0.04, w - 0.62, 0.62, 0.02, 0x3b4cc0, { faces: PZ });
-      break;
-    case 'table':
-      g.box(cx, 0.65, cz, w - 0.1, 0.08, d - 0.1, 0xc98d55);
-      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) g.box(cx + sx * (w / 2 - 0.15), 0, cz + sz * (d / 2 - 0.15), 0.1, 0.65, 0.1, 0x8b5d3a);
-      g.box(cx, 0.73, cz, 0.36, 0.12, 0.36, 0xffffff);
-      g.box(cx, 0.85, cz, 0.2, 0.12, 0.2, 0xff7b54);
-      break;
-    case 'tub':
-      g.box(cx, 0, cz, w - 0.1, 0.55, d - 0.1, 0xffffff, { top: 0xffffff });
-      g.box(cx, 0.5, cz, w - 0.35, 0.06, d - 0.35, 0x6fd3ff, { faces: PY });
-      break;
   }
-  rng();
+  const rot = Math.atan2(-back[0], -back[1]);
+  const W = back[0] ? f.d : f.w, D = back[0] ? f.w : f.d;
+  const cx = f.x0 + f.w / 2, cz = f.y0 + f.d / 2, cs = Math.cos(rot), sn = Math.sin(rot);
+  const wpos = (lx, lz) => [cx + lx * cs + lz * sn, cz - lx * sn + lz * cs];
+  const b = (bld, lx, y, lz, w, h, d, col, o = {}) => {
+    const [x, z] = wpos(lx, lz);
+    bld.box(x, y, z, w, h, d, col, { ...o, ry: (o.ry || 0) + rot });
+  };
+  return { b, W, D, rot, wpos };
 }
 
+function furniture(L, f, B, rng, lights) {
+  const rr = (a, b) => a + rng() * (b - a);
+  const P = B.plain, WD = B.woodfine, U = B.unlit;
+  let fb;
+  if (f.type === 'couch') {
+    const tv = L.furn.find((o) => o.type === 'tv');
+    fb = tv && tv.y0 < f.y0 ? [0, 1] : [0, -1];
+  } else if (f.type === 'chair') {
+    const t = L.furn.find((o) => o.type === 'table');
+    if (t) {
+      const dx = t.x0 + t.w / 2 - (f.x0 + 0.5), dz = t.y0 + t.d / 2 - (f.y0 + 0.5);
+      fb = Math.abs(dx) > Math.abs(dz) ? [-Math.sign(dx), 0] : [0, -Math.sign(dz)];
+    }
+  } else if (f.type === 'desk' || f.type === 'table') fb = [0, -1];
+  const { b, W, D, wpos } = propFrame(L, f, B, fb);
+  const light = (lx, y, lz, col, I, R) => { const [x, z] = wpos(lx, lz); lights.push({ x, y, z, col, I, R }); };
+  // soft contact shadow
+  b(B.shadow, 0, 0.012, 0, W + 0.35, 0.001, D + 0.35, 0xffffff, { faces: PY, fit: true });
+
+  switch (f.type) {
+    case 'shelf': {
+      const wal = 0x7a4e33, h = 1.6;
+      for (const s of [-1, 1]) b(WD, s * (W / 2 - 0.04), 0, 0, 0.07, h, D - 0.12, wal);
+      b(WD, 0, h - 0.06, 0, W - 0.02, 0.07, D - 0.08, wal);
+      b(WD, 0, 0, -D / 2 + 0.09, W - 0.1, h, 0.03, shade(wal, 0.7));
+      for (let k = 0; k < 4; k++) {
+        const y = 0.06 + k * 0.38;
+        b(WD, 0, y, 0, W - 0.1, 0.035, D - 0.18, wal);
+        if (k === 3 && rng() < 0.5) { b(P, rr(-0.2, 0.2), y + 0.035, 0, 0.12, 0.2, 0.12, 0x3f8f9a); b(P, 0, y + 0.235, 0, 0.18, 0.18, 0.18, LEAF[1], { ry: 0.6 }); continue; }
+        let x = -W / 2 + 0.1;
+        while (x < W / 2 - 0.12) {
+          const bw = rr(0.04, 0.09), bh = rr(0.2, 0.31), col = BOOKS[(rng() * BOOKS.length) | 0];
+          if (rng() < 0.08) { x += 0.12; continue; }
+          const lean = rng() < 0.1 ? 0.25 : 0;
+          b(P, x + bw / 2, y + 0.035, 0.02, bw, bh, D - 0.32, col, { top: shade(col, 1.25) });
+          if (bh > 0.25) b(P, x + bw / 2, y + 0.035 + bh * 0.7, 0.02, bw + 0.004, 0.025, D - 0.31, 0xf2d48a, { faces: PZ | NZ });
+          x += bw + 0.006 + lean * 0.1;
+        }
+      }
+      break;
+    }
+    case 'fridge': {
+      const c = 0xe8eef2;
+      b(P, 0, 0.04, 0, W - 0.12, 1.55, D - 0.14, c, { top: 0xd9e0e6 });
+      b(P, 0, 0, 0.02, W - 0.16, 0.05, D - 0.2, 0x3a3a46);
+      b(P, 0, 1.0, D / 2 - 0.068, W - 0.12, 0.015, 0.01, 0xaeb8c0, { faces: PZ });
+      b(P, 0.3, 0.55, D / 2 - 0.04, 0.04, 0.35, 0.05, 0xb8c2cc);
+      b(P, 0.3, 1.1, D / 2 - 0.04, 0.04, 0.3, 0.05, 0xb8c2cc);
+      for (let k = 0; k < 4; k++) b(P, rr(-0.3, 0.15), rr(0.6, 1.45), D / 2 - 0.066, 0.06, 0.06, 0.01, BOOKS[k], { faces: PZ });
+      b(P, -0.1, 1.15, D / 2 - 0.066, 0.18, 0.22, 0.008, 0xffffff, { faces: PZ, ry: 0.08 });
+      break;
+    }
+    case 'bed': {
+      const fr = 0x9a6644, duv = 0x5c8fc9;
+      b(WD, 0, 0.08, 0, W - 0.06, 0.22, D - 0.06, fr);
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(WD, sx * (W / 2 - 0.09), 0, sz * (D / 2 - 0.09), 0.1, 0.1, 0.1, shade(fr, 0.7));
+      b(WD, 0, 0, -D / 2 + 0.06, W, 1.05, 0.1, fr);
+      b(WD, 0, 1.05, -D / 2 + 0.06, W + 0.06, 0.07, 0.14, shade(fr, 0.85));
+      b(WD, 0, 0.45, -D / 2 + 0.115, W - 0.3, 0.45, 0.01, shade(fr, 1.15), { faces: PZ });
+      b(P, 0, 0.3, 0.04, W - 0.14, 0.18, D - 0.22, 0xf7f4ee);
+      b(P, 0, 0.33, 0.42, W - 0.08, 0.2, D - 0.95, duv, { top: shade(duv, 1.12) });
+      b(P, 0, 0.36, -D / 2 + 1.08, W - 0.07, 0.19, 0.22, 0xf0ece4);
+      for (const s of [-1, 1]) b(P, s * 0.45, 0.47, -D / 2 + 0.42, 0.78, 0.15, 0.4, 0xffffff, { ry: s * 0.04 });
+      b(P, 0, 0.535, D / 2 - 0.42, W - 0.04, 0.03, 0.42, 0xe8a33d);
+      b(P, 0, 0.3, D / 2 - 0.205, W - 0.04, 0.26, 0.02, 0xe8a33d, { faces: PZ });
+      break;
+    }
+    case 'desk': {
+      const wd = 0xb07a4a;
+      b(WD, 0, 0.7, -0.45, W - 0.1, 0.06, 0.8, wd, { top: shade(wd, 1.1) });
+      b(WD, -W / 2 + 0.35, 0, -0.45, 0.5, 0.7, 0.72, shade(wd, 0.9));
+      for (let k = 0; k < 3; k++) { b(P, -W / 2 + 0.35, 0.08 + k * 0.21, -0.08, 0.42, 0.16, 0.01, shade(wd, 0.75), { faces: PZ }); b(P, -W / 2 + 0.35, 0.15 + k * 0.21, -0.07, 0.12, 0.025, 0.02, 0xd9b45a); }
+      b(WD, W / 2 - 0.08, 0, -0.45, 0.06, 0.7, 0.72, shade(wd, 0.9));
+      b(P, 0.15, 0.76, -0.7, 0.18, 0.04, 0.14, 0x2a2b36);
+      b(P, 0.15, 0.8, -0.7, 0.05, 0.16, 0.05, 0x2a2b36);
+      b(P, 0.15, 0.92, -0.7, 0.72, 0.44, 0.05, 0x22232d);
+      b(U, 0.15, 0.95, -0.672, 0.64, 0.37, 0.01, 0x5fb4ff, { faces: PZ });
+      b(U, 0.0, 1.05, -0.665, 0.25, 0.14, 0.008, 0xbfe6ff, { faces: PZ });
+      b(U, 0.32, 1.0, -0.665, 0.18, 0.08, 0.008, 0xffd36e, { faces: PZ });
+      b(P, 0.15, 0.76, -0.38, 0.55, 0.025, 0.18, 0x34353f);
+      b(P, 0.55, 0.76, -0.38, 0.07, 0.03, 0.1, 0x34353f);
+      b(P, -0.5, 0.76, -0.35, 0.3, 0.012, 0.22, 0xffffff, { ry: 0.2 });
+      b(P, -0.5, 0.772, -0.35, 0.28, 0.012, 0.2, 0xf3efe0, { ry: -0.1 });
+      b(P, 0.78, 0.76, -0.5, 0.08, 0.1, 0.08, 0xd8735a);
+      // desk lamp
+      b(P, -0.7, 0.76, -0.7, 0.14, 0.03, 0.14, 0x2a2b36);
+      b(P, -0.7, 0.79, -0.7, 0.025, 0.32, 0.025, 0x2a2b36);
+      b(U, -0.62, 1.05, -0.62, 0.16, 0.1, 0.16, 0xffd99a, { ry: 0.5 });
+      light(-0.6, 1.0, -0.55, [1, 0.72, 0.42], 0.75, 2.6);
+      // office chair
+      b(P, 0, 0, 0.35, 0.5, 0.05, 0.05, 0x2a2b36); b(P, 0, 0, 0.35, 0.05, 0.05, 0.5, 0x2a2b36);
+      b(P, 0, 0.05, 0.35, 0.05, 0.35, 0.05, 0x55565f);
+      b(P, 0, 0.4, 0.35, 0.48, 0.09, 0.46, 0x3f8f9a, { top: 0x4aa3ad });
+      b(P, 0, 0.49, 0.58, 0.46, 0.5, 0.08, 0x3f8f9a);
+      break;
+    }
+    case 'counter': {
+      const cab = 0xf1ece2, top = 0x3b3a48;
+      b(P, 0, 0, 0.04, W - 0.02, 0.08, D - 0.2, 0x3a3a46);
+      b(P, 0, 0.08, 0, W - 0.02, 0.72, D - 0.12, cab);
+      const n = Math.max(1, Math.round(W / 0.5));
+      for (let k = 0; k < n; k++) {
+        const x = -W / 2 + (k + 0.5) * (W / n);
+        b(P, x, 0.14, D / 2 - 0.055, W / n - 0.06, 0.6, 0.012, shade(cab, 0.93), { faces: PZ });
+        b(P, x + (k % 2 ? -1 : 1) * (W / n / 2 - 0.08), 0.62, D / 2 - 0.04, 0.025, 0.12, 0.025, 0xb59a5a);
+      }
+      b(P, 0, 0.8, 0.02, W, 0.06, D - 0.06, top, { top: 0x4a4958 });
+      b(B.tile, 0, 0.86, -D / 2 + 0.02, W, 0.48, 0.01, 0xffffff, { faces: PZ, us: 0.5 });
+      b(P, 0, 1.36, -D / 2 + 0.2, W - 0.02, 0.48, 0.36, cab);
+      for (let k = 0; k < n; k++) {
+        const x = -W / 2 + (k + 0.5) * (W / n);
+        b(P, x, 1.4, -D / 2 + 0.385, W / n - 0.06, 0.4, 0.012, shade(cab, 0.93), { faces: PZ });
+        b(P, x, 1.43, -D / 2 + 0.4, 0.12, 0.025, 0.025, 0xb59a5a);
+      }
+      if (W >= 2) {
+        b(P, 0.45, 0.855, 0.05, 0.6, 0.012, 0.42, 0x8e98a2, { faces: PY });
+        b(P, 0.45, 0.86, -0.22, 0.04, 0.22, 0.04, 0xc3ccd6); b(P, 0.45, 1.05, -0.12, 0.04, 0.04, 0.2, 0xc3ccd6);
+        b(WD, -0.45, 0.86, 0.05, 0.42, 0.03, 0.3, 0xd9a774, { ry: 0.1 });
+        b(P, -0.35, 0.89, 0.05, 0.12, 0.06, 0.06, 0xd8735a);
+      } else {
+        b(P, 0, 0.86, -0.05, 0.22, 0.2, 0.16, 0xd8483f, { top: 0x2f2f38 });
+        b(P, 0.1, 0.92, -0.05, 0.03, 0.12, 0.03, 0x2f2f38);
+      }
+      break;
+    }
+    case 'stove': {
+      const top = 0x23232b;
+      b(P, 0, 0, 0.04, W - 0.02, 0.08, D - 0.2, 0x3a3a46);
+      b(P, 0, 0.08, 0, W - 0.04, 0.74, D - 0.12, 0xd6dce2);
+      b(P, 0, 0.18, D / 2 - 0.055, W - 0.2, 0.42, 0.012, 0x2b2c34, { faces: PZ });
+      b(U, 0, 0.26, D / 2 - 0.05, W - 0.36, 0.22, 0.01, 0x6a3a22, { faces: PZ });
+      b(P, 0, 0.56, D / 2 - 0.04, W - 0.3, 0.03, 0.03, 0xb8c2cc);
+      for (let k = 0; k < 4; k++) b(P, -0.3 + k * 0.2, 0.7, D / 2 - 0.05, 0.05, 0.05, 0.03, 0x2b2c34);
+      b(P, 0, 0.82, 0.02, W - 0.02, 0.04, D - 0.06, top);
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(P, sx * 0.2, 0.86, sz * 0.17, 0.2, 0.012, 0.2, 0x4a4a55);
+      b(P, 0.2, 0.872, 0.17, 0.3, 0.12, 0.3, 0x9aa4ae, { top: 0x6a7480 });
+      b(P, 0, 1.42, -D / 2 + 0.24, W - 0.1, 0.18, 0.44, 0xc3ccd6);
+      b(P, 0, 1.6, -D / 2 + 0.12, 0.3, 0.3, 0.22, 0xc3ccd6);
+      b(B.tile, 0, 0.86, -D / 2 + 0.02, W, 0.56, 0.01, 0xffffff, { faces: PZ, us: 0.5 });
+      break;
+    }
+    case 'couch': {
+      const c = 0x2f8a8e, cl = 0x3aa0a4, leg = 0x5a3a26;
+      for (const s of [-1, 1]) for (const z of [-1, 1]) b(WD, s * (W / 2 - 0.2), 0, z * (D / 2 - 0.15), 0.07, 0.1, 0.07, leg);
+      b(P, 0, 0.1, 0, W - 0.08, 0.26, D - 0.12, shade(c, 0.85));
+      b(P, 0, 0.1, -D / 2 + 0.17, W - 0.08, 0.66, 0.22, c);
+      for (const s of [-1, 1]) { b(P, s * (W / 2 - 0.13), 0.1, 0.02, 0.22, 0.44, D - 0.1, c); b(P, s * (W / 2 - 0.13), 0.54, 0.02, 0.26, 0.06, D - 0.06, cl); }
+      const n = 3, sw = (W - 0.6) / n;
+      for (let k = 0; k < n; k++) {
+        const x = -W / 2 + 0.3 + (k + 0.5) * sw;
+        b(P, x, 0.36, 0.08, sw - 0.04, 0.13, D - 0.4, cl, { top: shade(cl, 1.1) });
+        b(P, x, 0.42, -D / 2 + 0.34, sw - 0.06, 0.38, 0.14, cl, { ry: 0 });
+      }
+      b(P, -W / 2 + 0.6, 0.49, -0.12, 0.34, 0.3, 0.12, 0xf2b134, { ry: 0.3 });
+      b(P, W / 2 - 0.65, 0.49, -0.12, 0.34, 0.3, 0.12, 0xe8654f, { ry: -0.25 });
+      b(P, W / 2 - 1.3, 0.49, -0.1, 0.3, 0.27, 0.11, 0xf3ece0, { ry: 0.1 });
+      b(P, -0.4, 0.49, 0.05, 1.0, 0.025, 0.55, 0xe8dcc4, { ry: 0.05 });
+      break;
+    }
+    case 'tv': {
+      const wal = 0x6e452e;
+      for (const s of [-1, 1]) b(WD, s * (W / 2 - 0.15), 0, 0, 0.06, 0.12, 0.06, 0x2a2b36);
+      b(WD, 0, 0.12, -0.05, W - 0.1, 0.38, D - 0.45, wal, { top: shade(wal, 1.15) });
+      for (let k = 0; k < 3; k++) b(WD, -W / 2 + 0.05 + (k + 0.5) * ((W - 0.1) / 3), 0.16, D / 2 - 0.27, (W - 0.1) / 3 - 0.05, 0.3, 0.012, shade(wal, 1.2), { faces: PZ });
+      b(P, 0, 0.62, -0.2, W - 0.4, 0.92, 0.07, 0x16171e);
+      b(U, 0, 0.67, -0.163, W - 0.52, 0.8, 0.005, 0x2c4f9e, { faces: PZ });
+      b(U, -0.3, 0.75, -0.159, 0.9, 0.35, 0.004, 0x5fa8e8, { faces: PZ });
+      b(U, 0.5, 0.85, -0.158, 0.4, 0.22, 0.004, 0xffc857, { faces: PZ });
+      b(U, 0.25, 0.73, -0.158, 0.3, 0.12, 0.004, 0x7ad37a, { faces: PZ });
+      b(P, 0, 0.5, -0.02, W - 1.0, 0.07, 0.1, 0x22232b);
+      b(P, W / 2 - 0.35, 0.5, -0.05, 0.16, 0.22, 0.16, 0xc8673f);
+      for (let k = 0; k < 4; k++) b(P, W / 2 - 0.35 + rr(-0.05, 0.05), 0.68 + k * 0.05, -0.05, 0.22, 0.05, 0.08, LEAF[k % 4], { ry: k * 0.8 });
+      b(P, -W / 2 + 0.4, 0.5, -0.05, 0.3, 0.06, 0.2, 0x2a2b36);
+      light(0, 0.9, 0.35, [0.45, 0.62, 1.0], 0.7, 3.4);
+      break;
+    }
+    case 'table': {
+      const oak = 0xd39b62;
+      b(WD, 0, 0.66, 0, W - 0.2, 0.07, D - 0.2, oak, { top: shade(oak, 1.08) });
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(WD, sx * (W / 2 - 0.25), 0, sz * (D / 2 - 0.25), 0.08, 0.66, 0.08, shade(oak, 0.8));
+      b(P, 0, 0.73, 0, 0.5, 0.006, D - 0.25, 0xc65a4a);
+      b(P, 0, 0.736, 0, 0.36, 0.06, 0.36, 0xffffff, { top: 0xe8e2d6 });
+      b(P, -0.06, 0.79, 0.02, 0.12, 0.12, 0.12, 0xe8654f); b(P, 0.08, 0.79, -0.04, 0.11, 0.11, 0.11, 0xf2b134, { ry: 0.5 }); b(P, 0.02, 0.84, 0.08, 0.1, 0.1, 0.1, 0x7ac25a, { ry: 0.2 });
+      for (const [px, pz] of [[-0.45, -0.45], [0.45, 0.45]]) { b(P, px, 0.735, pz, 0.28, 0.012, 0.28, 0xffffff); b(P, px + 0.2, 0.735, pz, 0.03, 0.01, 0.2, 0xc3ccd6); }
+      break;
+    }
+    case 'chair': {
+      const oak = 0xb98154;
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(WD, sx * 0.17, 0, sz * 0.17, 0.05, 0.42, 0.05, shade(oak, 0.8));
+      b(WD, 0, 0.42, 0, 0.44, 0.05, 0.44, oak);
+      b(P, 0, 0.47, 0, 0.38, 0.03, 0.38, 0xc65a4a);
+      b(WD, 0, 0.47, -0.19, 0.42, 0.52, 0.05, oak);
+      b(WD, 0, 0.82, -0.19, 0.3, 0.1, 0.06, shade(oak, 1.1));
+      break;
+    }
+    case 'tub': {
+      b(P, 0, 0, 0, W - 0.12, 0.58, D - 0.12, 0xf4f6f7, { top: 0xffffff });
+      b(P, 0, 0.5, 0, W - 0.34, 0.06, D - 0.34, 0x8fd3ea, { faces: PY });
+      b(P, 0, 0.58, -D / 2 + 0.15, 0.05, 0.2, 0.05, 0xc3ccd6); b(P, 0, 0.74, -D / 2 + 0.22, 0.05, 0.04, 0.18, 0xc3ccd6);
+      b(P, 0.3, 0.56, 0.2, 0.12, 0.1, 0.14, 0xffd23f); b(P, 0.3, 0.64, 0.24, 0.08, 0.08, 0.08, 0xffd23f); b(P, 0.3, 0.66, 0.3, 0.04, 0.03, 0.05, 0xff8a3d);
+      b(P, 0, 1.75, D / 2 - 0.08, W - 0.1, 0.025, 0.025, 0xc3ccd6);
+      b(P, -W / 2 + 0.35, 0.6, D / 2 - 0.08, 0.6, 1.15, 0.03, 0x8fc8d8);
+      for (let k = 0; k < 3; k++) b(P, -W / 2 + 0.15 + k * 0.2, 0.6, D / 2 - 0.06, 0.04, 1.15, 0.035, 0xf6f0e6);
+      break;
+    }
+    case 'plant': {
+      b(P, 0, 0, 0, 0.36, 0.34, 0.36, 0xc8673f, { top: 0x4a3426 });
+      b(P, 0, 0.3, 0, 0.42, 0.06, 0.42, 0xd8774f);
+      b(WD, 0, 0.36, 0, 0.05, 0.5, 0.05, 0x6a4a2a);
+      for (let k = 0; k < 9; k++) {
+        const a = k * 2.4, r = rr(0.08, 0.26), y = rr(0.45, 1.2);
+        b(P, Math.cos(a) * r, y, Math.sin(a) * r, rr(0.18, 0.3), 0.04, rr(0.1, 0.16), LEAF[k % 4], { ry: a });
+      }
+      break;
+    }
+    case 'night': {
+      const wd = 0x9a6644;
+      b(WD, 0, 0, 0, W - 0.38, 0.5, D - 0.4, wd, { top: shade(wd, 1.12) });
+      b(WD, 0, 0.28, D / 2 - 0.195, W - 0.48, 0.16, 0.01, shade(wd, 1.2), { faces: PZ });
+      b(P, 0, 0.35, D / 2 - 0.18, 0.06, 0.03, 0.02, 0xd9b45a);
+      b(P, 0, 0.5, -0.05, 0.12, 0.03, 0.12, 0x3a3a46);
+      b(P, 0, 0.53, -0.05, 0.05, 0.2, 0.05, 0xd9b45a);
+      b(U, 0, 0.72, -0.05, 0.26, 0.18, 0.26, 0xffd9a0);
+      b(P, 0.12, 0.5, 0.08, 0.12, 0.03, 0.16, 0x3e6fa8, { ry: 0.3 });
+      light(0, 0.8, 0.05, [1, 0.7, 0.42], 0.9, 2.8);
+      break;
+    }
+    case 'toilet': {
+      b(P, 0, 0, 0.05, 0.36, 0.38, 0.46, 0xf6f7f8);
+      b(P, 0, 0.38, 0.07, 0.4, 0.04, 0.5, 0xffffff);
+      b(P, 0, 0.3, -D / 2 + 0.2, 0.44, 0.45, 0.2, 0xf6f7f8, { top: 0xffffff });
+      b(P, 0.15, 0.7, -D / 2 + 0.25, 0.06, 0.02, 0.03, 0xc3ccd6);
+      break;
+    }
+    case 'sink': {
+      b(P, 0, 0, 0, W - 0.2, 0.8, D - 0.42, 0x6aa58e);
+      b(P, 0, 0.12, D / 2 - 0.205, W - 0.3, 0.6, 0.01, shade(0x6aa58e, 1.15), { faces: PZ });
+      b(P, 0, 0.8, 0, W - 0.14, 0.05, D - 0.36, 0xffffff);
+      b(P, 0, 0.84, 0.02, 0.4, 0.015, 0.28, 0xc9d6de, { faces: PY });
+      b(P, 0, 0.85, -D / 2 + 0.26, 0.04, 0.16, 0.04, 0xc3ccd6);
+      b(P, 0, 1.0, -D / 2 + 0.03, 0.62, 0.72, 0.03, 0xd9b45a);
+      b(U, 0, 1.04, -D / 2 + 0.05, 0.54, 0.64, 0.005, 0xb9d6e4, { faces: PZ });
+      b(U, -0.12, 1.3, -D / 2 + 0.054, 0.12, 0.3, 0.004, 0xe6f4fa, { faces: PZ, ry: 0.0 });
+      break;
+    }
+  }
+}
+
+// ---------------------------------------------------------------- lighting bake
+function makeLighting(L, lights) {
+  const { W, H } = L;
+  const cellOf = (x, z) => (x < 0 || z < 0 || x >= W || z >= H ? -1 : Math.floor(z) * W + Math.floor(x));
+  const opaque = (x, z) => { const c = cellOf(x, z); return c < 0 || L.opaque[c] === 1; };
+  const los = (x0, z0, x1, z1) => {
+    const dx = x1 - x0, dz = z1 - z0, n = Math.ceil(Math.hypot(dx, dz) / 0.15);
+    for (let i = 1; i < n; i++) { const t = i / n; if (opaque(x0 + dx * t, z0 + dz * t)) return false; }
+    return true;
+  };
+  const SUN = [-0.55, 0.7, 0.45], sl = Math.hypot(...SUN); SUN[0] /= sl; SUN[1] /= sl; SUN[2] /= sl;
+  const out = [0, 0, 0];
+  const solidW = (x, z) => { const c = cellOf(x, z); if (c < 0) return 0; return L.ch[c] === '#' ? 1 : (!L.walk[c] && !L.outdoor[c] ? 0.55 : 0); };
+  function lightAt(px, py, pz, nx, ny, nz, omni) {
+    const sx = px + nx * 0.14, sz = pz + nz * 0.14;
+    const c = cellOf(sx, sz);
+    const indoor = c >= 0 && !L.outdoor[c] && L.ch[c] !== '#';
+    let r, g, b;
+    if (!indoor) {
+      const ndl = Math.max(0, nx * SUN[0] + ny * SUN[1] + nz * SUN[2]);
+      const sky = 0.55 + 0.45 * ny;
+      r = 0.5 * sky + 0.95 * ndl; g = 0.5 * sky + 0.8 * ndl; b = 0.62 * sky + 0.62 * ndl;
+    } else {
+      const a = 0.85 + 0.15 * ny;
+      r = 0.2 * a; g = 0.19 * a; b = 0.27 * a;
+      for (const l of lights) {
+        const dx = l.x - px, dy = l.y - py, dz = l.z - pz, d = Math.hypot(dx, dy, dz);
+        if (d > l.R) continue;
+        if (!los(l.x, l.z, sx, sz)) continue;
+        const k = 1 - d / l.R, att = l.I * k * k;
+        const ndl = omni ? 0.7 : Math.max(0, (nx * dx + ny * dy + nz * dz) / (d || 1)) * 0.75 + 0.25;
+        r += l.col[0] * att * ndl; g += l.col[1] * att * ndl; b += l.col[2] * att * ndl;
+      }
+    }
+    // ambient occlusion
+    let ao = 1;
+    if (py < 0.06 || (indoor && py > WALL_H - 0.08)) {
+      let s = 0;
+      for (const [ox, oz] of [[0.28, 0.28], [-0.28, 0.28], [0.28, -0.28], [-0.28, -0.28]]) s += solidW(sx + ox, sz + oz);
+      ao = 1 - 0.17 * s - (py < 0.06 ? 0.06 : 0.1);
+    } else if (py < 0.3 && indoor) ao = 0.9 + py * 0.3;
+    out[0] = r * ao; out[1] = g * ao; out[2] = b * ao;
+    return out;
+  }
+  return lightAt;
+}
+function bake(bld, lightAt) {
+  const p = bld.p, n = bld.n, c = bld.c;
+  for (let i = 0; i < p.length; i += 3) {
+    const l = lightAt(p[i], p[i + 1], p[i + 2], n[i], n[i + 1], n[i + 2], false);
+    c[i] *= l[0]; c[i + 1] *= l[1]; c[i + 2] *= l[2];
+  }
+}
+
+// ---------------------------------------------------------------- main build
 export function buildWorld(L) {
-  const g = new GeoBuilder();
+  const T = textures();
+  const B = {
+    wood: new GeoBuilder(2), carpet: new GeoBuilder(1), tile: new GeoBuilder(1), wallpaper: new GeoBuilder(1),
+    panel: new GeoBuilder(1), brick: new GeoBuilder(0.9), plaster: new GeoBuilder(2), grass: new GeoBuilder(3),
+    asphalt: new GeoBuilder(3), concrete: new GeoBuilder(1), plain: new GeoBuilder(1), woodfine: new GeoBuilder(0.8),
+    rug: new GeoBuilder(1), unlit: new GeoBuilder(1), shadow: new GeoBuilder(1), patch: new GeoBuilder(1),
+  };
   const { W, H, ch, floor } = L;
   const rng = mulberry32(1337);
+  const rr = (a, b) => a + rng() * (b - a);
   const isWall = (x, y) => x >= 0 && y >= 0 && x < W && y < H && ch[y * W + x] === '#';
   const isOut = (x, y) => x < 0 || y < 0 || x >= W || y >= H || L.outdoor[y * W + x] === 1;
   const roadTop = L.van ? L.van.y - 1 : H;
+  const lights = [], glows = [], rays = [];
 
-  // ---- surroundings (outside the playable grid) ----
+  // ---- rooms (flood fill, doorways split rooms) ----
+  const room = new Int16Array(W * H).fill(-1);
+  const isDoor = (x, y) => !isWall(x, y) && ((isWall(x - 1, y) && isWall(x + 1, y)) || (isWall(x, y - 1) && isWall(x, y + 1)));
+  const rooms = [];
+  for (let i = 0; i < W * H; i++) {
+    const x0 = i % W, y0 = (i / W) | 0;
+    if (room[i] >= 0 || ch[i] === '#' || L.outdoor[i] || isDoor(x0, y0)) continue;
+    const id = rooms.length, cells = [], st = [i];
+    room[i] = id;
+    while (st.length) {
+      const j = st.pop(), x = j % W, y = (j / W) | 0;
+      cells.push(j);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, k = ny * W + nx;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || room[k] >= 0 || ch[k] === '#' || L.outdoor[k] || isDoor(nx, ny)) continue;
+        room[k] = id; st.push(k);
+      }
+    }
+    rooms.push({ id, cells, pal: ROOMS[id % ROOMS.length] });
+  }
+  for (let i = 0; i < W * H; i++) if (room[i] < 0 && isDoor(i % W, (i / W) | 0)) {
+    const x = i % W, y = (i / W) | 0;
+    for (const [dx, dy] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) { const k = (y + dy) * W + x + dx; if (room[k] >= 0) { room[i] = room[k]; break; } }
+  }
+  const palAt = (x, y) => { const r = x >= 0 && y >= 0 && x < W && y < H ? room[y * W + x] : -1; return r >= 0 ? rooms[r].pal : ROOMS[0]; };
+  // ceiling lamps: spread through each room
+  for (const r of rooms) {
+    let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+    for (const c of r.cells) { const x = c % W, y = (c / W) | 0; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    const lw = x1 - x0 + 1, lh = y1 - y0 + 1, long = Math.max(lw, lh), n = Math.max(1, Math.round(long / 6));
+    for (let k = 0; k < n; k++) {
+      const t = (k + 0.5) / n;
+      const lx = lw >= lh ? x0 + lw * t : x0 + lw / 2, lz = lw >= lh ? y0 + lh / 2 : y0 + lh * t;
+      lights.push({ x: lx, y: WALL_H - 0.4, z: lz, col: [1, 0.74, 0.45], I: 1.75, R: 5.6, pendant: true });
+    }
+  }
+
+  // ---- surroundings ----
   const ext = 40;
-  const top = (x0, z0, x1, z1, col) => g.box((x0 + x1) / 2, -0.06, (z0 + z1) / 2, x1 - x0, 0.05, z1 - z0, col, { faces: PY });
-  top(-ext, -ext, 0, roadTop, C.grass[0]);
-  top(W, -ext, W + ext, roadTop, C.grass[0]);
-  top(0, -ext, W, 0, C.grass[0]);
-  top(-ext, roadTop, 0, roadTop + 1, C.walk);
-  top(W, roadTop, W + ext, roadTop + 1, C.walk);
-  top(-ext, roadTop + 1, 0, H, C.asphalt);
-  top(W, roadTop + 1, W + ext, H, C.asphalt);
-  top(-ext, H, W + ext, H + 1.2, C.walk);
-  top(-ext, H + 1.2, W + ext, H + ext, C.grass[1]);
-  for (let x = -ext; x < W + ext; x += 2.2) if (x < 0 || x > W - 1) g.box(x + 0.5, -0.01, roadTop + 2, 1.1, 0.02, 0.12, C.line, { faces: PY });
-  for (let x = 0; x < W - 1; x += 2.2) g.box(x + 0.5, -0.01, roadTop + 2, 1.1, 0.02, 0.12, C.line, { faces: PY });
-
-  // trees + neighbour houses
+  const ground = (bld, x0, z0, x1, z1, col) => bld.box((x0 + x1) / 2, -0.06, (z0 + z1) / 2, x1 - x0, 0.05, z1 - z0, col, { faces: PY });
+  ground(B.grass, -ext, -ext, 0, roadTop, 0xffffff);
+  ground(B.grass, W, -ext, W + ext, roadTop, 0xffffff);
+  ground(B.grass, 0, -ext, W, 0, 0xffffff);
+  ground(B.concrete, -ext, roadTop, 0, roadTop + 1, 0xffffff);
+  ground(B.concrete, W, roadTop, W + ext, roadTop + 1, 0xffffff);
+  ground(B.asphalt, -ext, roadTop + 1, 0, H, 0xffffff);
+  ground(B.asphalt, W, roadTop + 1, W + ext, H, 0xffffff);
+  ground(B.concrete, -ext, H, W + ext, H + 1.2, 0xffffff);
+  ground(B.grass, -ext, H + 1.2, W + ext, H + ext, 0xffffff);
+  for (let x = -ext; x < W + ext; x += 2.2) B.plain.box(x + 0.5, -0.01, roadTop + 2, 1.1, 0.02, 0.12, 0xf2c94c, { faces: PY });
   const tree = (x, z) => {
-    const s = 0.8 + rng() * 0.5, ry = rng() * 1.5;
-    g.box(x, 0, z, 0.3 * s, 0.7 * s, 0.3 * s, C.trunk, { ry });
-    g.box(x, 0.6 * s, z, 1.3 * s, 1.0 * s, 1.3 * s, C.leaf[(rng() * 3) | 0], { ry });
-    g.box(x, 1.55 * s, z, 0.8 * s, 0.6 * s, 0.8 * s, C.leaf[(rng() * 3) | 0], { ry: ry + 0.4 });
+    const s = 0.8 + rng() * 0.6, ry = rng() * 1.5;
+    B.woodfine.box(x, 0, z, 0.28 * s, 0.9 * s, 0.28 * s, 0x7a5236, { ry });
+    B.plain.box(x, 0.7 * s, z, 1.4 * s, 1.0 * s, 1.4 * s, LEAF[(rng() * 4) | 0], { ry });
+    B.plain.box(x + 0.2 * s, 1.5 * s, z - 0.1 * s, 1.0 * s, 0.8 * s, 1.0 * s, LEAF[(rng() * 4) | 0], { ry: ry + 0.5 });
+    B.plain.box(x - 0.1 * s, 2.15 * s, z + 0.1 * s, 0.6 * s, 0.5 * s, 0.6 * s, LEAF[(rng() * 4) | 0], { ry: ry + 0.9 });
   };
   for (let z = -ext + 2; z < roadTop - 0.5; z += 2.6) for (let x = -ext + 2; x < W + ext - 2; x += 2.6) {
     if (x > -1.5 && x < W + 1 && z > -1.5) continue;
     if (rng() < 0.55) tree(x + (rng() - 0.5) * 1.4, z + (rng() - 0.5) * 1.4);
   }
-  const houseCols = [0xffb4a2, 0x9ad1d4, 0xffe29a, 0xc3b1e1, 0xa8e6a3];
+  const houseCols = [0xe8a48e, 0x9cc7c9, 0xeed79a, 0xb9a9d4, 0xa8d4a0];
   for (let x = -ext + 3, k = 0; x < W + ext; x += 7, k++) {
     const z = H + 4.5 + (k % 2) * 0.8, col = houseCols[k % 5];
-    g.box(x, 0, z, 5, 2.2, 4, col, { top: shade(col, 0.7) });
-    g.box(x, 2.2, z, 5.4, 0.35, 4.4, 0x5a4a6a);
-    for (const wx of [-1.4, 1.4]) g.box(x + wx, 0.9, z - 2.01, 0.8, 0.7, 0.03, C.window, { faces: NZ | PZ });
-    g.box(x, 0, z - 2.01, 0.7, 1.2, 0.03, 0x7a4b33, { faces: NZ | PZ });
+    B.plain.box(x, 0, z, 5, 2.4, 4, col);
+    B.plain.box(x, 2.4, z, 5.5, 0.3, 4.5, 0x5a4058);
+    B.plain.box(x, 2.7, z, 4.2, 0.4, 3.4, 0x6a4a66);
+    for (const wx of [-1.5, 1.5]) { B.unlit.box(x + wx, 0.95, z - 2.01, 0.8, 0.75, 0.02, 0xffd38a, { faces: NZ }); B.plain.box(x + wx, 0.9, z - 2.03, 0.95, 0.06, 0.06, 0xffffff); }
+    B.woodfine.box(x, 0, z - 2.01, 0.75, 1.35, 0.03, 0x7a4b33, { faces: NZ });
     if (rng() < 0.8) tree(x + 3.3, z - 1.5);
   }
-  // picket fence around the yard
   const fenceRun = (x0, z0, x1, z1) => {
-    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.round(len / 0.5), horiz = z0 === z1;
-    g.box((x0 + x1) / 2, 0.28, (z0 + z1) / 2, horiz ? len : 0.06, 0.08, horiz ? 0.06 : len, C.fence);
-    g.box((x0 + x1) / 2, 0.55, (z0 + z1) / 2, horiz ? len : 0.06, 0.08, horiz ? 0.06 : len, C.fence);
-    for (let k = 0; k <= n; k++) {
-      const t = k / n;
-      g.box(x0 + (x1 - x0) * t, 0, z0 + (z1 - z0) * t, 0.12, 0.75, 0.12, C.fence);
-    }
+    const len = Math.hypot(x1 - x0, z1 - z0), n = Math.round(len / 0.45), horiz = z0 === z1;
+    B.plain.box((x0 + x1) / 2, 0.28, (z0 + z1) / 2, horiz ? len : 0.05, 0.07, horiz ? 0.05 : len, 0xf6f0e6);
+    B.plain.box((x0 + x1) / 2, 0.58, (z0 + z1) / 2, horiz ? len : 0.05, 0.07, horiz ? 0.05 : len, 0xf6f0e6);
+    for (let k = 0; k <= n; k++) { const t = k / n; B.plain.box(x0 + (x1 - x0) * t, 0, z0 + (z1 - z0) * t, 0.1, 0.8, 0.1, 0xffffff); }
   };
   fenceRun(-0.05, -0.05, W + 0.05, -0.05);
   fenceRun(-0.05, -0.05, -0.05, roadTop - 0.05);
   fenceRun(W + 0.05, -0.05, W + 0.05, roadTop - 0.05);
-  // road barriers at the edges of the playable street
-  for (const bx of [-0.25, W + 0.25]) for (let z = roadTop; z < H; z += 0.5) {
-    g.box(bx, 0, z + 0.25, 0.3, 0.7, 0.5, ((z * 2) | 0) % 2 ? 0xff4d5e : 0xffffff);
-  }
+  for (const bx of [-0.25, W + 0.25]) for (let z = roadTop; z < H; z += 0.5) B.plain.box(bx, 0, z + 0.25, 0.3, 0.7, 0.5, ((z * 2) | 0) % 2 ? 0xe8483f : 0xffffff);
 
-  // ---- playable grid ----
+  // ---- grid: floors, walls, ceilings, doors, windows ----
+  const quad = (bld, x, y, dx, dy, y0, h, col, seg = 2, o = {}) => {
+    const bit = dx > 0 ? PX : dx < 0 ? NX : dy > 0 ? PZ : NZ;
+    const fx = x + 0.5 + dx * 0.5 + dx * (o.off || 0), fz = y + 0.5 + dy * 0.5 + dy * (o.off || 0);
+    for (let s = 0; s < seg; s++) {
+      const t = (s + 0.5) / seg - 0.5;
+      bld.box(fx + (dy ? t : 0), y0, fz + (dx ? t : 0), dx ? 0 : 1 / seg, h, dy ? 0 : 1 / seg, col, { faces: bit });
+    }
+  };
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x, c = ch[i];
     if (c === '#') {
-      // wall block: hidden faces culled, interior / exterior colors per side
-      let faces = PY;
-      const fc = [0, 0, C.wallTop, 0, 0, 0];
-      const sides = [[1, 0, PX, 0], [-1, 0, NX, 1], [0, 1, PZ, 4], [0, -1, NZ, 5]];
-      for (const [dx, dy, bit, fi] of sides) {
+      B.plain.box(x + 0.5, WALL_H, y + 0.5, 1, 0, 1, 0x3a2f4a, { faces: PY });
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         if (isWall(x + dx, y + dy)) continue;
-        faces |= bit;
         const out = isOut(x + dx, y + dy);
-        fc[fi] = out ? C.wallOut : C.wallIn;
-        const wx = x + 0.5 + dx * 0.505, wz = y + 0.5 + dy * 0.505;
-        const oppOut = isOut(x - dx, y - dy) && !isWall(x - dx, y - dy);
-        if (!out) {
-          // baseboard strip
-          const bx = x + 0.5 + dx * 0.515, bz = y + 0.5 + dy * 0.515;
-          g.box(bx, 0, bz, dx ? 0.03 : 1, 0.14, dy ? 0.03 : 1, C.base, { faces: bit | PY });
-          // crown trim
-          g.box(bx, WALL_H - 0.08, bz, dx ? 0.03 : 1, 0.08, dy ? 0.03 : 1, C.base, { faces: bit | 8 });
+        const win = (x + y) % 3 === 0 && (out || (isOut(x - dx, y - dy) && !isWall(x - dx, y - dy)));
+        const fx = x + 0.5 + dx * 0.5, fz = y + 0.5 + dy * 0.5, tw = (w) => [dx ? 0.03 : w, dy ? 0.03 : w];
+        const bit = dx > 0 ? PX : dx < 0 ? NX : dy > 0 ? PZ : NZ;
+        if (out) {
+          quad(B.brick, x, y, dx, dy, 0, WALL_H, 0xffffff, 2);
+          B.plain.box(fx + dx * 0.02, 0, fz + dy * 0.02, ...[dx ? 0.04 : 1, 0.2, dy ? 0.04 : 1].slice(0, 1), 0.2, dy ? 0.04 : 1, 0x8a7a6a, { faces: bit | PY });
+        } else {
+          const pal = palAt(x + dx, y + dy);
+          quad(B.panel, x, y, dx, dy, 0, 0.72, pal.panel, 2);
+          quad(B.wallpaper, x, y, dx, dy, 0.72, 0.6, pal.wall, 2);
+          quad(B.wallpaper, x, y, dx, dy, 1.32, WALL_H - 1.32, pal.wall, 2);
+          const [w1, d1] = tw(1.0);
+          B.woodfine.box(fx + dx * 0.015, 0, fz + dy * 0.015, w1, 0.13, d1, TRIM, { faces: bit | PY });
+          B.plain.box(fx + dx * 0.02, 0.7, fz + dy * 0.02, dx ? 0.04 : 1, 0.05, dy ? 0.04 : 1, RAIL, { faces: bit | PY | NY });
+          B.plain.box(fx + dx * 0.02, WALL_H - 0.1, fz + dy * 0.02, dx ? 0.04 : 1, 0.1, dy ? 0.04 : 1, CROWN, { faces: bit | NY });
         }
-        if ((out || oppOut) && (x + y) % 3 === 0) {
-          // windows on outside walls (both faces)
-          g.box(wx, 0.75, wz, dx ? 0.02 : 0.62, 0.62, dy ? 0.02 : 0.62, C.window, { faces: bit });
-          g.box(wx, 0.7, wz, dx ? 0.03 : 0.76, 0.07, dy ? 0.03 : 0.76, C.frame, { faces: bit | PY });
-          g.box(wx, 1.0, wz, dx ? 0.025 : 0.05, 0.1, dy ? 0.025 : 0.05, C.frame, { faces: bit });
-          g.box(wx, 1.04, wz, dx ? 0.025 : 0.62, 0.04, dy ? 0.025 : 0.62, C.frame, { faces: bit });
+        if (win) {
+          const wf = out ? 0xf6f0e6 : 0xffffff;
+          B.unlit.box(fx + dx * 0.006, 0.82, fz + dy * 0.006, dx ? 0.01 : 0.62, 0.62, dy ? 0.01 : 0.62, out ? 0x6f9ec2 : 0xffe2b0, { faces: bit });
+          B.unlit.box(fx + dx * 0.008, 1.14, fz + dy * 0.008, dx ? 0.01 : 0.62, 0.3, dy ? 0.01 : 0.62, out ? 0x8fb8d6 : 0xfff1d0, { faces: bit });
+          B.plain.box(fx + dx * 0.02, 0.76, fz + dy * 0.02, dx ? 0.06 : 0.78, 0.06, dy ? 0.06 : 0.78, wf, { faces: 63 & ~NY });
+          B.plain.box(fx + dx * 0.02, 1.44, fz + dy * 0.02, dx ? 0.05 : 0.74, 0.05, dy ? 0.05 : 0.74, wf);
+          for (const s of [-1, 1]) B.plain.box(fx + dx * 0.02 + (dy ? s * 0.345 : 0), 0.8, fz + dy * 0.02 + (dx ? s * 0.345 : 0), dx ? 0.05 : 0.05, 0.66, dy ? 0.05 : 0.05, wf);
+          B.plain.box(fx + dx * 0.02, 1.11, fz + dy * 0.02, dx ? 0.04 : 0.62, 0.035, dy ? 0.04 : 0.62, wf);
+          B.plain.box(fx + dx * 0.02, 0.8, fz + dy * 0.02, dx ? 0.04 : 0.035, 0.64, dy ? 0.04 : 0.035, wf);
+          if (!out) {
+            const pal = palAt(x + dx, y + dy);
+            for (const s of [-1, 1]) {
+              const ox = dy ? s * 0.48 : 0, oz = dx ? s * 0.48 : 0;
+              B.plain.box(fx + dx * 0.06 + ox, 0.55, fz + dy * 0.06 + oz, dx ? 0.06 : 0.2, 1.2, dy ? 0.06 : 0.2, pal.curtain, { top: shade(pal.curtain, 0.8) });
+            }
+            B.plain.box(fx + dx * 0.07, 1.68, fz + dy * 0.07, dx ? 0.03 : 1.2, 0.03, dy ? 0.03 : 1.2, 0xb59a5a);
+            // window light: sun pool on the floor + light source + soft ray
+            const px = fx + dx * 0.9, pz = fz + dy * 0.9;
+            B.patch.box(px + (dy ? 0.25 : 0), 0.015, pz + (dx ? 0.25 : 0), dx ? 1.0 : 0.8, 0, dy ? 1.0 : 0.8, 0xffd9a0, { faces: PY, fit: true });
+            lights.push({ x: fx + dx * 0.6, y: 1.1, z: fz + dy * 0.6, col: [1, 0.8, 0.55], I: 0.95, R: 3.6 });
+            rays.push([fx + dx * 0.03, fz + dy * 0.03, dx, dy]);
+          }
         } else if (!out && (x * 5 + y * 3) % 7 === 0) {
-          // framed pictures on interior walls
-          const art = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0x6c7bf0, 0xff9f43][(x + y * 2) % 5];
-          g.box(wx, 0.85, wz, dx ? 0.04 : 0.5, 0.42, dy ? 0.04 : 0.5, 0x7d5535, { faces: 63 });
-          g.box(wx + dx * 0.01, 0.9, wz + dy * 0.01, dx ? 0.04 : 0.4, 0.32, dy ? 0.04 : 0.4, art, { faces: bit });
-          g.box(wx + dx * 0.015, 0.95, wz + dy * 0.015, dx ? 0.04 : 0.16, 0.14, dy ? 0.04 : 0.16, shade(art, 0.7), { faces: bit });
+          const art = [0xe8654f, 0x3f8f9a, 0xf2b134, 0x6a5fa8, 0x4f9a5a][(x + y * 2) % 5];
+          B.woodfine.box(fx + dx * 0.025, 0.95, fz + dy * 0.025, dx ? 0.05 : 0.56, 0.46, dy ? 0.05 : 0.56, 0x5a3a26, { faces: 63 });
+          B.plain.box(fx + dx * 0.035, 1.0, fz + dy * 0.035, dx ? 0.05 : 0.46, 0.36, dy ? 0.05 : 0.46, 0xf6f0e6, { faces: bit });
+          B.plain.box(fx + dx * 0.04, 1.03, fz + dy * 0.04, dx ? 0.05 : 0.38, 0.3, dy ? 0.05 : 0.38, art, { faces: bit });
+          B.plain.box(fx + dx * 0.045, 1.06, fz + dy * 0.045 , dx ? 0.05 : 0.16, 0.14, dy ? 0.05 : 0.16, shade(art, 0.65), { faces: bit });
+          B.plain.box(fx + dx * 0.045 + (dy ? 0.1 : 0), 1.16, fz + dy * 0.045 + (dx ? 0.1 : 0), dx ? 0.05 : 0.08, 0.08, dy ? 0.05 : 0.08, 0xfff1c0, { faces: bit });
         }
       }
-      g.box(x + 0.5, 0, y + 0.5, 1, WALL_H, 1, C.wallIn, { faces, fc });
       continue;
     }
     const f = floor[i];
-    let col;
-    if (f === 'wood') col = C.wood[y % 2] ;
-    else if (f === 'carpet') col = C.carpet[(x + y) % 2];
-    else if (f === 'tile') col = C.tile[(x + y) % 2];
-    else if (f === 'grass') col = C.grass[(rng() * 3) | 0];
-    else col = y === roadTop ? C.walk : C.asphalt;
+    const bld = f === 'wood' ? B.wood : f === 'carpet' ? B.carpet : f === 'tile' ? B.tile : f === 'grass' ? B.grass : y === roadTop ? B.concrete : B.asphalt;
+    const tint = f === 'carpet' ? 0x8e9be6 : f === 'tile' ? 0xffffff : 0xffffff;
+    const sub = f === 'grass' || f === 'road' ? 1 : 2;
+    for (let sy = 0; sy < sub; sy++) for (let sx = 0; sx < sub; sx++) bld.box(x + (sx + 0.5) / sub, -0.05, y + (sy + 0.5) / sub, 1 / sub, 0.05, 1 / sub, tint, { faces: PY });
+    if (f === 'road' && y === roadTop + 1 && x % 2 === 0) B.plain.box(x + 1, -0.01, y + 1, 1.1, 0.02, 0.12, 0xf2c94c, { faces: PY });
     if (f !== 'grass' && f !== 'road') {
-      let ao = 1;
-      if (isWall(x + 1, y) || isWall(x - 1, y) || isWall(x, y + 1) || isWall(x, y - 1)) ao = 0.85;
-      else if (isWall(x + 1, y + 1) || isWall(x - 1, y - 1) || isWall(x + 1, y - 1) || isWall(x - 1, y + 1)) ao = 0.93;
-      col = shade(col, ao * (0.97 + rng() * 0.06));
-    }
-    g.box(x + 0.5, -0.05, y + 0.5, 1, 0.05, 1, col, { faces: PY });
-    if (f !== 'grass' && f !== 'road') {
-      g.box(x + 0.5, WALL_H, y + 0.5, 1, 0.05, 1, C.ceil, { faces: 8 });
-      if (x % 4 === 1 && y % 3 === 0) g.box(x + 0.5, WALL_H - 0.04, y + 0.5, 0.5, 0.04, 0.5, C.lamp, { faces: 8 | PX | NX | PZ | NZ });
+      for (let sy = 0; sy < 2; sy++) for (let sx = 0; sx < 2; sx++) B.plaster.box(x + 0.25 + sx * 0.5, WALL_H, y + 0.25 + sy * 0.5, 0.5, 0, 0.5, 0xf6efe4, { faces: NY });
     }
     const doorX = isWall(x - 1, y) && isWall(x + 1, y), doorY = isWall(x, y - 1) && isWall(x, y + 1);
     if (doorX || doorY) {
-      g.box(x + 0.5, 1.5, y + 0.5, 1, WALL_H - 1.5, 1, C.wallIn, { faces: doorX ? (PY | 8 | PZ | NZ) : (PY | 8 | PX | NX), fc: [C.wallIn, C.wallIn, C.wallTop, C.trim, C.wallIn, C.wallIn] });
-      for (const s of [-1, 1]) g.box(x + 0.5 + (doorX ? s * 0.47 : 0), 0, y + 0.5 + (doorY ? s * 0.47 : 0), doorX ? 0.06 : 1.04, 1.5, doorY ? 0.06 : 1.04, C.trim, { faces: 63 & ~8 & ~4 });
+      const pal = palAt(x, y);
+      B.plain.box(x + 0.5, 1.55, y + 0.5, 1, WALL_H - 1.55, 1, pal.wall, { faces: doorX ? (NY | PZ | NZ) : (NY | PX | NX) });
+      B.plain.box(x + 0.5, 1.55, y + 0.5, doorX ? 1.04 : 1.12, 0.07, doorX ? 1.12 : 1.04, CROWN, { faces: 63 & ~PY });
+      for (const s of [-1, 1]) B.plain.box(x + 0.5 + (doorX ? s * 0.48 : 0), 0, y + 0.5 + (doorY ? s * 0.48 : 0), doorX ? 0.07 : 1.12, 1.55, doorY ? 0.07 : 1.12, CROWN, { faces: 63 & ~NY & ~PY });
+      // open door leaf resting against an adjacent wall
+      const opts = doorX ? [[-1, 1], [1, 1], [-1, -1], [1, -1]] : [[1, -1], [1, 1], [-1, -1], [-1, 1]];
+      for (const [a, bb] of opts) {
+        const cx = doorX ? x + a : x + bb, cy = doorX ? y + bb : y + a;
+        if (!isWall(doorX ? x + a : x, doorX ? y : y + a) || isWall(cx, cy) || isOut(cx, cy)) continue;
+        const ci = cy * W + cx;
+        if (!L.walk[ci]) continue;
+        const dcol = 0xa8774c;
+        if (doorX) {
+          const lz = bb > 0 ? y + 1 + 0.04 : y - 0.04, lx = a > 0 ? x + 1 + 0.44 : x - 0.44;
+          B.woodfine.box(lx, 0, lz, 0.86, 1.5, 0.05, dcol, { faces: 63 });
+          B.plain.box(lx + a * 0.32, 0.72, lz + bb * 0.035, 0.05, 0.05, 0.03, 0xd9b45a, { faces: 63 });
+          for (const py of [0.15, 0.85]) B.woodfine.box(lx, py, lz + bb * 0.028, 0.6, 0.55, 0.01, shade(dcol, 1.12), { faces: bb > 0 ? PZ : NZ });
+        } else {
+          const lx = bb > 0 ? x + 1 + 0.04 : x - 0.04, lz = a > 0 ? y + 1 + 0.44 : y - 0.44;
+          B.woodfine.box(lx, 0, lz, 0.05, 1.5, 0.86, dcol, { faces: 63 });
+          B.plain.box(lx + bb * 0.035, 0.72, lz + a * 0.32, 0.03, 0.05, 0.05, 0xd9b45a, { faces: 63 });
+          for (const py of [0.15, 0.85]) B.woodfine.box(lx + bb * 0.028, py, lz, 0.01, 0.55, 0.6, shade(dcol, 1.12), { faces: bb > 0 ? PX : NX });
+        }
+        break;
+      }
     }
-    if (f === 'road' && y === roadTop + 1 && x % 2 === 0) g.box(x + 1, -0.01, y + 1, 1.1, 0.02, 0.12, C.line, { faces: PY });
   }
   for (const d of L.def.decor || []) {
     if (d.type === 'rug') {
       const [x, y, w, h] = d.rect;
-      g.box(x + w / 2, 0, y + h / 2, w - 0.2, 0.02, h - 0.2, d.color, { faces: PY });
-      g.box(x + w / 2, 0, y + h / 2, w - 0.5, 0.025, h - 0.5, shade(d.color, 0.85), { faces: PY });
+      B.rug.box(x + w / 2, 0, y + h / 2, w - 0.2, 0.02, h - 0.2, d.color, { faces: PY, fit: true });
     }
   }
-  for (const f of L.furn) furniture(g, f, rng);
+  for (const f of L.furn) furniture(L, f, B, rng, lights);
 
-  const mesh = new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true }));
-  mesh.matrixAutoUpdate = false;
-  mesh.updateMatrix();
-  return mesh;
+  // pendant lamp fixtures
+  for (const l of lights) {
+    if (!l.pendant) continue;
+    B.plain.box(l.x, l.y + 0.12, l.z, 0.02, WALL_H - l.y - 0.12, 0.02, 0x2a2b36);
+    B.plain.box(l.x, WALL_H - 0.02, l.z, 0.16, 0.02, 0.16, 0xf6f0e6);
+    B.plain.box(l.x, l.y + 0.02, l.z, 0.46, 0.12, 0.46, 0xe8dcc4, { faces: 63 & ~NY });
+    B.plain.box(l.x, l.y + 0.14, l.z, 0.3, 0.06, 0.3, 0xd8cbb0);
+    B.unlit.box(l.x, l.y - 0.04, l.z, 0.16, 0.08, 0.16, 0xfff1c8, { faces: 63 });
+    B.unlit.box(l.x, l.y + 0.021, l.z, 0.44, 0.001, 0.44, 0xffe0a8, { faces: NY });
+    glows.push(l.x, l.y - 0.02, l.z);
+  }
+  for (const l of lights) if (!l.pendant && l.I > 0.8 && l.y < 1.2 && l.col[2] < 0.5) glows.push(l.x, l.y - 0.05, l.z);
+
+  // ---- bake lighting ----
+  const lightAt = makeLighting(L, lights);
+  for (const k of ['wood', 'carpet', 'tile', 'wallpaper', 'panel', 'brick', 'plaster', 'grass', 'asphalt', 'concrete', 'plain', 'woodfine', 'rug']) bake(B[k], lightAt);
+  // light probe grid for dynamic characters
+  L.light = new Float32Array(W * H * 3);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const v = lightAt(x + 0.5, 1.0, y + 0.5, 0, 0, 0, true);
+    const i = (y * W + x) * 3;
+    L.light[i] = v[0]; L.light[i + 1] = v[1]; L.light[i + 2] = v[2];
+  }
+
+  // ---- meshes ----
+  const group = new Group();
+  const mk = (bld, mat, order = 0) => {
+    if (bld.empty) return;
+    const m = new Mesh(bld.build(), mat);
+    m.matrixAutoUpdate = false; m.updateMatrix(); m.renderOrder = order;
+    group.add(m);
+  };
+  const lit = (map) => new MeshBasicMaterial({ vertexColors: true, map });
+  mk(B.wood, lit(T.wood)); mk(B.carpet, lit(T.carpet)); mk(B.tile, lit(T.tile));
+  mk(B.wallpaper, lit(T.wallpaper)); mk(B.panel, lit(T.panel)); mk(B.brick, lit(T.brick));
+  mk(B.plaster, lit(T.plaster)); mk(B.grass, lit(T.grass)); mk(B.asphalt, lit(T.asphalt));
+  mk(B.concrete, lit(T.concrete)); mk(B.plain, lit(T.plain)); mk(B.woodfine, lit(T.woodfine));
+  mk(B.rug, new MeshBasicMaterial({ vertexColors: true, map: T.rug, polygonOffset: true, polygonOffsetFactor: -1 }));
+  mk(B.unlit, new MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+  mk(B.shadow, new MeshBasicMaterial({ map: T.shadow, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), 1);
+  mk(B.patch, new MeshBasicMaterial({ vertexColors: true, map: T.patch, transparent: true, depthWrite: false, blending: AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -3 }), 2);
+
+  // soft god-rays from windows (additive gradient quads)
+  if (rays.length) {
+    const pos = [], col = [], idx = [];
+    for (const [fx, fz, dx, dy] of rays) {
+      const tx = dy ? 1 : 0, tz = dx ? 1 : 0, base = pos.length / 3;
+      const pts = [
+        [fx - tx * 0.3, 1.4, fz - tz * 0.3, 0.16], [fx + tx * 0.3, 1.4, fz + tz * 0.3, 0.16],
+        [fx + dx * 1.5 + tx * 0.75, 0.02, fz + dy * 1.5 + tz * 0.75, 0], [fx + dx * 1.5 - tx * 0.15, 0.02, fz + dy * 1.5 - tz * 0.15, 0],
+        [fx - tx * 0.3, 0.82, fz - tz * 0.3, 0.12], [fx + tx * 0.3, 0.82, fz + tz * 0.3, 0.12],
+        [fx + dx * 0.55 + tx * 0.55, 0.02, fz + dy * 0.55 + tz * 0.55, 0], [fx + dx * 0.55 - tx * 0.05, 0.02, fz + dy * 0.55 - tz * 0.05, 0],
+      ];
+      for (const p of pts) { pos.push(p[0], p[1], p[2]); col.push(1, 0.85, 0.6, p[3]); }
+      idx.push(base, base + 1, base + 2, base, base + 2, base + 3, base + 4, base + 5, base + 6, base + 4, base + 6, base + 7);
+      idx.push(base, base + 1, base + 5, base, base + 5, base + 4);
+    }
+    const g = new BufferGeometry();
+    g.setAttribute('position', new BufferAttribute(new Float32Array(pos), 3));
+    g.setAttribute('color', new BufferAttribute(new Float32Array(col), 4));
+    g.setIndex(idx);
+    const m = new Mesh(g, new MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, blending: AdditiveBlending, side: DoubleSide }));
+    m.renderOrder = 5;
+    group.add(m);
+  }
+  // lamp glows (one Points draw call)
+  if (glows.length) {
+    const g = new BufferGeometry();
+    g.setAttribute('position', new BufferAttribute(new Float32Array(glows), 3));
+    const m = new Points(g, new PointsMaterial({ map: T.glow, size: 1.1, color: 0xffc77a, transparent: true, depthWrite: false, blending: AdditiveBlending, sizeAttenuation: true }));
+    m.renderOrder = 6;
+    group.add(m);
+  }
+  return group;
 }
 
+// ---------------------------------------------------------------- dynamic props
 export function buildSafe() {
   const mat = new MeshLambertMaterial({ vertexColors: true });
   const group = new Group();
   const b = new GeoBuilder();
-  b.box(0, 0, 0, 0.9, 1.0, 0.8, 0x4a5170, { top: 0x5d6585 });
-  b.box(0, 0.12, 0.38, 0.72, 0.76, 0.05, 0x15171f, { faces: PZ });
-  b.box(0, 0.25, 0.3, 0.5, 0.18, 0.1, 0xffc93c, { top: 0xffe27a });
-  b.box(-0.12, 0.45, 0.3, 0.2, 0.18, 0.1, 0xffc93c, { top: 0xffe27a });
-  b.box(0.13, 0.45, 0.3, 0.2, 0.18, 0.1, 0x3fb950);
+  const steel = 0x3e4560, dark = 0x262a3a, gold = 0xe8b33a;
+  b.box(0, 0, 0, 0.94, 1.04, 0.84, steel, { top: 0x4b5373 });
+  b.box(0, 0, 0, 0.98, 0.06, 0.88, dark);
+  b.box(0, 0.98, 0, 0.98, 0.06, 0.88, dark);
+  for (const s of [-1, 1]) b.box(s * 0.47, 0.06, 0, 0.04, 0.92, 0.86, dark);
+  b.box(0, 0.12, 0.38, 0.74, 0.8, 0.05, 0x0f1016, { faces: PZ });
+  b.box(0, 0.14, 0.2, 0.66, 0.02, 0.3, 0x2a2e3e, { faces: PY });
+  b.box(0, 0.5, 0.2, 0.66, 0.02, 0.3, 0x2a2e3e, { faces: PY });
+  for (let k = 0; k < 3; k++) { b.box(-0.18 + k * 0.18, 0.16, 0.24, 0.16, 0.08, 0.1, gold, { top: 0xffe27a, faces: 63 }); b.box(-0.09 + k * 0.18, 0.24, 0.24, 0.16, 0.08, 0.1, gold, { top: 0xffe27a, faces: 63 }); }
+  for (let k = 0; k < 4; k++) b.box(-0.2 + k * 0.13, 0.52, 0.24, 0.11, 0.07 + (k % 2) * 0.03, 0.18, 0x3fb950, { top: 0x6fdc7a, faces: 63 });
   group.add(new Mesh(b.build(), mat));
   const d = new GeoBuilder();
-  d.box(0.36, 0.1, 0.03, 0.72, 0.8, 0.06, 0x7b85a8, { faces: 63 });
-  d.box(0.36, 0.45, 0.07, 0.2, 0.2, 0.05, 0xffd23f, { faces: 63 });
-  d.box(0.36, 0.53, 0.1, 0.04, 0.06, 0.03, 0x22242f, { faces: 63 });
-  d.box(0.6, 0.35, 0.08, 0.06, 0.28, 0.06, 0xd8deea, { faces: 63 });
+  d.box(0.37, 0.1, 0.035, 0.74, 0.84, 0.07, 0x59618a, { faces: 63 });
+  d.box(0.37, 0.16, 0.075, 0.62, 0.72, 0.02, 0x4b5373, { faces: 63 });
+  d.box(0.37, 0.46, 0.09, 0.24, 0.24, 0.04, gold, { faces: 63 });
+  d.box(0.37, 0.5, 0.115, 0.16, 0.16, 0.03, 0x22242f, { faces: 63 });
+  for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4; d.box(0.37 + Math.cos(a) * 0.105, 0.574 + Math.sin(a) * 0.105, 0.1, 0.02, 0.02, 0.03, 0xfff1c0, { faces: 63 }); }
+  for (const a of [0, 2.1, 4.2]) d.box(0.62 + Math.cos(a) * 0.05, 0.45 + Math.sin(a) * 0.05, 0.12, 0.03, 0.03, 0.1, 0xd8deea, { faces: 63 });
+  d.box(0.62, 0.45, 0.1, 0.06, 0.06, 0.06, 0xd8deea, { faces: 63 });
+  for (const y of [0.2, 0.8]) d.box(0.03, y, 0.04, 0.06, 0.12, 0.09, dark, { faces: 63 });
   const door = new Mesh(d.build(), mat);
-  door.position.set(-0.36, 0, 0.4);
+  door.position.set(-0.37, 0, 0.42);
   group.add(door);
   return { group, door, mat };
 }
 
 export function buildVan() {
   const g = new GeoBuilder();
-  const body = 0x6b4cff, stripe = 0xffd23f, glass = 0x24304f;
-  g.box(0, 0.25, 0, 2.7, 1.05, 1.3, body, { top: 0x7d62ff });
+  const body = 0x5b46d6, stripe = 0xf2b134, glass = 0x24304f;
+  g.box(0, 0.25, 0, 2.7, 1.05, 1.3, body, { top: 0x6d58e8 });
   g.box(1.15, 0.25, 0, 0.6, 0.75, 1.32, body);
   g.box(0, 0.55, 0, 2.72, 0.14, 1.32, stripe, { faces: PX | NX | PZ | NZ });
   g.box(0.95, 0.78, 0, 0.4, 0.4, 1.34, glass, { faces: PZ | NZ });
   g.box(1.36, 0.78, 0, 0.04, 0.4, 1.1, glass, { faces: PX });
   g.box(-0.3, 0.75, -0.66, 1.4, 0.42, 0.03, glass, { faces: NZ });
+  g.box(0, 1.3, 0, 1.6, 0.06, 1.0, 0x2a2b36);
+  g.box(1.5, 0.22, 0, 0.12, 0.12, 1.34, 0x2a2b36);
   g.box(1.52, 0.35, 0.42, 0.06, 0.16, 0.24, 0xfff3b0, { faces: PX });
   g.box(1.52, 0.35, -0.42, 0.06, 0.16, 0.24, 0xfff3b0, { faces: PX });
   g.box(-1.37, 0.4, 0.45, 0.04, 0.18, 0.2, 0xff4d5e, { faces: NX });
@@ -257,22 +696,27 @@ export function buildVan() {
 // geometries centered at origin, used by InstancedMesh per loot type
 export function lootGeometries() {
   const cash = new GeoBuilder();
-  cash.box(0, -0.1, 0, 0.44, 0.13, 0.26, 0x3fb950, { top: 0x6fdc7a, faces: 63 });
-  cash.box(0.03, 0.03, -0.02, 0.44, 0.13, 0.26, 0x3fb950, { top: 0x6fdc7a, faces: 63, ry: 0.25 });
-  cash.box(0, -0.105, 0, 0.1, 0.14, 0.27, 0xf6e7a8, { faces: 63 });
-  cash.box(0.03, 0.025, -0.02, 0.1, 0.14, 0.27, 0xf6e7a8, { faces: 63, ry: 0.25 });
+  for (let k = 0; k < 3; k++) {
+    const y = -0.12 + k * 0.075, ry = (k - 1) * 0.15;
+    cash.box(k * 0.015, y, 0, 0.44, 0.07, 0.24, 0x4fae5a, { top: 0x8fe08a, faces: 63, ry });
+    cash.box(k * 0.015, y - 0.002, 0, 0.09, 0.075, 0.245, 0xf3e3a0, { faces: 63, ry });
+  }
   const gold = new GeoBuilder();
-  gold.box(0, -0.12, 0, 0.5, 0.15, 0.26, 0xf5b301, { top: 0xffdd55, faces: 63 });
-  gold.box(-0.06, 0.03, 0, 0.4, 0.13, 0.22, 0xf5b301, { top: 0xffe680, faces: 63, ry: 1.2 });
+  gold.box(-0.13, -0.13, 0, 0.24, 0.12, 0.42, 0xe8a520, { top: 0xffd75a, faces: 63 });
+  gold.box(0.13, -0.13, 0, 0.24, 0.12, 0.42, 0xe8a520, { top: 0xffd75a, faces: 63 });
+  gold.box(0, -0.01, 0, 0.24, 0.12, 0.42, 0xf0b02a, { top: 0xffe680, faces: 63 });
   const jewel = new GeoBuilder();
-  const oct = new OctahedronGeometry(0.2, 0);
-  oct.scale(1, 1.35, 1);
-  jewel.add(oct, 0x3ee8ff);
-  jewel.box(0, -0.32, 0, 0.3, 0.06, 0.3, 0xffd23f, { faces: 63 });
+  const oct = new OctahedronGeometry(0.17, 0);
+  oct.scale(1.15, 1.2, 1.15);
+  jewel.add(oct, 0x4cdcff, 0, 0.02, 0);
+  jewel.box(0, -0.3, 0, 0.34, 0.06, 0.34, 0x6a2a4a, { faces: 63 });
+  jewel.box(0, -0.24, 0, 0.26, 0.05, 0.26, 0xf2c94c, { faces: 63 });
+  jewel.box(0, -0.19, 0, 0.12, 0.05, 0.12, 0xf2c94c, { faces: 63 });
   const art = new GeoBuilder();
-  art.box(0, -0.32, 0, 0.7, 0.66, 0.08, 0xc08440, { faces: 63 });
-  art.box(0, -0.26, 0, 0.56, 0.54, 0.1, 0xff6b6b, { faces: PZ | NZ });
-  art.box(-0.1, -0.2, 0, 0.22, 0.3, 0.11, 0x4ecdc4, { faces: PZ | NZ });
-  art.box(0.12, -0.05, 0, 0.16, 0.16, 0.11, 0xffe66d, { faces: PZ | NZ });
+  art.box(0, -0.34, 0, 0.74, 0.7, 0.08, 0xc08a3a, { faces: 63 });
+  art.box(0, -0.29, 0, 0.62, 0.6, 0.09, 0x2f4858, { faces: PZ | NZ });
+  art.box(0, -0.29, 0, 0.62, 0.22, 0.095, 0x3f8f9a, { faces: PZ | NZ });
+  art.box(0.14, -0.02, 0, 0.16, 0.16, 0.1, 0xf2b134, { faces: PZ | NZ });
+  art.box(-0.12, -0.14, 0, 0.3, 0.12, 0.1, 0xe8654f, { faces: PZ | NZ });
   return { cash: cash.build(), gold: gold.build(), jewel: jewel.build(), art: art.build() };
 }

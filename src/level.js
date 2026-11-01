@@ -1,6 +1,9 @@
 // Parses an ASCII level definition into grids used by rendering, collision, vision and pathfinding.
 export const FLOOR = { '.': 'wood', _: 'carpet', ',': 'tile', g: 'grass', p: 'road' };
-export const FURN = { h: 'shelf', f: 'fridge', b: 'bed', t: 'desk', k: 'counter', c: 'couch', e: 'tv', i: 'table', u: 'tub' };
+export const FURN = {
+  h: 'shelf', f: 'fridge', b: 'bed', t: 'desk', k: 'counter', c: 'couch', e: 'tv', i: 'table', u: 'tub',
+  q: 'plant', n: 'night', r: 'stove', y: 'chair', o: 'toilet', w: 'sink',
+};
 const TALL = new Set(['h', 'f']);
 export const LOOT = { $: 'cash', G: 'gold', J: 'jewel', A: 'art' };
 

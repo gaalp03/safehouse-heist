@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { parseLevel } from './level.js';
 import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat } from './world.js';
-import { makeCharacter, animateChar, squash } from './chars.js';
+import { makeCharacter, animateChar, squash, probe } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 
 const PR = 0.3, P_SPEED = 3.7, DASH_V = 11, DASH_T = 0.18, DASH_CD = 0.8, EYE = 1.02, CHASE = 3.2;
@@ -20,8 +20,8 @@ const shadowMat = new MeshBasicMaterial({ color: 0x000000, transparent: true, op
 function makeCone() {
   const g = new BufferGeometry();
   const pos = new Float32Array((CONE_N + 2) * 3), col = new Float32Array((CONE_N + 2) * 4);
-  col.set([1, 1, 1, 0.55], 0);
-  for (let i = 1; i <= CONE_N + 1; i++) col.set([1, 1, 1, 0.12], i * 4);
+  col.set([1, 1, 1, 0.3], 0);
+  for (let i = 1; i <= CONE_N + 1; i++) col.set([1, 1, 1, 0.05], i * 4);
   const idx = [];
   for (let i = 1; i <= CONE_N; i++) idx.push(0, i + 1, i);
   g.setAttribute('position', new BufferAttribute(pos, 3));
@@ -661,6 +661,12 @@ export class Game {
     g.shadow.visible = g.state !== 'sleep';
     const fast = g.state === 'alert';
     animateChar(c, dt * (fast ? 1.5 : 1), g.moving ? 1 : 0, this.t);
+    probe(c, this.L, g.x, g.z, dt);
+    if (c.beam) {
+      const on = g.state !== 'ko' && g.state !== 'getup' && g.state !== 'sleep';
+      c.beam.visible = on;
+      if (on) c.beam.material.color.setHex(g.state === 'alert' ? 0xff5a5a : g.susp > 0.25 ? 0xffb35a : 0xffe6a8);
+    }
     if (g.state === 'ko' || g.state === 'getup') {
       const k = g.state === 'ko' ? Math.min(1, g.fallT / 0.25) : g.t / 0.5;
       const e = g.state === 'ko' ? 1 - Math.pow(1 - k, 3) * Math.cos(k * 7) : k;
@@ -753,7 +759,8 @@ export class Game {
     app.shake.add(0.55);
     app.audio.play('safe');
     app.flash('gold');
-    app.particles.burst(sx, 0.8, sz + 0.4, { count: 30, colors: [0xffd23f, 0x3fb950, 0xffffff, 0xffe680], speed: 4, up: 6, size: 0.14, life: 1.0 });
+    app.particles.burst(sx, 0.8, sz + 0.4, { count: 24, colors: [0xffd23f, 0xffffff, 0xffe680], speed: 4, up: 6, size: 0.1, life: 1.0 });
+    app.particles.burst(sx, 1.0, sz + 0.5, { count: 30, colors: [0x6fcf7a, 0x9be39a, 0x4fae5a], speed: 3, up: 4, size: 0.13, life: 2.2, shape: 'bill', gravity: 3, drag: 1.5 });
     app.floaters.spawn('+$' + v.stash.toLocaleString('en-US') + ' STASH!', sx, 1.8, sz, 'big', 1.6);
     for (let i = 0; i < v.bundles; i++) {
       const a = -0.9 + (1.8 * i) / (v.bundles - 1);
@@ -783,7 +790,9 @@ export class Game {
       app.audio.play('combo', this.combo);
     }
     const cols = { cash: [0x3fb950, 0x9df59f, 0xffffff], gold: [0xffd23f, 0xfff1a8], jewel: [0x3ee8ff, 0xffffff, 0xb7f6ff], art: [0xff6b6b, 0x4ecdc4, 0xffe66d] }[it.type];
-    app.particles.burst(p.x + fx * 0.9, 0.75, p.z + fz * 0.9, { count: it.type === 'cash' ? 7 : 14, colors: cols, speed: 1.6, up: 2, size: 0.05, life: 0.5 });
+    app.particles.burst(p.x + fx * 0.9, 0.75, p.z + fz * 0.9, { count: it.type === 'cash' ? 5 : 14, colors: cols, speed: 1.6, up: 2, size: 0.05, life: 0.5 });
+    if (it.type === 'cash') app.particles.burst(p.x + fx * 1.0, 1.0, p.z + fz * 1.0, { count: 6, colors: [0x6fcf7a, 0x9be39a, 0x4fae5a], speed: 1.4, up: 1.6, size: 0.1, life: 1.1, shape: 'bill', gravity: 3, drag: 2.5 });
+    else app.particles.burst(p.x + fx * 1.0, 1.0, p.z + fz * 1.0, { count: 8, colors: [0xffffff, 0xfff1a8], speed: 1.2, up: 1, size: 0.035, life: 0.6, gravity: 0 });
     app.audio.play(it.type === 'cash' ? 'pick' : it.type, this.combo);
     this.player.bagV += 4;
     squash(this.player.c, 1.12);
@@ -817,6 +826,7 @@ export class Game {
         it.rot += dt * 12;
         if (d < 0.45) { this.collect(it); this.loot.splice(i, 1); continue; }
       }
+      if (it.st === 'idle' && Math.random() < dt * 1.6) this.app.particles.burst(it.x + rand(-0.2, 0.2), it.y + rand(0, 0.25), it.z + rand(-0.2, 0.2), { count: 1, colors: [0xffffff, 0xfff1a8], speed: 0.1, up: 0.3, size: 0.05, gravity: 0, life: 0.5, spin: 3 });
       const m = this.lootMeshes[it.type];
       const s = it.st === 'mag' ? Math.max(0.4, 1 - it.ms * 0.02) : 1 + (it.type === 'art' ? 0 : Math.sin(this.t * 6 + it.ph) * 0.06);
       _o.position.set(it.x, it.y, it.z);
@@ -859,6 +869,7 @@ export class Game {
     }
     if (this.state !== 'play') p.moving = damp(p.moving, 0, 8, dt);
     p.grabT = Math.max(0, p.grabT - dt * 4);
+    probe(this.app.vm, this.L, p.x, p.z, dt);
     this.app.vm.update(dt, {
       move: p.moving, bob: p.bob, lookX: p.lookX, lookY: p.lookY, punch: p.punchT > 0 ? p.punchT / 0.28 : 0,
       crack: p.crack && this.state === 'play', grab: p.grabT, dash: p.dashT > 0, busted: this.state === 'caught',

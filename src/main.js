@@ -1,4 +1,5 @@
-import { WebGLRenderer, Scene, PerspectiveCamera, HemisphereLight, DirectionalLight, Color, Vector3 } from 'three';
+import { WebGLRenderer, Scene, PerspectiveCamera, HemisphereLight, DirectionalLight, Color, Vector3, Fog, ACESFilmicToneMapping } from 'three';
+import { makeSky, Dust } from './atmo.js';
 import { Game } from './game.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
@@ -46,14 +47,19 @@ class App {
     this.dpr = Math.min(devicePixelRatio || 1, this.maxDpr);
     const r = (this.renderer = new WebGLRenderer({ canvas: this.els.canvas, antialias: !mobile, powerPreference: 'high-performance', stencil: false }));
     r.setPixelRatio(this.dpr);
+    r.toneMapping = ACESFilmicToneMapping;
+    r.toneMappingExposure = 1.15;
     this.scene = new Scene();
-    this.scene.background = new Color(0x9ad8ff);
+    this.scene.background = new Color(0xf4b98a);
+    this.scene.fog = new Fog(0xf0c49a, 16, 70);
+    this.sky = makeSky();
+    this.scene.add(this.sky);
     r.autoClear = false;
     this.camera = new PerspectiveCamera(42, 1, 0.05, 120);
     this.camera.rotation.order = 'YXZ';
     this.vm = new ViewModel();
-    this.scene.add(new HemisphereLight(0xffffff, 0xc4c8e8, 1.9));
-    const sun = new DirectionalLight(0xffffff, 1.7);
+    this.scene.add(new HemisphereLight(0xffe6c8, 0x6a5878, 1.5));
+    const sun = new DirectionalLight(0xffe0b8, 1.4);
     sun.position.set(-4, 10, 6);
     this.scene.add(sun);
 
@@ -63,6 +69,7 @@ class App {
     this.particles = new Particles(this.scene);
     this.shake = new Shake();
     this.floaters = new Floaters(this.els.fxl);
+    this.dust = new Dust(this.scene);
     this.game = new Game(this);
     this.level = await loadLevel(0);
     this.game.load(this.level);
@@ -359,6 +366,9 @@ class App {
       this.shake.update(rdt);
     }
     this.updateCamera(rdt);
+    this.sky.position.copy(this.camera.position);
+    if (st !== 'pause') this.dust.update(rdt, this.camera.position.x, this.camera.position.z);
+    this.dust.points.visible = st !== 'menu' && st !== 'soon';
     this.floaters.update(st === 'pause' ? 0 : rdt, this.camera, this.w, this.h);
     this.updateHints(rdt);
     if (st === 'play') this.updateHud();
@@ -463,6 +473,8 @@ class App {
     } else {
       g.applyCamera(cam, dt);
       fov = (this.aspect < 1 ? 84 : 70) + g.fovKick;
+      const sp = $('speed'), so = Math.min(1, g.fovKick / 9).toFixed(2);
+      if (sp.dataset.o !== so) { sp.dataset.o = so; sp.style.opacity = so; }
     }
     if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
   }

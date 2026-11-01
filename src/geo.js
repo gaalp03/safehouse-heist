@@ -15,9 +15,9 @@ export const PX = 1, NX = 2, PY = 4, NY = 8, PZ = 16, NZ = 32, ALL = 63, NOBOT =
 const _c = new Color();
 
 export class GeoBuilder {
-  constructor() { this.p = []; this.n = []; this.c = []; this.i = []; }
+  constructor(uvScale = 1) { this.p = []; this.n = []; this.c = []; this.i = []; this.u = []; this.us = uvScale; }
 
-  // Box with center x/z and bottom y. o: {faces, top, fc:[6 colors], ry}
+  // Box with center x/z and bottom y. o: {faces, top, fc:[6 colors], ry, fit (uv 0..1 per face), us (uv scale)}
   box(cx, y0, cz, w, h, d, color, o = {}) {
     const faces = o.faces ?? NOBOT;
     const hw = w / 2, hh = h / 2, hd = d / 2, cy = y0 + hh;
@@ -29,11 +29,18 @@ export class GeoBuilder {
       const [nn, vs] = F[f];
       const base = this.p.length / 3;
       const nx = nn[0] * cs + nn[2] * sn, nz = -nn[0] * sn + nn[2] * cs;
+      const us = o.us || this.us, ax = Math.abs(nx), az = Math.abs(nz);
+      let k = 0;
       for (const v of vs) {
         const lx = v[0] * hw, lz = v[2] * hd;
-        this.p.push(cx + lx * cs + lz * sn, cy + v[1] * hh, cz - lx * sn + lz * cs);
+        const px = cx + lx * cs + lz * sn, py = cy + v[1] * hh, pz = cz - lx * sn + lz * cs;
+        this.p.push(px, py, pz);
         this.n.push(nx, nn[1], nz);
         this.c.push(_c.r, _c.g, _c.b);
+        if (o.fit) { this.u.push(k === 1 || k === 2 ? 1 : 0, k >= 2 ? 1 : 0); k++; }
+        else if (f === 2 || f === 3) this.u.push(px / us, -pz / us);
+        else if (ax > az) this.u.push((nx > 0 ? -pz : pz) / us, py / us);
+        else this.u.push((nz > 0 ? px : -px) / us, py / us);
       }
       this.i.push(base, base + 1, base + 2, base, base + 2, base + 3);
     }
@@ -50,16 +57,19 @@ export class GeoBuilder {
       this.p.push(pa[k] + ox, pa[k + 1] + oy, pa[k + 2] + oz);
       this.n.push(na[k], na[k + 1], na[k + 2]);
       this.c.push(_c.r, _c.g, _c.b);
+      this.u.push(pa[k] / this.us, pa[k + 1] / this.us);
     }
     for (let k = 0; k < pa.length / 3; k++) this.i.push(base + k);
     return this;
   }
 
+  get empty() { return this.p.length === 0; }
   build() {
     const g = new BufferGeometry();
     g.setAttribute('position', new BufferAttribute(new Float32Array(this.p), 3));
     g.setAttribute('normal', new BufferAttribute(new Float32Array(this.n), 3));
     g.setAttribute('color', new BufferAttribute(new Float32Array(this.c), 3));
+    if (this.u.length) g.setAttribute('uv', new BufferAttribute(new Float32Array(this.u), 2));
     const n = this.p.length / 3;
     g.setIndex(new BufferAttribute(n > 65535 ? new Uint32Array(this.i) : new Uint16Array(this.i), 1));
     g.computeBoundingSphere();
