@@ -21,7 +21,7 @@ export class ViewModel {
     const armGeo = (left) => {
       const g = new GeoBuilder();
       // hoodie sleeve with folds
-      g.box(0, -0.075, -0.16, 0.14, 0.14, 0.34, SLEEVE, { faces: 63 });
+      g.box(0, -0.075, -0.24, 0.14, 0.14, 0.26, SLEEVE, { faces: 63 });
       g.box(0, -0.082, -0.24, 0.152, 0.152, 0.05, SLEEVE2, { faces: 63 });
       g.box(0, -0.08, -0.36, 0.148, 0.148, 0.1, SLEEVE, { faces: 63 });
       g.box(0, -0.082, -0.44, 0.155, 0.155, 0.07, CUFF, { faces: 63 });
@@ -41,8 +41,8 @@ export class ViewModel {
     };
     // right arm + crowbar
     this.R = new Group();
-    this.R.position.set(0.3, -0.27, 0.02);
-    this.R.rotation.y = 0.14;
+    this.R.position.set(0.28, -0.29, 0.0);
+    this.R.rotation.y = 0.16;
     this.root.add(this.R);
     this.R.add(new Mesh(armGeo(false), mat));
     const bar = new GeoBuilder();
@@ -51,11 +51,10 @@ export class ViewModel {
     bar.box(0, -0.235, 0.012, 0.03, 0.04, 0.02, dark, { faces: 63 });
     bar.box(0, -0.12, 0, 0.042, 0.42, 0.042, red, { faces: 63 });
     bar.box(0, -0.1, 0, 0.046, 0.12, 0.046, 0x22242f, { faces: 63 });
-    bar.box(0, 0.3, 0, 0.038, 0.06, 0.038, steel, { faces: 63 });
-    bar.box(0, 0.35, -0.025, 0.036, 0.04, 0.07, steel, { faces: 63 });
-    bar.box(0, 0.37, -0.075, 0.034, 0.04, 0.06, steel, { faces: 63 });
-    bar.box(0, 0.335, -0.11, 0.032, 0.05, 0.03, steel, { faces: 63 });
-    bar.box(0.0, 0.31, -0.123, 0.028, 0.03, 0.02, dark, { faces: 63 });
+    bar.box(0, 0.3, 0, 0.038, 0.07, 0.038, steel, { faces: 63 });
+    bar.box(0, 0.36, -0.035, 0.036, 0.036, 0.1, steel, { faces: 63, top: 0xdfe6ef });
+    bar.box(0, 0.33, -0.095, 0.034, 0.05, 0.03, steel, { faces: 63 });
+    bar.box(0, 0.305, -0.1, 0.03, 0.03, 0.022, steel, { faces: 63 });
     bar.box(0.02, -0.05, 0.022, 0.006, 0.3, 0.002, 0xff8a8a, { faces: 16 });
     this.bar = new Mesh(bar.build(), mat);
     this.bar.position.set(0, -0.02, -0.57);
@@ -63,8 +62,8 @@ export class ViewModel {
     this.R.add(this.bar);
     // left hand (appears when grabbing / cracking)
     this.L = new Group();
-    this.L.position.set(-0.3, -0.27, 0.02);
-    this.L.rotation.y = -0.14;
+    this.L.position.set(-0.28, -0.29, 0.0);
+    this.L.rotation.y = -0.16;
     this.root.add(this.L);
     this.L.add(new Mesh(armGeo(true), mat));
 
@@ -77,8 +76,8 @@ export class ViewModel {
     this.camera.fov = aspect < 1 ? 70 : 60;
     this.camera.updateProjectionMatrix();
     // keep hands inside narrow portrait screens
-    this.root.scale.setScalar(aspect < 1 ? 0.68 : 1);
-    this.root.userData.px = aspect < 1 ? -0.03 : 0;
+    this.root.scale.setScalar(aspect < 1 ? 0.6 : 0.92);
+    this.root.userData.px = aspect < 1 ? 0.01 : 0;
   }
 
   // s: {move, bob, lookX, lookY, punch (0..1 or <0), crack, grab, dash, busted}
@@ -95,12 +94,12 @@ export class ViewModel {
     this.root.rotation.z = this.kick * 0.08;
 
     // right arm: idle pose / swing / crack jiggle
-    let rx = 0, rz = 0, rpz = 0.02;
+    let rx = 0.14, rz = 0, rpz = 0.0;
     if (s.punch > 0) {
       const t = 1 - s.punch; // 0..1
       if (t < 0.3) rx = (t / 0.3) * 0.9;
       else if (t < 0.55) rx = 0.9 - ((t - 0.3) / 0.25) * 1.9;
-      else rx = -1.0 + ((t - 0.55) / 0.45) * 1.0;
+      else rx = -1.0 + ((t - 0.55) / 0.45) * 1.14;
       rz = -rx * 0.3;
     } else if (s.crack) {
       rx = 0.35 + Math.sin(this.t * 38) * 0.08;
@@ -115,7 +114,7 @@ export class ViewModel {
     const want = s.grab > 0 || s.crack ? 1 : 0;
     this.lIn = damp(this.lIn, want, want ? 18 : 8, dt);
     L.visible = this.lIn > 0.02;
-    L.position.y = -0.27 - (1 - this.lIn) * 0.45;
+    L.position.y = -0.29 - (1 - this.lIn) * 0.45;
     L.position.z = 0.02 - (s.grab > 0 ? Math.sin(Math.min(1, s.grab) * Math.PI) * 0.12 : 0);
     L.rotation.x = s.crack ? 0.25 : 0.1;
     L.rotation.z = s.crack ? Math.sin(this.t * 9) * 0.35 : 0;

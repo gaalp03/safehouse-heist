@@ -247,7 +247,7 @@ class App {
     const el = $('hint');
     if (this.hCur) {
       this.hT -= dt;
-      if (this.hT <= 0 || this.state !== 'play') { this.hCur = null; el.classList.add('hidden'); }
+      if (this.hT <= 0 || this.state !== 'play' || this.game.state !== 'play') { this.hCur = null; el.classList.add('hidden'); }
     } else if (this.hQ.length && this.state === 'play') {
       this.hCur = this.hQ.shift();
       if (this.hDone.has(this.hCur) && this.hCur !== 'stash') { this.hCur = null; return; }

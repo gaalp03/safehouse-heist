@@ -772,6 +772,7 @@ export class Game {
     this.exitRing.visible = this.exitBeam.visible = true;
     app.onLoot(true);
     app.setObjective('Escape to the van!');
+    app.hintDone('safe');
     app.hint('stash');
   }
 
@@ -790,9 +791,9 @@ export class Game {
       app.audio.play('combo', this.combo);
     }
     const cols = { cash: [0x3fb950, 0x9df59f, 0xffffff], gold: [0xffd23f, 0xfff1a8], jewel: [0x3ee8ff, 0xffffff, 0xb7f6ff], art: [0xff6b6b, 0x4ecdc4, 0xffe66d] }[it.type];
-    app.particles.burst(p.x + fx * 0.9, 0.75, p.z + fz * 0.9, { count: it.type === 'cash' ? 5 : 14, colors: cols, speed: 1.6, up: 2, size: 0.05, life: 0.5 });
+    app.particles.burst(p.x + fx * 1.4, 0.8, p.z + fz * 1.4, { count: it.type === 'cash' ? 4 : 10, colors: cols, speed: 1.4, up: 1.6, size: 0.03, life: 0.5 });
     if (it.type === 'cash') app.particles.burst(p.x + fx * 1.0, 1.0, p.z + fz * 1.0, { count: 6, colors: [0x6fcf7a, 0x9be39a, 0x4fae5a], speed: 1.4, up: 1.6, size: 0.1, life: 1.1, shape: 'bill', gravity: 3, drag: 2.5 });
-    else app.particles.burst(p.x + fx * 1.0, 1.0, p.z + fz * 1.0, { count: 8, colors: [0xffffff, 0xfff1a8], speed: 1.2, up: 1, size: 0.035, life: 0.6, gravity: 0 });
+    else app.particles.burst(p.x + fx * 1.5, 1.0, p.z + fz * 1.5, { count: 8, colors: [0xffffff, 0xfff1a8], speed: 1.2, up: 1, size: 0.025, life: 0.6, gravity: 0 });
     app.audio.play(it.type === 'cash' ? 'pick' : it.type, this.combo);
     this.player.bagV += 4;
     squash(this.player.c, 1.12);
