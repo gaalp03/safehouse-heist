@@ -143,6 +143,8 @@ export class Audio {
         T(330, 0.09, { type: 'sawtooth', slide: 170, vol: 0.22 }); N(0.08, { freq: 800, vol: 0.18, q: 2 });
         T(300, 0.11, { type: 'sawtooth', slide: 150, vol: 0.2, delay: 0.15 }); N(0.09, { freq: 700, vol: 0.16, q: 2, delay: 0.15 }); break;
       case 'sniff': for (let i = 0; i < 3; i++) N(0.04, { freq: 2500, vol: 0.05, q: 3, delay: i * 0.07 }); break;
+      case 'zap': T(1400, 0.25, { type: 'sawtooth', slide: 200, vol: 0.18 }); N(0.2, { freq: 3000, vol: 0.2, type: 'highpass' }); break;
+      case 'powerdown': T(440, 0.8, { type: 'sawtooth', slide: 40, vol: 0.16 }); N(0.15, { freq: 2000, vol: 0.25, q: 0.7 }); T(60, 0.5, { type: 'sine', vol: 0.4, delay: 0.05 }); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
     }

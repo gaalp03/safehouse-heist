@@ -8,6 +8,8 @@ export const CONTRACTS = [
   { id: 'cash', text: 'Pocket all loose cash', bonus: 500, check: (g) => P(g.got.cashLoose >= g.totals.cash) },
   { id: 'hide', text: 'Hide from an alerted guard', bonus: 500, needs: (g) => g.hides.length > 0, check: (g) => P(g.hidFromAlert) },
   { id: 'nodog', text: "Don't get barked at", bonus: 600, needs: (g) => g.dogs.length > 0, check: (g, end) => (g.barkedAt ? 'fail' : end ? 'ok' : 'pending') },
+  { id: 'nolaser', text: 'Never trip a laser', bonus: 600, needs: (g) => g.lasers.length > 0, check: (g, end) => (g.lasersTripped > 0 ? 'fail' : end ? 'ok' : 'pending') },
+  { id: 'power', text: 'Cut the power', bonus: 500, needs: (g) => !!g.breaker, check: (g) => P(g.powerOff) },
   { id: 'lure', text: 'Lure a guard with a coin', bonus: 400, check: (g) => P(g.lures > 0) },
   { id: 'ko2', text: 'Knock out 2 guards', bonus: 500, tag: 'ko', check: (g) => P(g.kos >= 2) },
   { id: 'noko', text: 'No knockouts', bonus: 700, tag: 'ko', check: (g, end) => (g.kos > 0 ? 'fail' : end ? 'ok' : 'pending') },

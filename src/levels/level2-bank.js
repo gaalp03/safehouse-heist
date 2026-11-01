@@ -54,6 +54,11 @@ export default {
     { path: [[20, 3], [28, 6]], wait: 1.6, speed: 1.4 },
   ],
   panel: { x: 14, y: 18, dx: 0, dy: -1 },
+  lasers: [
+    { cells: [[19, 6], [20, 6], [21, 6], [22, 6], [23, 6], [24, 6], [25, 6], [26, 6], [27, 6], [28, 6], [29, 6]], on: 1.9, off: 1.3, phase: 0 },
+    { cells: [[17, 8], [17, 9], [17, 10], [17, 11]], on: 1.6, off: 1.5, phase: 0.8 },
+  ],
+  breaker: { x: 9, y: 3, dx: 1, dy: 0 },
   cameras: [
     { pos: [16, 13.3], face: 0, sweep: 0.9, sweepSpeed: 0.6 },
     { pos: [2.3, 8.3], face: 1.57, sweep: 0.5, sweepSpeed: 0.7 },

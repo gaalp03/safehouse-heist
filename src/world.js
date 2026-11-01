@@ -759,6 +759,47 @@ export function buildSecDoor(alongX) {
   grp.add(led);
   return { group: grp, led };
 }
+export function buildBreaker() {
+  const g = new GeoBuilder();
+  g.box(0, 0, 0, 0.42, 0.56, 0.1, 0x6a7484, { faces: 63, top: 0x7a8494 });
+  g.box(0, 0.06, 0.051, 0.36, 0.44, 0.01, 0x4a5262, { faces: 16 });
+  g.box(-0.08, 0.36, 0.06, 0.12, 0.12, 0.01, 0xf2c94c, { faces: 16 });
+  g.box(-0.08, 0.38, 0.065, 0.03, 0.08, 0.01, 0x22242f, { faces: 16 });
+  for (let k = 0; k < 3; k++) g.box(-0.1 + k * 0.1, 0.12, 0.065, 0.06, 0.12, 0.03, 0x22242f, { faces: 63 });
+  const grp = new Group();
+  grp.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
+  const lever = new Group();
+  const lg = new GeoBuilder();
+  lg.box(0, 0, 0.04, 0.05, 0.2, 0.05, 0xd8333a, { faces: 63 });
+  lg.box(0, 0.18, 0.04, 0.09, 0.06, 0.08, 0x22242f, { faces: 63 });
+  lever.add(new Mesh(lg.build(), new MeshLambertMaterial({ vertexColors: true })));
+  lever.position.set(0.12, 0.3, 0.06);
+  grp.add(lever);
+  const led = new Mesh(new BoxGeometry(0.05, 0.05, 0.02), new MeshBasicMaterial({ color: 0xff2a3a }));
+  led.position.set(0.12, 0.5, 0.06);
+  grp.add(led);
+  return { group: grp, lever, led };
+}
+// laser curtain across a line of cells: 4 horizontal beams + emitter posts
+export function buildLaser(cells) {
+  const xs = cells.map((c) => c[0]), ys = cells.map((c) => c[1]);
+  const alongX = new Set(ys).size === 1;
+  const x0 = Math.min(...xs), x1 = Math.max(...xs) + 1, y0 = Math.min(...ys), y1 = Math.max(...ys) + 1;
+  const len = alongX ? x1 - x0 : y1 - y0, cx = (x0 + x1) / 2, cz = (y0 + y1) / 2;
+  const beams = new GeoBuilder(), posts = new GeoBuilder();
+  for (const y of [0.25, 0.55, 0.85, 1.15]) beams.box(cx, y, cz, alongX ? len : 0.025, 0.025, alongX ? 0.025 : len, 0xff3040, { faces: 63 });
+  for (const s of [-1, 1]) {
+    const px = alongX ? cx + s * (len / 2 - 0.05) : cx, pz = alongX ? cz : cz + s * (len / 2 - 0.05);
+    posts.box(px, 0, pz, 0.1, 1.3, 0.1, 0x3a3f4e, { faces: 63, top: 0xff3040 });
+    for (const y of [0.25, 0.55, 0.85, 1.15]) posts.box(px, y - 0.02, pz, 0.12, 0.06, 0.12, 0xff6070, { faces: 63 });
+  }
+  const mat = new MeshBasicMaterial({ color: 0xff3040, transparent: true, opacity: 0.9, depthWrite: false, blending: AdditiveBlending, toneMapped: false });
+  const beamMesh = new Mesh(beams.build(), mat);
+  beamMesh.renderOrder = 6;
+  const grp = new Group();
+  grp.add(beamMesh, new Mesh(posts.build(), new MeshLambertMaterial({ vertexColors: true })));
+  return { group: grp, mat, alongX, line: alongX ? cz : cx, lo: alongX ? x0 : y0, hi: alongX ? x1 : y1 };
+}
 export function buildKeycard() {
   const g = new GeoBuilder();
   g.box(0, -0.1, 0, 0.34, 0.22, 0.03, 0x2f7ae8, { faces: 63 });

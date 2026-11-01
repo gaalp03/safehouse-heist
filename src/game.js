@@ -4,7 +4,7 @@ import {
   CylinderGeometry, Object3D, Vector3, DoubleSide, BoxGeometry,
 } from 'three';
 import { parseLevel } from './level.js';
-import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildKeycard, WALL_H } from './world.js';
+import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildKeycard, buildLaser, buildBreaker, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
@@ -82,6 +82,15 @@ export class Game {
       this.root.add(m.group);
       return { ...d, m, open: false, t: 0 };
     });
+    this.lasers = (def.lasers || []).map((ld) => { const m = buildLaser(ld.cells); this.root.add(m.group); return { def: ld, ...m, on: true }; });
+    this.breaker = null;
+    if (def.breaker) {
+      const bd = def.breaker, m = buildBreaker();
+      m.group.position.set(bd.x + 0.5 + bd.dx * 0.53, 0.75, bd.y + 0.5 + bd.dy * 0.53);
+      m.group.rotation.y = Math.atan2(bd.dx, bd.dy);
+      this.root.add(m.group);
+      this.breaker = { ...m, at: { x: bd.x + 0.5 + bd.dx * 1.15, z: bd.y + 0.5 + bd.dy * 1.15 } };
+    }
     this.keyMeshes = L.keys.map((k) => { const m = buildKeycard(); m.position.set(k.x + 0.5, 0.8, k.y + 0.5); this.root.add(m); return { ...k, m }; });
     this.root.add(this.safe.group);
 
@@ -210,6 +219,9 @@ export class Game {
     this.state = 'play';
     this.time = 0; this.lootGot = 0; this.spotted = false; this.kos = 0;
     this.hasKey = false; this.objText = ''; this.crackNoiseT = 0;
+    this.powerOff = false; this.breakProg = 0; this.lasersTripped = 0;
+    if (this.breaker) { this.breaker.lever.rotation.x = 0; this.breaker.led.material.color.setHex(0xff2a3a); }
+    for (const l of this.lasers || []) l.group.visible = true;
     for (const d of this.doors || []) {
       const i = d.y * this.L.W + d.x;
       d.open = false; d.t = 0; this.L.walk[i] = 0; this.L.opaque[i] = 1;
@@ -437,6 +449,7 @@ export class Game {
     for (const d of this.dogs) this.updateDog(d, dt, playing);
     this.tension = alertN > 0 || this.alarm ? 1 : 0;
     this.updateAlarm(dt, playing);
+    this.updateLasers(dt, playing);
 
     this.updateLoot(dt, playing);
     this.updateProps(dt);
@@ -543,6 +556,18 @@ export class Game {
       const dx = d.x + 0.5, dz = d.y + 0.5;
       if (Math.hypot(p.x - dx, p.z - dz) < 1.5 && Math.abs(angDiff(p.face, Math.atan2(dx - p.x, dz - p.z))) < 1.0) nearDoor = d;
     }
+    // breaker box (cuts the lasers)
+    let nearBreaker = false;
+    if (this.breaker && !this.powerOff) {
+      const a = this.breaker.at, bp = this.breaker.group.position;
+      nearBreaker = Math.hypot(p.x - a.x, p.z - a.z) < 1.0 && Math.abs(angDiff(p.face, Math.atan2(bp.x - p.x, bp.z - p.z))) < 1.0;
+      if (nearBreaker && inp.act) {
+        this.breakProg += dt / 1.2; p.crack = true;
+        this.safeTick -= dt;
+        if (this.safeTick <= 0) { this.safeTick = 0.15; app.audio.play('tick', this.breakProg * 0.5); app.particles.burst(bp.x, bp.y + 0.3, bp.z, { count: 2, colors: [0xfff1a8, 0x7fd8ff], speed: 2, up: 1.5, size: 0.03, life: 0.3 }); }
+        if (this.breakProg >= 1) this.cutPower();
+      } else this.breakProg = Math.max(0, this.breakProg - dt);
+    }
     let nearPanel = false;
     const hide = this.nearHide();
     if (this.alarm && this.panel) {
@@ -585,6 +610,7 @@ export class Game {
       this.updateObjective();
       return;
     }
+    if (nearBreaker && !nearSafe && !ko) { app.setPrompt('breaker', this.breakProg); this.updateObjective(); return; }
     const hideOk = hide && !nearPanel && !nearSafe && !ko;
     if (hideOk) { app.hint('hide'); if (pressed) { this.enterHide(hide); return; } }
     app.setPrompt(nearPanel ? 'panel' : nearSafe ? 'safe' : ko ? 'ko' : hideOk ? 'hide' : '', nearPanel ? this.disarmProg : this.safeProg);
@@ -611,6 +637,7 @@ export class Game {
       const d = Math.hypot(p.x - g.x, p.z - g.z);
       if (g.state === 'sleep' && d < 6) app.hint('owner');
       for (const dg of this.dogs) if (Math.hypot(p.x - dg.x, p.z - dg.z) < 7) app.hint('dog');
+      if (!this.powerOff) for (const l of this.lasers) { const al = l.alongX ? p.x : p.z, ac = l.alongX ? p.z : p.x; if (al > l.lo - 1 && al < l.hi + 1 && Math.abs(ac - l.line) < 3.5) app.hint('laser'); }
       else if (g.state !== 'sleep' && d < 6.5) { app.hint('cone'); if (this.time > 8) app.hint('coin'); }
     }
     for (const it of this.loot) if (Math.hypot(p.x - it.x, p.z - it.z) < 4) { app.hint('loot'); break; }
@@ -1472,6 +1499,38 @@ export class Game {
     squash(p.c, 1.3);
     if (g) { this.knockout(g); this.kos--; }
     for (const o of this.guards) if (o.state === 'alert') { o.state = 'search'; o.tx = o.lastX; o.tz = o.lastZ; o.hurry = 2.4; o.susp = 0.5; }
+  }
+  cutPower() {
+    const app = this.app, bp = this.breaker.group.position;
+    this.powerOff = true; this.breakProg = 0;
+    this.breaker.lever.rotation.x = -2.2;
+    this.breaker.led.material.color.setHex(0x3ddc84);
+    for (const l of this.lasers) l.group.visible = false;
+    app.audio.play('powerdown');
+    app.shake.add(0.2);
+    app.particles.burst(bp.x, bp.y + 0.3, bp.z, { count: 24, colors: [0xfff1a8, 0x7fd8ff, 0xffffff], speed: 3, up: 3, size: 0.04, life: 0.6 });
+    app.floaters.spawn('LASERS OFF', bp.x, 1.6, bp.z, 'big', 1.3);
+  }
+  updateLasers(dt, playing) {
+    if (this.powerOff) return;
+    const p = this.player, app = this.app;
+    for (const l of this.lasers) {
+      const d = l.def, per = d.on + d.off, ph = (this.t + (d.phase || 0)) % per;
+      const on = ph < d.on, warn = !on && per - ph < 0.45;
+      l.on = on;
+      l.mat.opacity = on ? 0.75 + Math.sin(this.t * 40) * 0.15 : warn ? (Math.sin(this.t * 50) > 0 ? 0.35 : 0) : 0.0;
+      if (!playing || !on || p.hiding) continue;
+      const along = l.alongX ? p.x : p.z, across = l.alongX ? p.z : p.x;
+      if (along > l.lo && along < l.hi && Math.abs(across - l.line) < 0.28) {
+        if (!this.laserHitT || this.t - this.laserHitT > 1.5) {
+          this.laserHitT = this.t; this.lasersTripped++;
+          app.audio.play('zap'); app.flash('red'); app.shake.add(0.3);
+          app.particles.burst(p.x, 0.8, p.z, { count: 14, colors: [0xff3040, 0xffffff], speed: 2.5, up: 2, size: 0.04, life: 0.5 });
+          this.spotted = true;
+          this.triggerAlarm('You tripped a laser!');
+        }
+      }
+    }
   }
   openDoor(d) {
     const app = this.app, i = d.y * this.L.W + d.x;
