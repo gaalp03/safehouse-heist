@@ -8,6 +8,7 @@ import { SDK, ADS_ENABLED } from './sdk.js';
 import { LEVELS, loadLevel } from './levels/index.js';
 import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
+import { DIFFS, diffKey } from './difficulty.js';
 
 const $ = (id) => document.getElementById(id);
 const HINTS = {
@@ -43,6 +44,7 @@ class App {
     SDK.hooks.adEnd = () => { this.inAd = false; this.audio.setAdMuted(false); };
     this.save = SDK.load();
     this.save.best = this.save.best || {};
+    this.diff = DIFFS[this.save.diff] ? this.save.diff : 'normal';
 
     const mobile = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
     this.maxDpr = mobile ? 1.25 : 1.75;
@@ -93,6 +95,12 @@ class App {
   bindUI() {
     const click = (id, fn) => $(id).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); fn(); });
     click('bPlay', () => this.start());
+    for (const el of document.querySelectorAll('#diff button')) {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
+        this.diff = el.dataset.d; this.save.diff = this.diff; SDK.store(this.save); this.showMenu();
+      });
+    }
     click('lvl1', () => this.start());
     click('lvl2', () => this.showSoon());
     click('bResume', () => this.resume());
@@ -147,7 +155,8 @@ class App {
     this.audio.siren(false);
     this.state = 'menu';
     this.game.reset();
-    const b = this.save.best.safehouse;
+    const b = this.save.best[diffKey('safehouse', this.diff)];
+    for (const el of document.querySelectorAll('#diff button')) el.classList.toggle('on', el.dataset.d === this.diff);
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
     $('lvl1best').textContent = b ? 'Best ' + fmtMoney(b.score) : 'New!';
     this.screen('menu');
@@ -357,9 +366,10 @@ class App {
     SDK.gameplayStop();
     SDK.happytime();
     const nStars = res.stars.filter(Boolean).length;
-    const prev = this.save.best.safehouse || { score: 0, stars: 0 };
+    const bk = diffKey('safehouse', this.diff);
+    const prev = this.save.best[bk] || { score: 0, stars: 0 };
     const newBest = res.score > prev.score;
-    this.save.best.safehouse = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
+    this.save.best[bk] = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
     this.save.contracts = (this.save.contracts || 0) + res.contracts.filter((c) => c.st === 'ok').length;
     SDK.store(this.save);
     $('rStars').innerHTML = this.starsHTML(0);
@@ -371,7 +381,8 @@ class App {
     $('rScore').textContent = '$0';
     $('rCtr').innerHTML = res.contracts.map((c) => `<li class="${c.st === 'ok' ? 'ok' : 'no'}">${c.st === 'ok' ? '✔' : '✖'} ${c.text}<b>${c.st === 'ok' ? '+' + fmtMoney(c.bonus) : '—'}</b></li>`).join('');
     $('rCtrTotal').textContent = 'Contracts done (all time): ' + (this.save.contracts || 0);
-    $('rBest').textContent = newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(this.save.best.safehouse.score);
+    $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(this.save.best[bk].score)) + ' · ' + res.diff;
+    $('rMult').textContent = res.mult === 1 ? '' : `${res.diff} ×${res.mult}`;
     $('rBest').classList.toggle('new', newBest);
     this.screen('result');
     const stars = $('rStars').children;

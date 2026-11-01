@@ -8,6 +8,7 @@ import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, 
 import { makeCharacter, animateChar, squash, probe } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
+import { DIFFS } from './difficulty.js';
 
 const PR = 0.3, P_SPEED = 3.7, DASH_V = 11, DASH_T = 0.18, DASH_CD = 0.8, EYE = 1.02, CHASE = 3.2;
 const CONE_N = 20;
@@ -181,12 +182,13 @@ export class Game {
     this.hasStash = false; this.safeOpen = false; this.safeProg = 0; this.safeTick = 0; this.doorT = 0;
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
-    this.coinsLeft = 3; this.coins = []; this.lures = 0;
+    this.D = DIFFS[this.app.diff] || DIFFS.normal;
+    this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
     this.contracts = pickContracts(3);
-    this.alarm = false; this.alarmT = 0; this.alarmTotal = this.def.alarmTime || 45; this.disarmProg = 0; this.alarms = 0; this.policeBusted = false;
+    this.alarm = false; this.alarmT = 0; this.alarmTotal = this.D.alarm; this.disarmProg = 0; this.alarms = 0; this.policeBusted = false;
     if (this.police) this.police.group.visible = false;
     this.app.onAlarm && this.app.onAlarm(false);
     for (const m of this.coinMeshes || []) m.visible = false;
@@ -223,7 +225,8 @@ export class Game {
     Object.assign(g, {
       susp: 0, lastX: 0, lastZ: 0, lostT: 99, koT: 0, t: 0, wp: 0, dir: 1, nav: [], navGoal: -1, navT: 0,
       tx: 0, tz: 0, hurry: 0, baseFace: 0, fallT: 0, zz: 0.5, prevBadge: '',
-      speed: d.speed || 1.8, range: g.kind === 'owner' ? 4.6 : 5.6, fov: g.kind === 'owner' ? 1.2 : 1.35,
+      speed: (d.speed || 1.8) * this.D.speed, range: (g.kind === 'owner' ? 4.6 : 5.6) * this.D.range, fov: g.kind === 'owner' ? 1.2 : 1.35,
+      reviveT: null, sawSafe: false, safeRun: false,
     });
     g.c.root.rotation.set(0, 0, 0);
     g.c.root.position.y = 0;
@@ -526,6 +529,8 @@ export class Game {
 
   knockout(g) {
     const app = this.app, p = this.player;
+    if (g.reviveT) { g.reviveT.claimed = false; g.reviveT = null; }
+    g.safeRun = false; g.claimed = false;
     g.state = 'ko'; g.koT = 9; g.susp = 0; g.fallT = 0;
     g.c.flash = 0.2;
     squash(g.c, 0.6);
@@ -633,6 +638,53 @@ export class Game {
     this.app.shake.add(0.15);
   }
 
+  seesPoint(g, x, z, range) {
+    const dx = x - g.x, dz = z - g.z, d = Math.hypot(dx, dz);
+    if (d > range || (d > 0.6 && Math.abs(angDiff(g.face, Math.atan2(dx, dz))) > g.fov / 2)) return false;
+    return this.los(g.x, g.z, x, z);
+  }
+  noticeThings(g) {
+    const app = this.app;
+    for (const o of this.guards) {
+      if (o === g || o.state !== 'ko' || o.koT < 1.2 || o.claimed) continue;
+      if (!this.seesPoint(g, o.x, o.z, g.range)) continue;
+      o.claimed = true;
+      g.state = 'investigate'; g.tx = o.x; g.tz = o.z; g.hurry = g.speed * 1.7; g.reviveT = o; g.susp = Math.max(g.susp, 0.6); g.navGoal = -1;
+      app.audio.play('huh');
+      app.floaters.spawn('Man down!', g.x, 2.0, g.z, 'warn', 1.3);
+      return;
+    }
+    if (this.safeOpen && !g.sawSafe && g.kind === 'guard') {
+      const sx = this.L.safe.x + 0.5, sz = this.L.safe.y + 0.5;
+      if (this.seesPoint(g, sx, sz, g.range)) {
+        g.sawSafe = true; g.safeRun = true;
+        g.state = 'investigate'; g.tx = sx; g.tz = sz + 1; g.hurry = g.speed * 1.6; g.susp = Math.max(g.susp, 0.7); g.navGoal = -1;
+        app.audio.play('huh');
+        app.floaters.spawn('The safe!?', g.x, 2.0, g.z, 'warn', 1.3);
+      }
+    }
+  }
+  arrive(g) {
+    const app = this.app;
+    if (g.reviveT) {
+      const o = g.reviveT;
+      g.reviveT = null; o.claimed = false;
+      if (o.state === 'ko' && Math.hypot(o.x - g.x, o.z - g.z) < 1.8) {
+        o.koT = 0.25; this.revives++;
+        g.face = Math.atan2(o.x - g.x, o.z - g.z);
+        app.floaters.spawn('Wake up!', o.x, 1.4, o.z, 'warn', 1.1);
+        app.audio.play('wake');
+      }
+    }
+    if (g.safeRun) {
+      g.safeRun = false;
+      if (this.D.safeAlarm && this.state === 'play' && !this.alarm) {
+        app.floaters.spawn('We\'ve been robbed!', g.x, 2.0, g.z, 'alert', 1.4);
+        this.triggerAlarm('A guard found the open safe!');
+      }
+    }
+  }
+
   alert(g) {
     g.state = 'alert'; g.susp = 1; g.lostT = 0; g.radioT = 0; g.radioSaid = false;
     if (!this.spotted) this.app.hintDone('cone');
@@ -685,7 +737,7 @@ export class Game {
     const seen = perceive && p.inv <= 0 ? this.canSee(g) : 0;
     if (seen) {
       const close = 1 - clamp(seen / g.range, 0, 1);
-      const rate = (0.65 + 2.3 * close * close) * (p.dashT > 0 ? 1.6 : 1);
+      const rate = (0.65 + 2.3 * close * close) * (p.dashT > 0 ? 1.6 : 1) * this.D.susp;
       g.susp = Math.min(1, g.susp + rate * dt);
       g.lastX = p.x; g.lastZ = p.z; g.lostT = 0;
       if (g.state !== 'alert') {
@@ -696,6 +748,8 @@ export class Game {
       g.lostT += dt;
       if (g.state !== 'alert') g.susp = Math.max(0, g.susp - dt * 0.3);
     }
+    // smarter guards: notice knocked-out colleagues and an open safe
+    if (perceive && (g.state === 'patrol' || g.state === 'wait' || g.state === 'post' || g.state === 'look' || g.state === 'suspicious')) this.noticeThings(g);
     // bumping into a guard's face = instantly spotted
     if (perceive && p.inv <= 0 && g.state !== 'alert') {
       const d = Math.hypot(p.x - g.x, p.z - g.z);
@@ -739,7 +793,7 @@ export class Game {
       case 'alert': {
         g.radioT = (g.radioT || 0) + dt;
         if (!this.alarm && g.radioT > 0.7 && !g.radioSaid) { g.radioSaid = true; app.floaters.spawn('Calling it in...', g.x, 2.0, g.z, 'warn', 1.4); }
-        if (!this.alarm && g.radioT > 2.6) this.triggerAlarm('A guard radioed the police!');
+        if (!this.alarm && g.radioT > this.D.radio) this.triggerAlarm('A guard radioed the police!');
         const tx = seen ? p.x : g.lastX, tz = seen ? p.z : g.lastZ;
         this.navTo(g, tx, tz, CHASE, dt);
         if (!seen && g.lostT > 2.2) {
@@ -754,6 +808,7 @@ export class Game {
       case 'search':
         if (this.navTo(g, g.tx, g.tz, g.hurry || g.speed, dt) || g.stateT > 9 || (g.nav.length === 0 && Math.hypot(g.tx - g.x, g.tz - g.z) < 0.9)) {
           g.state = 'look'; g.t = 2.2; g.baseFace = g.face;
+          this.arrive(g);
         }
         break;
       case 'look':
@@ -1167,7 +1222,8 @@ export class Game {
     return {
       loot: this.lootGot, total: this.lootTotal, frac, time: this.time, ghost, kos: this.kos, stars,
       timeBonus, ghostBonus: ghost ? 1000 : 0, contracts: this.contracts, contractBonus,
-      score: this.lootGot + timeBonus + (ghost ? 1000 : 0) + contractBonus,
+      diff: this.D.label, mult: this.D.mult,
+      score: Math.round((this.lootGot + timeBonus + (ghost ? 1000 : 0) + contractBonus) * this.D.mult),
     };
   }
 
