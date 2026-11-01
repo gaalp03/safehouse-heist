@@ -26,6 +26,7 @@ export class Input {
       if (e.code === 'Escape' || e.code === 'KeyP') this.emit('pause');
       if (e.code === 'KeyR') this.emit('restart');
       if (e.code === 'KeyM') this.emit('mute');
+      if (e.code === 'KeyQ' || e.code === 'KeyG') this.throwP = true;
       this.emit('key', e.code);
     });
     addEventListener('keyup', (e) => {
@@ -41,6 +42,7 @@ export class Input {
       if (!this.locked && !this.lockFailed && !this.touch) { this.requestLock(); return; }
       if (e.button === 0) { this.act = true; this.actP = true; }
       if (e.button === 2) this.dashP = true;
+      if (e.button === 1) this.throwP = true;
       this.dragLook = true;
     });
     addEventListener('mouseup', (e) => { if (e.button === 0) this.act = false; this.dragLook = false; });
@@ -112,6 +114,7 @@ export class Input {
     };
     btn(els.bAct, () => { this.act = true; this.actP = true; }, () => { this.act = false; });
     btn(els.bDash, () => { this.dashP = true; });
+    btn(els.bThrow, () => { this.throwP = true; });
   }
   requestLock() {
     if (this.touch || this.locked) return;
@@ -148,5 +151,6 @@ export class Input {
   consumeLook(out) { out.x = this.lx; out.y = this.ly; this.lx = 0; this.ly = 0; return out; }
   consumeAct() { const v = this.actP; this.actP = false; return v; }
   consumeDash() { const v = this.dashP; this.dashP = false; return v; }
-  clear() { this.actP = false; this.dashP = false; this.lx = 0; this.ly = 0; }
+  consumeThrow() { const v = this.throwP; this.throwP = false; return v; }
+  clear() { this.actP = false; this.dashP = false; this.throwP = false; this.lx = 0; this.ly = 0; }
 }

@@ -126,6 +126,13 @@ export class Audio {
       case 'star':
         T(784 * Math.pow(2, (p * 4) / 12), 0.35, { type: 'triangle', vol: 0.2 });
         T(1568 * Math.pow(2, (p * 4) / 12), 0.25, { type: 'sine', vol: 0.08, delay: 0.05 }); break;
+      case 'throw': N(0.12, { vol: 0.15, freq: 1800, slide: 900, q: 1.5 }); T(900, 0.06, { type: 'triangle', vol: 0.06 }); break;
+      case 'clink': {
+        const v = 0.05 + p * 0.12;
+        T(2400 + Math.random() * 300, 0.12, { type: 'triangle', vol: v }); T(3700 + Math.random() * 300, 0.18, { type: 'sine', vol: v * 0.7, delay: 0.02 });
+        if (p > 0.5) T(3100, 0.25, { type: 'sine', vol: v * 0.5, delay: 0.09 });
+        break;
+      }
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
     }

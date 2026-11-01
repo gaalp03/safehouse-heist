@@ -129,6 +129,13 @@ export class Game {
     this.exitBeam.position.set(L.exit.x, 1.2, L.exit.z);
     this.root.add(this.exitRing, this.exitBeam);
 
+    // throwable coins (distraction)
+    const cg = new BoxGeometry(0.11, 0.025, 0.11);
+    this.coinMeshes = [];
+    for (let i = 0; i < 4; i++) {
+      const m = new Mesh(cg, new MeshBasicMaterial({ color: 0xffc83a }));
+      m.visible = false; this.root.add(m); this.coinMeshes.push(m);
+    }
     this.arrow = makeArrow();
     this.root.add(this.arrow);
 
@@ -162,6 +169,8 @@ export class Game {
     this.hasStash = false; this.safeOpen = false; this.safeProg = 0; this.safeTick = 0; this.doorT = 0;
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
+    this.coinsLeft = 3; this.coins = []; this.lures = 0;
+    for (const m of this.coinMeshes || []) m.visible = false;
 
     const p = this.player;
     Object.assign(p, {
@@ -359,6 +368,7 @@ export class Game {
     this.updateProps(dt);
     if (!demo) this.syncPlayer(dt);
     this.updateNoiseRings(dt);
+    this.updateCoins(dt, playing);
 
     if (this.state === 'escape') this.updateEscape(dt);
     if (this.state === 'caught') {
@@ -461,13 +471,14 @@ export class Game {
       }
     }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
+    if (inp.consumeThrow()) this.throwCoin();
 
     // contextual hints
     if (this.time > 3.5) app.hint('dash');
     for (const g of this.guards) {
       const d = Math.hypot(p.x - g.x, p.z - g.z);
       if (g.state === 'sleep' && d < 6) app.hint('owner');
-      else if (g.state !== 'sleep' && d < 6.5) app.hint('cone');
+      else if (g.state !== 'sleep' && d < 6.5) { app.hint('cone'); if (this.time > 8) app.hint('coin'); }
     }
     for (const it of this.loot) if (Math.hypot(p.x - it.x, p.z - it.z) < 4) { app.hint('loot'); break; }
   }
@@ -497,7 +508,69 @@ export class Game {
     app.hintDone('ko');
   }
 
-  makeNoise(x, z, r, except) {
+  throwCoin() {
+    const p = this.player, app = this.app;
+    if (this.coinsLeft <= 0) { app.audio.play('nope'); app.floaters.spawn('No coins!', p.x + Math.sin(p.face) * 1.5, 1.2, p.z + Math.cos(p.face) * 1.5, 'warn', 0.9); return; }
+    const mesh = this.coinMeshes.find((m) => !m.visible);
+    if (!mesh) return;
+    this.coinsLeft--;
+    const fx = Math.sin(p.face), fz = Math.cos(p.face), cp = Math.cos(p.pitch), sp = Math.sin(p.pitch);
+    const v = 7.5;
+    this.coins.push({ mesh, x: p.x + fx * 0.35, y: 0.95, z: p.z + fz * 0.35, vx: fx * cp * v + p.vx * 0.5, vy: sp * v + 2.6, vz: fz * cp * v + p.vz * 0.5, st: 'fly', t: 0, bounces: 0 });
+    mesh.visible = true;
+    p.grabT = 1;
+    app.audio.play('throw');
+    app.onCoins(this.coinsLeft);
+    app.hintDone('coin');
+  }
+
+  updateCoins(dt, playing) {
+    const p = this.player, app = this.app;
+    for (let i = this.coins.length - 1; i >= 0; i--) {
+      const c = this.coins[i];
+      c.t += dt;
+      if (c.st === 'fly') {
+        c.vy -= 16 * dt;
+        const ox = c.x, oz = c.z;
+        c.x += c.vx * dt; c.y += c.vy * dt; c.z += c.vz * dt;
+        const cx = Math.floor(c.x), cz = Math.floor(c.z);
+        if (!this.walkable(cx, cz) && (this.opaqueAt(cx, cz) || c.y < 0.9)) {
+          // bounce off walls / furniture
+          if (Math.floor(ox) !== cx) c.vx *= -0.4; else c.vx *= 0.6;
+          if (Math.floor(oz) !== cz) c.vz *= -0.4; else c.vz *= 0.6;
+          c.x = ox; c.z = oz;
+          app.audio.play('clink', 0.4);
+        }
+        if (c.y < 0.03) {
+          c.y = 0.03;
+          if (c.bounces === 0) {
+            this.makeNoise(c.x, c.z, 4.6, null, true);
+            app.audio.play('clink', 1);
+            app.particles.burst(c.x, 0.06, c.z, { count: 6, colors: [0xffe680, 0xffffff], speed: 1.5, up: 1.5, size: 0.04, life: 0.4 });
+          } else app.audio.play('clink', 0.3);
+          c.bounces++;
+          c.vy = Math.abs(c.vy) * 0.35; c.vx *= 0.5; c.vz *= 0.5;
+          if (c.bounces > 2 || Math.abs(c.vy) < 0.5) { c.st = 'rest'; c.vy = 0; }
+        }
+        c.mesh.rotation.set(c.t * 18, c.t * 7, 0);
+      } else {
+        c.mesh.rotation.set(0, c.t * 2, 0);
+        c.mesh.position.y = 0.03;
+        // walk over a landed coin to pick it back up
+        if (playing && c.t > 0.6 && Math.hypot(p.x - c.x, p.z - c.z) < 0.6) {
+          this.coinsLeft++;
+          c.mesh.visible = false;
+          this.coins.splice(i, 1);
+          app.audio.play('pick', 6);
+          app.onCoins(this.coinsLeft);
+          continue;
+        }
+      }
+      c.mesh.position.set(c.x, c.y, c.z);
+    }
+  }
+
+  makeNoise(x, z, r, except, lure) {
     const ring = this.noiseRings.find((n) => n.t >= 1);
     if (ring) { ring.t = 0; ring.r = r; ring.x = x; ring.z = z; ring.m.visible = true; }
     for (const g of this.guards) {
@@ -506,7 +579,8 @@ export class Game {
       if (g.state === 'sleep') { this.wake(g, x, z); continue; }
       if (g.state !== 'investigate' && g.state !== 'suspicious') {
         this.app.audio.play('huh');
-        this.app.floaters.spawn('?', g.x, 1.9, g.z, 'q', 0.8);
+        this.app.floaters.spawn(lure ? 'Huh? A coin?' : '?', g.x, 1.9, g.z, 'q', 0.9);
+        if (lure) this.lures++;
       }
       g.state = 'investigate'; g.tx = x; g.tz = z; g.hurry = g.speed * 1.4;
       g.susp = Math.max(g.susp, 0.3);

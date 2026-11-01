@@ -19,12 +19,13 @@ const HINTS = {
   owner: ['Shh... the owner is asleep. No dashing near the bed!', 'Shh... the owner is asleep. No dashing near the bed!'],
   loot: ['Extra loot = more stars. Grab it all!', 'Extra loot = more stars. Grab it all!'],
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
+  coin: ['Q: throw a coin to lure guards away', 'Tap the coin to lure guards away'],
 };
 
 class App {
   constructor() {
     this.els = {
-      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'),
+      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'), bThrow: $('bThrow'),
     };
     this.state = 'boot';
     this.hShown = new Set(); this.hDone = new Set(); this.hQ = []; this.hT = 0; this.hCur = null;
@@ -175,6 +176,7 @@ class App {
     this.hQ.length = 0;
     this.lastLoot = -1; this.lastSec = -1;
     this.onLoot(false, true);
+    this.onCoins(this.game.coinsLeft);
     this.setObjective('Crack the safe!');
     this.hint('move');
     SDK.gameplayStart();
@@ -287,6 +289,13 @@ class App {
     if (silent) return;
     const l = $('loot');
     l.classList.remove('punch', 'bigpunch'); void l.offsetWidth; l.classList.add(big ? 'bigpunch' : 'punch');
+  }
+  onCoins(n) {
+    const c = $('coins');
+    c.lastChild.textContent = '×' + n;
+    c.classList.toggle('empty', n === 0);
+    c.classList.remove('punch'); void c.offsetWidth; c.classList.add('punch');
+    this.els.bThrow.lastChild.textContent = '×' + n;
   }
   flash(kind) {
     const f = $('flash');
