@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { parseLevel } from './level.js';
 import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel } from './world.js';
-import { makeCharacter, animateChar, squash, probe } from './chars.js';
+import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
 import { DIFFS } from './difficulty.js';
@@ -15,6 +15,7 @@ const CONE_N = 20;
 const COL = { cone: 0xffe14d, sus: 0xff9f1c, alert: 0xff3b4e };
 const _o = new Object3D(), _v = new Vector3(), _mv = { x: 0, y: 0 }, _lk = { x: 0, y: 0 };
 const turn = (a, b, r) => a + clamp(angDiff(a, b), -r, r);
+const turnTo = turn;
 
 const shadowGeo = new CircleGeometry(0.36, 12).rotateX(-Math.PI / 2);
 const shadowMat = new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
@@ -122,6 +123,12 @@ export class Game {
       const o = def.owner;
       mkGuard('owner', { path: o.patrol, wait: 1.2, speed: o.speed, loop: true, owner: o });
     }
+    // guard dogs
+    this.dogs = (def.dogs || []).map((dd) => {
+      const m = makeDog();
+      this.root.add(m.root);
+      return { def: dd, m, shadow: this.addShadow() };
+    });
     // security cameras
     this.cams = (def.cameras || []).map((cd) => {
       const cone = makeCone(); this.root.add(cone);
@@ -215,6 +222,12 @@ export class Game {
     squash(p.c, 1);
 
     for (const g of this.guards) this.resetGuard(g);
+    this.crumbs = []; this.crumbT = 0; this.barkedAt = false;
+    for (const d of this.dogs) {
+      const s = d.def.path[0];
+      Object.assign(d, { x: s[0] + 0.5, z: s[1] + 0.5, wp: 1 % d.def.path.length, state: 'roam', t: 0, barkT: 0, sniffT: 0, ci: 0, lostT: 0,
+        nav: [], navGoal: -1, navT: 0, face: 0, moving: 0, tx: 0, tz: 0, waitT: 0, smellT: 0 });
+    }
     for (const cam of this.cams) Object.assign(cam, { susp: 0, cool: 0, face: cam.def.face });
 
     this.loot = L.loot.map((l, i) => ({
@@ -395,6 +408,7 @@ export class Game {
       this.syncGuard(g, dt);
     }
     for (const cam of this.cams) this.updateCam(cam, dt, playing);
+    for (const d of this.dogs) this.updateDog(d, dt, playing);
     this.tension = alertN > 0 || this.alarm ? 1 : 0;
     this.updateAlarm(dt, playing);
 
@@ -449,6 +463,16 @@ export class Game {
       if (Math.random() < 0.6) app.particles.burst(p.x, 0.15, p.z, { count: 1, colors: [0xffffff], speed: 0.5, up: 0.5, size: 0.12, gravity: 0, life: 0.35 });
     }
     this.moveEnt(p, vx * dt, vz * dt, PR);
+    // scent trail for dogs
+    this.crumbT -= dt;
+    if (this.crumbT <= 0 && Math.hypot(p.vx, p.vz) > 0.5) {
+      this.crumbT = 0.4; this.crumbs.push({ x: p.x, z: p.z, t: this.time });
+      if (this.crumbs.length > 60) this.crumbs.shift();
+    }
+    for (const d of this.dogs) {
+      const dx = p.x - d.x, dz = p.z - d.z, dd = Math.hypot(dx, dz);
+      if (dd < 0.5 && dd > 0.001) { p.x += (dx / dd) * (0.5 - dd); p.z += (dz / dd) * (0.5 - dd); this.collide(p, PR); }
+    }
     // soft-collide with standing guards
     for (const g of this.guards) {
       if (g.state === 'sleep') continue;
@@ -529,6 +553,7 @@ export class Game {
     for (const g of this.guards) {
       const d = Math.hypot(p.x - g.x, p.z - g.z);
       if (g.state === 'sleep' && d < 6) app.hint('owner');
+      for (const dg of this.dogs) if (Math.hypot(p.x - dg.x, p.z - dg.z) < 7) app.hint('dog');
       else if (g.state !== 'sleep' && d < 6.5) { app.hint('cone'); if (this.time > 8) app.hint('coin'); }
     }
     for (const it of this.loot) if (Math.hypot(p.x - it.x, p.z - it.z) < 4) { app.hint('loot'); break; }
@@ -695,6 +720,103 @@ export class Game {
       g.state = 'investigate'; g.tx = x; g.tz = z; g.hurry = g.speed * 1.4;
       g.susp = Math.max(g.susp, 0.3);
     }
+    if (lure) for (const d of this.dogs) {
+      if ((d.state === 'roam' || d.state === 'sniff') && Math.hypot(d.x - x, d.z - z) < r + 2) {
+        d.state = 'coin'; d.tx = x; d.tz = z; d.waitT = 5; d.navGoal = -1;
+        this.app.floaters.spawn('!', d.x, 1.0, d.z, 'q', 0.7);
+      }
+    }
+  }
+
+  // ---------- guard dog ----------
+  updateDog(d, dt, playing) {
+    const p = this.player, app = this.app;
+    d.t += dt; d.moving = 0;
+    const dist = Math.hypot(p.x - d.x, p.z - d.z);
+    const hide = p.hiding;
+    // senses: sees/smells you close, or sniffs you out in a wardrobe
+    if (playing && d.state !== 'bark' && d.state !== 'barkHide') {
+      if (!hide && p.inv <= 0 && dist < 3.0 && this.los(d.x, d.z, p.x, p.z)) {
+        d.state = 'bark'; d.barkT = 0.25; d.lostT = 0;
+        app.floaters.spawn('!', d.x, 1.1, d.z, 'alert', 0.8);
+      } else if (hide && Math.hypot(hide.ex - d.x, hide.ez - d.z) < 1.4) {
+        d.state = 'barkHide'; d.barkT = 0.3; d.hide = hide;
+      }
+    }
+    const P = d.def.path;
+    switch (d.state) {
+      case 'roam': {
+        if (d.waitT > 0) { d.waitT -= dt; d.face += Math.sin(d.t * 3) * dt; break; }
+        const w = P[d.wp];
+        if (this.navTo(d, w[0] + 0.5, w[1] + 0.5, d.def.speed, dt)) { d.wp = (d.wp + 1) % P.length; d.waitT = 1.2; }
+        // pick up a fresh scent
+        d.smellT -= dt;
+        if (playing && d.smellT <= 0) {
+          d.smellT = 0.5;
+          for (let i = this.crumbs.length - 1; i >= 0; i--) {
+            const c = this.crumbs[i];
+            if (this.time - c.t > 14) break;
+            if (Math.hypot(c.x - d.x, c.z - d.z) < 2.2) { d.state = 'sniff'; d.ci = i; d.sniffT = 0; app.audio.play('sniff'); break; }
+          }
+        }
+        break;
+      }
+      case 'sniff': {
+        d.sniffT += dt;
+        const c = this.crumbs[d.ci];
+        if (!c || d.sniffT > 16) { d.state = 'roam'; d.navGoal = -1; break; }
+        if (this.navTo(d, c.x, c.z, 2.5, dt) || Math.hypot(c.x - d.x, c.z - d.z) < 0.45) {
+          if (d.ci < this.crumbs.length - 1) d.ci++;
+          else { d.state = 'roam'; d.waitT = 2; d.navGoal = -1; }
+        }
+        if (Math.random() < dt * 1.5) app.audio.play('sniff');
+        break;
+      }
+      case 'coin':
+        if (this.navTo(d, d.tx, d.tz, 3.2, dt) || Math.hypot(d.tx - d.x, d.tz - d.z) < 0.6) {
+          d.waitT -= dt;
+          d.face += Math.sin(d.t * 6) * dt * 3;
+          if (Math.random() < dt * 2) app.audio.play('sniff');
+          if (d.waitT <= 0) { d.state = 'roam'; d.navGoal = -1; }
+        }
+        break;
+      case 'bark': {
+        const sees = !hide && dist < 6 && this.los(d.x, d.z, p.x, p.z);
+        if (sees) d.lostT = 0; else d.lostT += dt;
+        if (dist > 1.3 && !hide) this.navTo(d, p.x, p.z, 3.3, dt);
+        d.face = turnTo(d.face, Math.atan2(p.x - d.x, p.z - d.z), 8 * dt);
+        this.dogBark(d, dt, d.x, d.z);
+        if (d.lostT > 2.5 || hide) { d.state = 'sniff'; d.ci = Math.max(0, this.crumbs.length - 6); d.sniffT = 0; }
+        if (playing && sees && !this.barkedAt) { this.barkedAt = true; this.spotted = true; }
+        break;
+      }
+      case 'barkHide': {
+        const h = d.hide;
+        if (!p.hiding) { d.state = 'bark'; d.lostT = 0; break; }
+        d.face = turnTo(d.face, Math.atan2(h.cx - d.x, h.cz - d.z), 8 * dt);
+        this.dogBark(d, dt, h.ex, h.ez, 10);
+        if (!this.barkedAt) { this.barkedAt = true; }
+        break;
+      }
+    }
+    // render
+    const m = d.m;
+    m.root.position.set(d.x, 0, d.z);
+    m.root.rotation.y = d.face;
+    d.shadow.position.set(d.x, 0.02, d.z);
+    d.shadow.scale.set(0.8, 1, 1.1);
+    animateDog(m, dt, d.moving ? 1 : 0, this.t, d.state === 'bark' || d.state === 'barkHide');
+    probe(m, this.L, d.x, d.z, dt);
+  }
+  dogBark(d, dt, nx, nz, r = 7) {
+    d.barkT -= dt;
+    if (d.barkT > 0) return;
+    d.barkT = 0.85;
+    const app = this.app;
+    app.audio.play('woof');
+    app.floaters.spawn('WOOF!', d.x, 1.0, d.z, 'woof', 0.7);
+    d.m.sq = 1.3; d.m.sqv = 0;
+    this.makeNoise(nx, nz, r, null);
   }
 
   wake(g, x, z) {
@@ -747,6 +869,13 @@ export class Game {
         app.floaters.spawn('Wake up!', o.x, 1.4, o.z, 'warn', 1.1);
         app.audio.play('wake');
       }
+    }
+    const ph = this.player.hiding;
+    if (ph && this.state === 'play' && this.dogs.some((d) => d.state === 'barkHide') && Math.hypot(ph.ex - g.x, ph.ez - g.z) < 1.8) {
+      app.floaters.spawn('Got you!', g.x, 2.0, g.z, 'alert', 1.2);
+      this.leaveHide(true);
+      this.bust(g);
+      return;
     }
     if (g.safeRun) {
       g.safeRun = false;

@@ -172,3 +172,52 @@ export function probe(c, L, x, z, dt) {
   col.b += (Math.max(0.78, Math.min(1.5, L.light[i + 2] * m)) - col.b) * k;
 }
 export const squash = (c, amt) => { c.sq = amt; c.sqv = 0; };
+
+// Guard dog: chunky box pup with floppy ears, collar and a wagging tail.
+export function makeDog() {
+  const mat = new MeshLambertMaterial({ vertexColors: true });
+  const fur = 0xc98a4a, dark = 0x7a4a26, white = 0xf6ead8;
+  const root = new Group(), body = new Group();
+  root.add(body);
+  const mk = (fn, parent, x = 0, y = 0, z = 0) => { const g = new GeoBuilder(); fn(g); const m = new Mesh(g.build(), mat); m.position.set(x, y, z); parent.add(m); return m; };
+  mk((g) => {
+    g.box(0, 0.3, -0.02, 0.32, 0.28, 0.66, fur, { faces: A, top: shade(fur, 1.1) });
+    g.box(0, 0.3, 0.2, 0.28, 0.22, 0.2, white, { faces: A & ~4 });
+    g.box(0, 0.5, 0.26, 0.34, 0.06, 0.1, 0xd8333a, { faces: A });
+    g.box(0, 0.44, 0.32, 0.06, 0.07, 0.03, 0xf2c94c, { faces: A });
+    g.box(0, 0.4, -0.1, 0.33, 0.12, 0.3, dark, { faces: 4 | 1 | 2 });
+  }, body);
+  const head = new Group(); head.position.set(0, 0.58, 0.34); body.add(head);
+  mk((g) => {
+    g.box(0, -0.12, 0, 0.3, 0.26, 0.28, fur, { faces: A });
+    g.box(0, -0.12, 0.2, 0.17, 0.13, 0.16, white, { faces: A });
+    g.box(0, -0.05, 0.285, 0.07, 0.05, 0.03, 0x1c1d26, { faces: A });
+    g.box(0, -0.165, 0.26, 0.1, 0.03, 0.06, 0xe8707a, { faces: A });
+    for (const s of [-1, 1]) {
+      g.box(s * 0.08, -0.01, 0.141, 0.06, 0.06, 0.02, 0x1c1d26, { faces: 16 });
+      g.box(s * 0.09, 0.0, 0.151, 0.02, 0.02, 0.01, 0xffffff, { faces: 16 });
+      g.box(s * 0.17, -0.12, -0.02, 0.06, 0.22, 0.14, dark, { faces: A });
+    }
+  }, head);
+  const legs = [];
+  for (const [lx, lz] of [[-0.1, 0.2], [0.1, 0.2], [-0.1, -0.24], [0.1, -0.24]]) {
+    const L = new Group(); L.position.set(lx, 0.3, lz); body.add(L); legs.push(L);
+    mk((g) => { g.box(0, -0.3, 0, 0.09, 0.3, 0.1, fur, { faces: A }); g.box(0, -0.3, 0.015, 0.1, 0.05, 0.13, white, { faces: A }); }, L);
+  }
+  const tail = new Group(); tail.position.set(0, 0.42, -0.34); body.add(tail);
+  mk((g) => g.box(0, 0, -0.1, 0.06, 0.06, 0.22, fur, { faces: A }), tail);
+  tail.rotation.x = 0.7;
+  body.scale.setScalar(1.1);
+  return { root, body, head, legs, tail, mat, phase: 0, sq: 1, sqv: 0 };
+}
+export function animateDog(m, dt, move, t, bark) {
+  m.phase += dt * (6 + 12 * move);
+  const sw = Math.sin(m.phase) * 0.7 * move;
+  m.legs[0].rotation.x = sw; m.legs[3].rotation.x = sw; m.legs[1].rotation.x = -sw; m.legs[2].rotation.x = -sw;
+  m.tail.rotation.y = Math.sin(t * (bark ? 26 : 12)) * (bark ? 0.4 : 0.7);
+  m.body.position.y = Math.abs(Math.sin(m.phase)) * 0.03 * move;
+  m.head.rotation.x = bark ? -0.25 + Math.sin(t * 18) * 0.15 : Math.sin(t * 1.5) * 0.05;
+  m.sqv += (1 - m.sq) * 260 * dt; m.sqv *= Math.exp(-11 * dt); m.sq += m.sqv * dt;
+  const s = 1.1 * Math.max(0.6, m.sq);
+  m.body.scale.set(1.1 / Math.sqrt(m.sq), s, 1.1);
+}
