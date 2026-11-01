@@ -28,6 +28,7 @@ const HINTS = {
   door: ['Got the keycard! Swipe it at the vault door', 'Got the keycard! Swipe it at the vault door'],
   drill: ['Cracking the vault is LOUD. Guards will hear it!', 'Cracking the vault is LOUD. Guards will hear it!'],
   hide: ['E at a wardrobe: hide inside. Guards lose you if they did not see you!', 'Tap the hand at a wardrobe to hide inside'],
+  smoke: ['C: drop a smoke bomb. Guards cannot see into or through the cloud!', 'Tap 💨 to drop a smoke bomb. Guards cannot see through it!'],
   coin: ['Q: throw a coin to lure guards away', 'Tap the coin to lure guards away'],
   alarm: ['ALARM! Escape or hold E at the keypad by the front door', 'ALARM! Escape or hold the hand at the keypad by the front door'],
 };
@@ -35,7 +36,7 @@ const HINTS = {
 class App {
   constructor() {
     this.els = {
-      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'), bThrow: $('bThrow'),
+      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'), bThrow: $('bThrow'), bSmoke: $('bSmoke'),
     };
     this.state = 'boot';
     this.hShown = new Set(); this.hDone = new Set(); this.hQ = []; this.hT = 0; this.hCur = null;
@@ -225,6 +226,7 @@ class App {
     this.lastLoot = -1; this.lastSec = -1;
     this.onLoot(false, true);
     this.onCoins(this.game.coinsLeft);
+    this.onSmoke(this.game.smokesLeft);
     this.renderContracts(this.game.contracts);
     clearTimeout(this.whyT); $('alarmwhy').classList.add('hidden');
     if (this.mode === 'daily') {
@@ -379,6 +381,19 @@ class App {
   onHide(on) {
     $('slats').classList.toggle('hidden', !on);
     $('xh').classList.toggle('hidden', on);
+  }
+  onSmoke(n) {
+    const c = $('smokep');
+    c.lastChild.textContent = '×' + n;
+    c.classList.toggle('empty', n === 0);
+    c.classList.remove('punch'); void c.offsetWidth; c.classList.add('punch');
+    this.els.bSmoke.lastChild.textContent = '×' + n;
+    this.els.bSmoke.classList.toggle('empty', n === 0);
+  }
+  onInSmoke(on) {
+    if (this.inSmokeOn === on) return;
+    this.inSmokeOn = on;
+    $('smokeov').classList.toggle('on', on);
   }
   onCoins(n) {
     const c = $('coins');

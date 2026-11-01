@@ -146,6 +146,7 @@ export class Audio {
       case 'zap': T(1400, 0.25, { type: 'sawtooth', slide: 200, vol: 0.18 }); N(0.2, { freq: 3000, vol: 0.2, type: 'highpass' }); break;
       case 'powerdown': T(440, 0.8, { type: 'sawtooth', slide: 40, vol: 0.16 }); N(0.15, { freq: 2000, vol: 0.25, q: 0.7 }); T(60, 0.5, { type: 'sine', vol: 0.4, delay: 0.05 }); break;
       case 'scream': T(900, 0.45, { type: 'sawtooth', slide: 1400, vol: 0.09 }); T(1100, 0.4, { type: 'square', slide: 1600, vol: 0.04, delay: 0.05 }); break;
+      case 'smoke': T(160, 0.12, { type: 'sine', slide: 60, vol: 0.4 }); N(1.4, { freq: 4000, slide: 900, vol: 0.22, q: 0.6 }); N(0.5, { freq: 900, vol: 0.12, type: 'lowpass', delay: 0.05 }); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
     }

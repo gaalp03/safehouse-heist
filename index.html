@@ -82,6 +82,9 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 #bAct{right:max(22px,env(safe-area-inset-right));bottom:max(34px,env(safe-area-inset-bottom));width:96px;height:96px;font-size:36px;background:#fff}
 #bAct.ready{background:var(--y);animation:rdy .6s infinite alternate}@keyframes rdy{to{scale:1.08}}
 #bDash{right:calc(max(22px,env(safe-area-inset-right)) + 110px);bottom:max(26px,env(safe-area-inset-bottom));width:74px;height:74px;font-size:28px;background:#7fd8ff}
+#bSmoke{right:calc(max(22px,env(safe-area-inset-right)) + 122px);bottom:calc(max(26px,env(safe-area-inset-bottom)) + 90px);width:56px;height:56px;font-size:22px;background:#e2dcef}#bSmoke.empty{opacity:.45}
+#smokep{position:absolute;left:84px;top:206px;font-size:16px;padding:5px 10px;gap:4px}#smokep.punch{animation:punch .3s}#smokep.empty{opacity:.5}
+#smokeov{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;background:radial-gradient(ellipse at center,rgba(220,214,232,.35),rgba(200,194,214,.8))}#smokeov.on{opacity:1}
 #bThrow{right:max(30px,env(safe-area-inset-right));bottom:calc(max(34px,env(safe-area-inset-bottom)) + 110px);width:62px;height:62px;background:#ffe08a}
 .coin{display:inline-block;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,#ffc83a 55%,#c98a1a);border:2px solid #8a5a10}
 #coins{position:absolute;left:12px;font-size:16px;padding:5px 10px;gap:6px}#coins.punch{animation:punch .3s}#coins.empty{opacity:.5}
@@ -114,7 +117,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 .stats{display:grid;grid-template-columns:auto auto;gap:4px 18px;font-size:16px;text-align:left}.stats b{color:var(--y);text-align:right}
 #rScore{font-size:34px;color:#7dff9b}#rBest{font-size:15px;opacity:.8}#rBest.new{color:var(--y);opacity:1;animation:bob .5s infinite alternate}
 #soonList{list-style:none;font-size:16px;display:flex;flex-direction:column;gap:6px}#soonList li::before{content:"★ ";color:var(--y)}
-#coins{top:206px}#key{position:absolute;left:96px;top:206px;font-size:14px;padding:6px 10px;background:linear-gradient(180deg,#3a7ae8,#1f4aa8)}#key.punch{animation:punch .4s}@media (max-width:640px){#key{top:178px;left:86px;font-size:12px}}
+#coins{top:206px}#key{position:absolute;left:156px;top:206px;font-size:14px;padding:6px 10px;background:linear-gradient(180deg,#3a7ae8,#1f4aa8)}#key.punch{animation:punch .4s}@media (max-width:640px){#key{top:178px;left:144px;font-size:12px}#smokep{top:178px;left:76px}}
 .card.shake{animation:shakeX .35s}
 #ctr{position:absolute;left:12px;top:250px;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13px;max-width:230px}
 #ctr li{display:flex;align-items:center;gap:6px;background:rgba(28,19,48,.72);border-radius:9px;padding:4px 8px;border:1px solid rgba(255,214,160,.18)}
@@ -152,6 +155,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <body>
 <canvas id="c" tabindex="-1"></canvas>
 <div id="vignette"></div>
+<div id="smokeov"></div>
 <div id="slats" class="hidden"></div>
 <div id="siren"></div>
 <div id="fxl"></div>
@@ -163,6 +167,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div id="alarmwhy" class="o hidden"></div>
   <canvas id="mm"></canvas>
   <ul id="ctr" class="o"></ul>
+  <div id="smokep" class="pill o">💨<span>×1</span></div>
   <div id="key" class="pill o hidden">🔑 KEYCARD</div>
   <div id="coins" class="pill o"><i class="coin"></i><span>×3</span></div>
   <div id="tr">
@@ -179,6 +184,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <div id="touch" class="hidden">
   <div id="joyzone"></div><div id="lookzone"></div><div id="joy"><div id="knob"></div></div>
   <button id="bDash">⚡<span>DASH</span></button>
+  <button id="bSmoke">💨<span>×1</span></button>
   <button id="bThrow"><i class="coin"></i><span>×3</span></button>
   <button id="bAct">✋<span>GRAB</span></button>
 </div>
@@ -195,7 +201,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   </div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>
   <button class="btn" id="bPlay">PLAY</button>
-  <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Q coin · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · ✋ knock out &amp; crack</span></p>
+  <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
 </div>
 
 <div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>

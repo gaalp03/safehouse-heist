@@ -1,8 +1,9 @@
 // Gameplay: player, guards (vision cones, suspicion, chase, noise), loot, safe, escape, scoring.
 import {
   Group, Mesh, MeshBasicMaterial, InstancedMesh, BufferGeometry, BufferAttribute, CircleGeometry, RingGeometry,
-  CylinderGeometry, Object3D, Vector3, DoubleSide, BoxGeometry,
+  CylinderGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial,
 } from 'three';
+import { textures } from './textures.js';
 import { parseLevel } from './level.js';
 import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildKeycard, buildLaser, buildBreaker, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
@@ -199,6 +200,18 @@ export class Game {
       }
       return null;
     }).filter(Boolean);
+    // smoke clouds (pooled Points)
+    this.smokeFx = [];
+    for (let i = 0; i < 2; i++) {
+      const N = 46, geo = new BufferGeometry();
+      geo.setAttribute('position', new BufferAttribute(new Float32Array(N * 3), 3));
+      const pts = new Points(geo, new PointsMaterial({ map: textures().glow, size: 1.5, color: 0xd9d4e2, transparent: true, opacity: 0, depthWrite: false }));
+      pts.frustumCulled = false; pts.renderOrder = 8; pts.visible = false;
+      const off = new Float32Array(N * 4);
+      for (let k = 0; k < N; k++) { const a = Math.random() * 6.28, r = Math.sqrt(Math.random()); off.set([Math.cos(a) * r, Math.random(), Math.sin(a) * r, Math.random() * 6.28], k * 4); }
+      this.root.add(pts);
+      this.smokeFx.push({ pts, geo, off, N });
+    }
     this.arrow = makeArrow();
     this.root.add(this.arrow);
 
@@ -248,6 +261,7 @@ export class Game {
     this.daily = this.app.mode === 'daily' ? this.app.daily : null;
     this.D = this.daily ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
     this.lootTotal = this.baseLootTotal;
+    this.smokesLeft = this.D.smoke; this.clouds = []; this.smokeHid = false; for (const s of this.smokeFx || []) s.pts.visible = false;
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
     this.hidFromAlert = false; this.clerkStopped = false;
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
@@ -470,6 +484,7 @@ export class Game {
     if (!demo) this.syncPlayer(dt);
     this.updateNoiseRings(dt);
     this.updateCoins(dt, playing);
+    this.updateSmoke(dt);
 
     if (this.state === 'escape') this.updateEscape(dt);
     if (this.state === 'caught') {
@@ -642,6 +657,7 @@ export class Game {
     }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
     if (inp.consumeThrow()) this.throwCoin();
+    if (inp.consumeSmoke()) this.dropSmoke();
     this.checkContracts(false);
     this.updateObjective();
 
@@ -742,6 +758,62 @@ export class Game {
     if (p.hideT > 0.35 && (inp.consumeAct() || Math.hypot(_mv.x, _mv.y) > 0.5)) this.leaveHide(false);
   }
 
+  // ---------- smoke bomb ----------
+  dropSmoke() {
+    const p = this.player, app = this.app;
+    if (this.smokesLeft <= 0) { app.audio.play('nope'); return; }
+    if (this.clouds.length >= this.smokeFx.length) return;
+    this.smokesLeft--;
+    let x = p.x + Math.sin(p.face) * 0.7, z = p.z + Math.cos(p.face) * 0.7;
+    if (!this.walkable(Math.floor(x), Math.floor(z))) { x = p.x; z = p.z; }
+    const fx = this.smokeFx.find((f) => !f.pts.visible);
+    fx.pts.visible = true;
+    this.clouds.push({ x, z, t: 0, dur: 7.5, r: 0, fx });
+    app.audio.play('smoke');
+    app.shake.add(0.12);
+    app.particles.burst(x, 0.2, z, { count: 14, colors: [0xffffff, 0xd9d4e2, 0xb8b2c6], speed: 3, up: 2, size: 0.12, life: 0.7, gravity: 1 });
+    app.onSmoke(this.smokesLeft);
+    app.hintDone('smoke');
+  }
+  smokeBlocks(x0, z0, x1, z1) {
+    for (const c of this.clouds) {
+      const R = c.r * 0.9;
+      if (R < 0.3) continue;
+      if (Math.hypot(x1 - c.x, z1 - c.z) < R || Math.hypot(x0 - c.x, z0 - c.z) < R) return true;
+      const dx = x1 - x0, dz = z1 - z0, L2 = dx * dx + dz * dz || 1;
+      const t = clamp(((c.x - x0) * dx + (c.z - z0) * dz) / L2, 0, 1);
+      if (Math.hypot(x0 + dx * t - c.x, z0 + dz * t - c.z) < R) return true;
+    }
+    return false;
+  }
+  inSmoke(x, z) { return this.clouds.some((c) => Math.hypot(x - c.x, z - c.z) < c.r * 0.85); }
+  updateSmoke(dt) {
+    for (let i = this.clouds.length - 1; i >= 0; i--) {
+      const c = this.clouds[i];
+      c.t += dt;
+      const grow = Math.min(1, c.t / 0.6), fade = clamp((c.dur - c.t) / 1.6, 0, 1);
+      c.r = 2.1 * (1 - Math.pow(1 - grow, 3)) * (0.75 + 0.25 * fade);
+      const f = c.fx, pos = f.geo.attributes.position.array;
+      for (let k = 0; k < f.N; k++) {
+        const o = k * 4, sw = Math.sin(c.t * 0.8 + f.off[o + 3]) * 0.15;
+        pos[k * 3] = c.x + f.off[o] * c.r + sw;
+        pos[k * 3 + 1] = 0.2 + f.off[o + 1] * 1.5 * grow + c.t * 0.04;
+        pos[k * 3 + 2] = c.z + f.off[o + 2] * c.r + sw;
+      }
+      f.geo.attributes.position.needsUpdate = true;
+      f.pts.material.opacity = 0.55 * fade * grow;
+      f.pts.material.size = 1.2 + grow * 0.6;
+      // guards caught inside cough and lose their bearings
+      for (const g of this.guards) {
+        if (g.coughT > 0) g.coughT -= dt;
+        if (g.state === 'ko' || g.state === 'sleep' || Math.hypot(g.x - c.x, g.z - c.z) > c.r * 0.8) continue;
+        if (!(g.coughT > 0)) { g.coughT = 2.2; this.app.floaters.spawn('*cough*', g.x, 1.9, g.z, 'q', 0.9); if (g.state === 'alert') g.lostT = Math.max(g.lostT, 1.5); }
+      }
+      if (c.t >= c.dur) { f.pts.visible = false; this.clouds.splice(i, 1); }
+    }
+    this.app.onInSmoke(this.state === 'play' && this.inSmoke(this.player.x, this.player.z));
+  }
+
   throwCoin() {
     const p = this.player, app = this.app;
     if (this.coinsLeft <= 0) { app.audio.play('nope'); app.floaters.spawn('No coins!', p.x + Math.sin(p.face) * 1.5, 1.2, p.z + Math.cos(p.face) * 1.5, 'warn', 0.9); return; }
@@ -835,7 +907,7 @@ export class Game {
     const hide = p.hiding;
     // senses: sees/smells you close, or sniffs you out in a wardrobe
     if (playing && d.state !== 'bark' && d.state !== 'barkHide') {
-      if (!hide && p.inv <= 0 && dist < 3.0 && this.los(d.x, d.z, p.x, p.z)) {
+      if (!hide && p.inv <= 0 && dist < 3.0 && this.los(d.x, d.z, p.x, p.z) && !this.smokeBlocks(d.x, d.z, p.x, p.z)) {
         d.state = 'bark'; d.barkT = 0.25; d.lostT = 0;
         app.floaters.spawn('!', d.x, 1.1, d.z, 'alert', 0.8);
       } else if (hide && Math.hypot(hide.ex - d.x, hide.ez - d.z) < 1.4) {
@@ -1002,6 +1074,7 @@ export class Game {
     this.spotted = true;
     this.app.audio.play('alert');
     this.app.floaters.spawn('!', g.x, 2.0, g.z, 'alert', 0.8);
+    if (this.smokesLeft > 0) this.app.hint('smoke');
     this.app.shake.add(0.15);
     squash(g.c, 1.3);
   }
@@ -1017,6 +1090,7 @@ export class Game {
     if (d > g.range) return 0;
     if (d > 0.35 && Math.abs(angDiff(g.face, Math.atan2(dx, dz))) > g.fov / 2) return 0;
     if (!this.los(g.x, g.z, p.x, p.z)) return 0;
+    if (this.smokeBlocks(g.x, g.z, p.x, p.z)) { if (g.susp > 0.2 || g.state === 'alert') this.smokeHid = true; return 0; }
     return d + 0.001;
   }
 
@@ -1226,7 +1300,7 @@ export class Game {
     let seen = false;
     if (perceive && p.inv <= 0 && cam.cool <= 0) {
       const dx = p.x - x, dz = p.z - z, dist = Math.hypot(dx, dz);
-      seen = dist < 6.5 && Math.abs(angDiff(cam.face, Math.atan2(dx, dz))) < 0.45 && this.los(x, z, p.x, p.z);
+      seen = dist < 6.5 && Math.abs(angDiff(cam.face, Math.atan2(dx, dz))) < 0.45 && this.los(x, z, p.x, p.z) && !this.smokeBlocks(x, z, p.x, p.z);
     }
     cam.susp = clamp(cam.susp + (seen ? dt * 1.5 : -dt * 0.8), 0, 1);
     if (cam.susp >= 1) {

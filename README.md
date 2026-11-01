@@ -25,6 +25,7 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 | Look | Mouse (pointer lock, click the game to capture) | Drag on the right half |
 | Move | WASD / Arrows | Drag on the left half (joystick) |
 | Dash (noisy!) | Space / Shift / Right click | ⚡ |
+| Smoke bomb (guards, cameras and the dog cannot see into or through the cloud; 1 per run, 2 on Easy) | C / X | 💨 |
 | Throw a coin (lures guards to where it lands; walk over it to pick it back up, 3 per run) | Q / G / Middle click | 🪙 |
 | Knock out (from behind) / crack safe (hold) | E / Left click | ✋ |
 | Pause / Restart / Mute | Esc or P / R / M | ⏸ button |
