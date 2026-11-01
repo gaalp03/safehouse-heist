@@ -58,7 +58,7 @@ class App {
     this.camera = new PerspectiveCamera(42, 1, 0.05, 120);
     this.camera.rotation.order = 'YXZ';
     this.vm = new ViewModel();
-    this.scene.add(new HemisphereLight(0xffe6c8, 0x6a5878, 1.5));
+    this.scene.add(new HemisphereLight(0xffe6c8, 0x7a6888, 1.8));
     const sun = new DirectionalLight(0xffe0b8, 1.4);
     sun.position.set(-4, 10, 6);
     this.scene.add(sun);

@@ -4,7 +4,7 @@ Safehouse Heist is an original game. All content was created for this project.
 
 - **Code, game design, level design:** original.
 - **3D models:** none loaded. All geometry (house, furniture, characters, van, loot, trees) is generated procedurally from boxes at runtime (`src/world.js`, `src/chars.js`).
-- **Textures / images:** none. Flat vertex colors only.
+- **Textures / images:** none shipped. All textures are drawn procedurally on canvas at runtime (`src/textures.js`); lighting is baked procedurally (`src/world.js`).
 - **Sound effects and music:** none loaded. Synthesized in real time with the Web Audio API (`src/audio.js`).
 - **Fonts:** system fonts only.
 

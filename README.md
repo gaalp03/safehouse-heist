@@ -55,9 +55,15 @@ src/sdk.js            CrazyGames SDK v3 wrapper + save data
 
 Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` (ASCII map + guards + values) and register it in `src/levels/index.js`. See `docs/level2-bank.md` for the next level's plan.
 
+## Look
+
+- Procedural canvas textures generated at load (wood planks, wallpaper, wainscot panels, carpet, tiles, brick, rugs, grass, asphalt): no image files.
+- Warm lamp + golden window light and ambient occlusion are **baked into vertex colors** at load, so the house renders unlit (cheap on mobile) with soft light pools and contact shadows; characters and hands get a light-probe tint from the same bake.
+- ACES tone mapping, gradient sky dome, fog, dust motes, lamp glows, window god-rays, guard flashlight beams, vignette, dash speed lines, paper-bill and sparkle particles.
+
 ## Performance
 
-- Whole static level (walls, ceilings, furniture, decor) is one merged vertex-colored mesh; ~50 draw calls total in play
+- Static level is merged into ~16 meshes (one per material); ~35-70 draw calls total in play, ~50k triangles
 - Instanced loot and particles, blob shadows instead of shadow maps
 - Pixel ratio capped (1.25 on mobile, 1.75 desktop), no MSAA on mobile, automatic resolution scaling if FPS drops
 

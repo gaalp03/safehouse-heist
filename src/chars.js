@@ -163,8 +163,8 @@ export function probe(c, L, x, z, dt) {
   const cx = Math.max(0, Math.min(L.W - 1, Math.floor(x))), cz = Math.max(0, Math.min(L.H - 1, Math.floor(z)));
   const i = (cz * L.W + cx) * 3, k = 1 - Math.exp(-6 * dt), m = 1.55;
   const col = c.mat.color;
-  col.r += (Math.max(0.62, Math.min(1.5, L.light[i] * m)) - col.r) * k;
-  col.g += (Math.max(0.6, Math.min(1.5, L.light[i + 1] * m)) - col.g) * k;
-  col.b += (Math.max(0.6, Math.min(1.5, L.light[i + 2] * m)) - col.b) * k;
+  col.r += (Math.max(0.82, Math.min(1.5, L.light[i] * m)) - col.r) * k;
+  col.g += (Math.max(0.78, Math.min(1.5, L.light[i + 1] * m)) - col.g) * k;
+  col.b += (Math.max(0.78, Math.min(1.5, L.light[i + 2] * m)) - col.b) * k;
 }
 export const squash = (c, amt) => { c.sq = amt; c.sqv = 0; };
