@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Safehouse Heist</title>
+<link rel="icon" href="data:,">
+<style>
+:root{--ink:#1d2140;--y:#ffd23f;--g:#3ddc84;--r:#ff4d5e;--b:#6b4cff;--w:#fff;--panel:#262b52}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+html,body{width:100%;height:100%;overflow:hidden;background:#9ad8ff;overscroll-behavior:none;touch-action:none}
+body{font-family:"Trebuchet MS","Arial Rounded MT Bold","Segoe UI",system-ui,sans-serif;color:var(--w);font-weight:900}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;outline:none}
+.hidden{display:none!important}
+.o{text-shadow:0 3px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink),0 2px 0 var(--ink)}
+#vignette{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .25s;box-shadow:inset 0 0 120px 30px rgba(255,40,60,.55);animation:pulse 0.6s infinite alternate}
+@keyframes pulse{to{box-shadow:inset 0 0 160px 50px rgba(255,40,60,.7)}}
+#flash{position:fixed;inset:0;pointer-events:none;opacity:0}
+#flash.red{animation:fl .5s ease-out;background:#ff3b4e}#flash.gold{animation:fl .4s ease-out;background:#fff3b0}#flash.alarm{animation:fl .7s ease-out;background:#ff3b4e}
+@keyframes fl{0%{opacity:.55}100%{opacity:0}}
+#fxl{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.ft{position:absolute;left:0;top:0;font-size:22px;white-space:nowrap;color:#fff;animation:pop .45s cubic-bezier(.2,1.8,.4,1);text-shadow:0 3px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 -2px 0 var(--ink)}
+.ft.cash{color:#7dff9b}.ft.gold{color:var(--y);font-size:28px}.ft.jewel{color:#7ff3ff;font-size:26px}.ft.art{color:#ff9fd0;font-size:30px}
+.ft.ko{color:var(--y);font-size:34px}.ft.alert{color:var(--r);font-size:38px}.ft.q{color:var(--y);font-size:32px}
+.ft.big{font-size:36px;color:var(--y)}.ft.combo{font-size:18px;color:#ffb3ff}.ft.warn{font-size:18px;color:#ffe08a}
+.ft.zz{font-size:20px;color:#cfe6ff;animation:none}
+@keyframes pop{0%{scale:.2}100%{scale:1}}
+.badge{position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;display:none;place-items:center;
+ background:conic-gradient(var(--y) calc(var(--p,0)*360deg),rgba(29,33,64,.6) 0);border:3px solid var(--ink)}
+.badge.sus,.badge.alert{display:grid}.badge i{position:absolute;inset:3px;border-radius:50%;background:var(--ink)}
+.badge b{position:relative;color:var(--y);font-size:18px;line-height:1}
+.badge.alert{background:var(--r);animation:pop .3s cubic-bezier(.2,1.8,.4,1)}.badge.alert i{background:var(--r)}.badge.alert b{color:#fff}
+#hud{position:fixed;inset:0;pointer-events:none;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}
+.pill{background:rgba(29,33,64,.82);border-radius:14px;padding:8px 14px;display:inline-flex;align-items:center;gap:8px;font-size:20px;border:3px solid rgba(255,255,255,.12)}
+#loot{position:absolute;left:12px;top:10px;flex-direction:column;align-items:flex-start;gap:4px;min-width:140px;transform-origin:left top}
+#loot .row{display:flex;gap:8px;align-items:baseline}#lootv{color:#7dff9b;font-size:24px}#lootp{font-size:14px;opacity:.75}
+#loot .bar{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;position:relative}
+#loot .bar::after{content:"";position:absolute;left:70%;top:0;bottom:0;width:2px;background:var(--y)}
+#lootbar{height:100%;width:0;background:#7dff9b;transition:width .3s}#lootbar.star{background:var(--y)}
+#loot.punch{animation:punch .25s}#loot.bigpunch{animation:punch .5s}
+@keyframes punch{0%{scale:1}35%{scale:1.18}100%{scale:1}}
+#obj{position:absolute;left:50%;top:10px;transform:translateX(-50%);color:var(--y);font-size:18px}
+#obj.pop{animation:objp .5s cubic-bezier(.2,1.8,.4,1)}@keyframes objp{0%{scale:.5}100%{scale:1}}
+#tr{position:absolute;right:12px;top:10px;display:flex;gap:8px;pointer-events:auto}
+.ib{width:44px;height:44px;border-radius:12px;border:3px solid rgba(255,255,255,.15);background:rgba(29,33,64,.82);color:#fff;font:inherit;font-size:18px;cursor:pointer;display:grid;place-items:center}
+.ib svg{width:22px;height:22px;fill:#fff}#bMute.off .w{display:none}#bMute:not(.off) .x{display:none}
+#prompt{position:fixed;left:50%;bottom:20%;transform:translateX(-50%);background:var(--y);color:var(--ink);padding:10px 18px;border-radius:14px;font-size:18px;pointer-events:none;box-shadow:0 4px 0 #b8901a;animation:objp .35s cubic-bezier(.2,1.8,.4,1)}
+#hint{position:fixed;left:50%;bottom:calc(8% + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(29,33,64,.88);padding:12px 20px;border-radius:16px;font-size:17px;pointer-events:none;text-align:center;max-width:min(92vw,560px);border:3px solid var(--y);animation:objp .4s cubic-bezier(.2,1.8,.4,1)}
+body.touch #hint{bottom:auto;top:76px}body.touch #prompt{bottom:auto;top:132px}
+@media (max-width:640px){#obj{top:66px;font-size:15px;padding:6px 12px}.pill{font-size:17px;padding:6px 10px}#lootv{font-size:19px}#loot{min-width:110px}.ib{width:38px;height:38px}body.touch #hint{top:112px;font-size:15px}body.touch #prompt{top:168px;font-size:16px}.card{width:142px}.card .art{height:44px}#bAct{width:86px;height:86px}#bDash{width:68px;height:68px;right:calc(max(22px,env(safe-area-inset-right)) + 100px)}}
+#ring{position:fixed;left:0;top:0;width:54px;height:54px;pointer-events:none}
+#ring circle{fill:none;stroke-width:6}#ring .bg{stroke:rgba(29,33,64,.7)}#ring .fg{stroke:var(--y);stroke-dasharray:126;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
+#touch{position:fixed;inset:0;pointer-events:none}
+#joyzone{position:absolute;left:0;top:64px;bottom:0;right:0;pointer-events:auto;touch-action:none}
+#joy{position:absolute;left:0;top:0;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(255,255,255,.15);border:4px solid rgba(255,255,255,.35);display:none;pointer-events:none}
+#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.85);transform:translate(-50%,-50%);box-shadow:0 4px 0 rgba(0,0,0,.2)}
+#touch button{position:absolute;pointer-events:auto;border-radius:50%;border:4px solid var(--ink);font:inherit;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;box-shadow:0 6px 0 var(--ink)}
+#touch button span{font-size:12px;margin-top:-2px}
+#bAct{right:max(22px,env(safe-area-inset-right));bottom:max(34px,env(safe-area-inset-bottom));width:96px;height:96px;font-size:36px;background:#fff}
+#bAct.ready{background:var(--y);animation:rdy .6s infinite alternate}@keyframes rdy{to{scale:1.08}}
+#bDash{right:calc(max(22px,env(safe-area-inset-right)) + 110px);bottom:max(26px,env(safe-area-inset-bottom));width:74px;height:74px;font-size:28px;background:#7fd8ff}
+#touch button.down{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;background:rgba(20,22,48,.45);text-align:center;overflow:auto}
+.screen.solid{background:rgba(20,22,48,.78)}
+.logo{font-size:clamp(40px,9vw,84px);line-height:.92;letter-spacing:1px;color:var(--y);transform:rotate(-3deg);animation:bob 2.4s ease-in-out infinite alternate}
+.logo small{display:block;color:#fff;font-size:.55em}
+@keyframes bob{to{transform:rotate(2deg) translateY(-4px)}}
+.sub{font-size:16px;opacity:.9;max-width:460px}
+.btn{font:inherit;font-size:24px;padding:14px 34px;border-radius:18px;border:4px solid var(--ink);background:var(--y);color:var(--ink);cursor:pointer;box-shadow:0 6px 0 var(--ink);transition:transform .08s}
+.btn:hover{transform:translateY(-2px) scale(1.03)}.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--ink)}
+.btn.s{font-size:18px;padding:10px 22px;background:#fff}.btn.g{background:var(--g)}.btn.p{background:#ff9fd0}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.levels{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.card{width:170px;padding:12px;border-radius:18px;border:4px solid var(--ink);background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 6px 0 var(--ink);font:inherit;display:flex;flex-direction:column;gap:4px;align-items:center;transition:transform .08s}
+.card:hover{transform:translateY(-3px) rotate(-1deg)}.card .n{font-size:13px;opacity:.6}.card .t{font-size:20px}
+.card .art{width:100%;height:58px;border-radius:10px;background:linear-gradient(135deg,#ffb35c,#ff6b6b);display:grid;place-items:center;font-size:30px;color:#fff}
+.card.lock{background:#d9dcef}.card.lock .art{background:linear-gradient(135deg,#7d8bb8,#4b5585)}
+.stars span{color:#c2c6db;font-size:22px}.stars span.on{color:var(--y);text-shadow:0 2px 0 #b8901a}
+.panel{background:var(--panel);border:4px solid var(--ink);border-radius:22px;padding:20px 24px;box-shadow:0 8px 0 var(--ink);display:flex;flex-direction:column;gap:12px;align-items:center;min-width:min(92vw,360px);max-width:94vw}
+.big{font-size:clamp(38px,8vw,60px)}.big.win{color:var(--g)}.big.bust{color:var(--r);animation:shakeX .4s}
+@keyframes shakeX{0%,100%{transform:none}25%{transform:translateX(-8px) rotate(-2deg)}75%{transform:translateX(8px) rotate(2deg)}}
+#rStars{display:flex;gap:6px}#rStars span{font-size:60px;color:#4a5080;display:inline-block}
+#rStars span.on{color:var(--y);text-shadow:0 4px 0 #b8901a}#rStars span.pop{animation:spop .5s cubic-bezier(.2,2,.4,1)}
+@keyframes spop{0%{scale:0;rotate:-90deg}100%{scale:1;rotate:0}}
+.goals{list-style:none;font-size:15px;text-align:left;display:flex;flex-direction:column;gap:4px}.goals li{opacity:.55}.goals li.ok{opacity:1;color:#9dffb8}
+.stats{display:grid;grid-template-columns:auto auto;gap:4px 18px;font-size:16px;text-align:left}.stats b{color:var(--y);text-align:right}
+#rScore{font-size:34px;color:#7dff9b}#rBest{font-size:15px;opacity:.8}#rBest.new{color:var(--y);opacity:1;animation:bob .5s infinite alternate}
+#soonList{list-style:none;font-size:16px;display:flex;flex-direction:column;gap:6px}#soonList li::before{content:"★ ";color:var(--y)}
+.keys{font-size:13px;opacity:.75;max-width:520px}body.touch .kb{display:none}body:not(.touch) .tc{display:none}
+#loading{background:#1d2140;z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
+#loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
+@media (max-height:500px){.screen{gap:8px;padding:10px}.panel{padding:12px 18px;gap:8px}#rStars span{font-size:42px}.logo{font-size:44px}.btn{font-size:20px;padding:10px 26px}.card .art{height:40px}}
+</style>
+<script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
+</head>
+<body>
+<canvas id="c" tabindex="-1"></canvas>
+<div id="vignette"></div>
+<div id="fxl"></div>
+<div id="flash"></div>
+<div id="hud" class="hidden">
+  <div id="loot" class="pill o"><div class="row"><span id="lootv">$0</span><span id="lootp">0%</span></div><div class="bar"><div id="lootbar"></div></div></div>
+  <div id="obj" class="pill o">Crack the safe!</div>
+  <div id="tr">
+    <div id="time" class="pill o">0:00</div>
+    <button id="bMute" class="ib" aria-label="Sound"><svg viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3z"/><path class="w" d="M15 8.5a5 5 0 0 1 0 7l1.4 1.4a7 7 0 0 0 0-9.8zM17.8 5.7a9 9 0 0 1 0 12.6l1.4 1.4a11 11 0 0 0 0-15.4z"/><path class="x" d="M15 9.4l1.4-1.4 2.1 2.1 2.1-2.1 1.4 1.4-2.1 2.1 2.1 2.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg></button>
+    <button id="bPause" class="ib" aria-label="Pause"><svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
+  </div>
+</div>
+<div id="prompt" class="hidden"></div>
+<div id="hint" class="hidden"></div>
+<svg id="ring" class="hidden" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="20"/><circle class="fg" cx="27" cy="27" r="20"/></svg>
+<div id="touch" class="hidden">
+  <div id="joyzone"></div><div id="joy"><div id="knob"></div></div>
+  <button id="bDash">⚡<span>DASH</span></button>
+  <button id="bAct">✋<span>GRAB</span></button>
+</div>
+
+<div id="loading" class="screen"><div class="logo o">SAFEHOUSE<small>HEIST</small></div><div class="bar"><i></i></div><p class="sub">Loading...</p></div>
+
+<div id="menu" class="screen hidden">
+  <div class="logo o">SAFEHOUSE<small>HEIST</small></div>
+  <p class="sub o">Sneak in. Crack the safe. Grab the loot. Get to the van.</p>
+  <div class="levels">
+    <button class="card" id="lvl1"><div class="art">$</div><span class="n">LEVEL 1</span><span class="t">Safe House</span><span class="stars" id="lvl1stars"></span><span class="n" id="lvl1best">New!</span></button>
+    <button class="card lock" id="lvl2"><div class="art">🔒</div><span class="n">LEVEL 2</span><span class="t">The Bank</span><span class="n">Coming soon</span></button>
+  </div>
+  <button class="btn" id="bPlay">PLAY</button>
+  <p class="keys o"><span class="kb">WASD move · SPACE dash · E / Click knock out &amp; crack · R restart · P pause</span><span class="tc">Drag to move · ⚡ dash · ✋ knock out &amp; crack</span></p>
+</div>
+
+<div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>
+  <button class="btn" id="bResume">RESUME</button><div class="row"><button class="btn s" id="bRestart">RESTART</button><button class="btn s" id="bPMenu">MENU</button></div></div></div>
+
+<div id="result" class="screen solid hidden"><div class="panel">
+  <div class="big win o">ESCAPED!</div>
+  <div id="rStars"></div>
+  <ul class="goals" id="rGoals"></ul>
+  <div class="stats"><span>Loot</span><b id="rLoot"></b><span>Time</span><b id="rTime"></b><span>Ghost bonus</span><b id="rGhost"></b></div>
+  <div id="rScore">$0</div><div id="rBest"></div>
+  <div class="row"><button class="btn" id="bRetry">RETRY</button><button class="btn g" id="bNext">NEXT</button></div>
+  <button class="btn s" id="bRMenu">MENU</button>
+</div></div>
+
+<div id="busted" class="screen solid hidden"><div class="panel">
+  <div class="big bust o">BUSTED!</div>
+  <p class="sub" id="bustTip"></p>
+  <button class="btn" id="bBRetry">RETRY</button>
+  <button class="btn p hidden" id="bRevive">▶ SECOND CHANCE</button>
+  <button class="btn s" id="bBMenu">MENU</button>
+</div></div>
+
+<div id="soon" class="screen solid hidden"><div class="panel">
+  <span class="sub">LEVEL 2</span><div class="big o" id="soonName">The Bank</div>
+  <div class="o" style="color:var(--y);font-size:22px">COMING SOON</div>
+  <ul id="soonList"></ul>
+  <button class="btn" id="bSoonBack">BACK</button>
+</div></div>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
