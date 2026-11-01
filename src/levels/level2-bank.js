@@ -1,21 +1,61 @@
-// LEVEL 2 — THE BANK (design stub). Loaded lazily; the menu shows a "Coming soon" screen.
-// Full plan: docs/level2-bank.md. When ready, add `map`, `guards`, etc. in the same format as level1.js
-// and drop `comingSoon`. New mechanics are listed under `plan.mechanics` so the loader can grow into them.
+// LEVEL 2 — THE BANK. Same legend as level1.js plus:
+//  z  teller counter (glass partition)   K  keycard   D  security door (needs the keycard)
 export default {
   id: 'bank',
   name: 'The Bank',
-  comingSoon: true,
-  parTime: 150,
-  teaser: [
-    'Two floors: lobby, offices & the deep vault',
-    'Keycards that open security doors',
-    'Laser grids you can time or switch off',
-    'Drill the vault while you hold the line',
-    'Bigger loot, heavier bags, faster getaway',
+  parTime: 120,
+  tutorial: true,
+  safeName: 'vault',
+  safeScale: 1.45,
+  crackTime: 3.2,
+  crackNoise: 3.5,
+  alarmTime: 45,
+  map: [
+    'gggggggggggggggggggggggggggggggg',
+    'g##############################g',
+    'g#hhh.q..#hhhh..hh#,,,,,,,,,,,#g',
+    'g#.......#........#,G,,,,,,,G,#g',
+    'g#.K..tt.#..tttt..#,,,,,S,,,,,#g',
+    'g#yy..tt.#..tttt..#,$,,,,,,,$,#g',
+    'g#q....A.#q......q#,,,,,J,,,,,#g',
+    'g####.######.#######D##########g',
+    'g#............................#g',
+    'g#.$.......................$..#g',
+    'g#.tt..tt..tt.....tt..tt..tt.x#g',
+    'g#.tt..tt..tt..$..tt..tt..tt..#g',
+    'g#zzzzzzzzzzzzz..zzzzzzzzzzzzz#g',
+    'g#x,,,,,,,,,,,,,,,,,,,,,,,,,,,#g',
+    'g#,q,,,,,,,,,,,,,,,,,,,,,,,,q,#g',
+    'g#,,,cccc,,,,,,,,,,,,,,,cccc,,#g',
+    'g#,,,,,,,,,,$,,,,,,,G,,,,,,,,,#g',
+    'g#,q,,,,,,,,,,,,,,,,,,,,,,,,q,#g',
+    'g##############,,##############g',
+    'gggggggggggggggppggggggggggggggg',
+    'pppppppppppppppPpppppppppppppppp',
+    'ppppppppppVppppppppppppppppppppp',
+    'pppppppppppppppppppppppppppppppp',
   ],
-  plan: {
-    mechanics: ['keycard', 'securityDoor', 'laserGrid', 'drill', 'heavyLoot', 'alarmTimer'],
-    rooms: ['street', 'lobby', 'tellers', 'offices', 'securityRoom', 'vaultCorridor', 'vault'],
-  },
-  map: null,
+  values: { cash: 150, gold: 600, jewel: 450, art: 900, stash: 4000, bundle: 200, bundles: 10 },
+  palette: [
+    { wall: 0xeadcc2, panel: 0x6a4a3a, curtain: 0x3f6f5a },
+    { wall: 0xcfd8de, panel: 0x3a4a5a, curtain: 0x5a6a7a },
+    { wall: 0xb9c3cc, panel: 0x4a5262, curtain: 0x8a94a0 },
+    { wall: 0xf2ebdd, panel: 0x2f5a4a, curtain: 0xb33951 },
+  ],
+  decor: [
+    { type: 'rug', rect: [15, 13, 2, 5], color: 0xb33951 },
+    { type: 'rug', rect: [11, 3, 6, 3], color: 0x4a5a7a },
+    { type: 'rug', rect: [21, 3, 7, 3], color: 0x8a6a2a },
+  ],
+  guards: [
+    { path: [[3, 16], [28, 16]], wait: 1.4, speed: 1.8 },
+    { path: [[2, 9], [28, 8]], wait: 1.2, speed: 1.9 },
+    { post: [14, 5], face: 0, sweep: 0.9, sweepSpeed: 0.7 },
+    { path: [[20, 3], [28, 6]], wait: 1.6, speed: 1.4 },
+  ],
+  panel: { x: 14, y: 18, dx: 0, dy: -1 },
+  cameras: [
+    { pos: [16, 13.3], face: 0, sweep: 0.9, sweepSpeed: 0.6 },
+    { pos: [2.3, 8.3], face: 1.57, sweep: 0.5, sweepSpeed: 0.7 },
+  ],
 };

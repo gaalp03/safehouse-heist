@@ -101,6 +101,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 .card:hover{transform:translateY(-3px) rotate(-1deg)}.card .n{font-size:13px;opacity:.6}.card .t{font-size:20px}
 .card .art{width:100%;height:58px;border-radius:10px;background:linear-gradient(135deg,#ffb35c,#ff6b6b);display:grid;place-items:center;font-size:30px;color:#fff}
 .card.daily .art{background:linear-gradient(135deg,#7b5cff,#ff6aa8);display:flex;flex-direction:column;line-height:1;font-size:28px}.card.daily .art small{font-size:11px;letter-spacing:2px;opacity:.85}.card.daily .t{font-size:16px}
+.card:not(.lock) #lvl2art{background:linear-gradient(135deg,#3f6f5a,#2f4858)}
 .card.lock{background:#d9dcef}.card.lock .art{background:linear-gradient(135deg,#7d8bb8,#4b5585)}
 .stars span{color:#c2c6db;font-size:22px}.stars span.on{color:var(--y);text-shadow:0 2px 0 #b8901a}
 .panel{background:linear-gradient(180deg,#3d2c62,#251a3d);border:4px solid var(--ink);border-radius:22px;padding:20px 24px;box-shadow:0 8px 0 var(--ink),0 20px 40px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.12);display:flex;flex-direction:column;gap:12px;align-items:center;min-width:min(92vw,360px);max-width:94vw}
@@ -113,7 +114,8 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 .stats{display:grid;grid-template-columns:auto auto;gap:4px 18px;font-size:16px;text-align:left}.stats b{color:var(--y);text-align:right}
 #rScore{font-size:34px;color:#7dff9b}#rBest{font-size:15px;opacity:.8}#rBest.new{color:var(--y);opacity:1;animation:bob .5s infinite alternate}
 #soonList{list-style:none;font-size:16px;display:flex;flex-direction:column;gap:6px}#soonList li::before{content:"★ ";color:var(--y)}
-#coins{top:206px}
+#coins{top:206px}#key{position:absolute;left:96px;top:206px;font-size:14px;padding:6px 10px;background:linear-gradient(180deg,#3a7ae8,#1f4aa8)}#key.punch{animation:punch .4s}@media (max-width:640px){#key{top:178px;left:86px;font-size:12px}}
+.card.shake{animation:shakeX .35s}
 #ctr{position:absolute;left:12px;top:250px;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13px;max-width:230px}
 #ctr li{display:flex;align-items:center;gap:6px;background:rgba(28,19,48,.72);border-radius:9px;padding:4px 8px;border:1px solid rgba(255,214,160,.18)}
 #ctr li i{width:12px;height:12px;border-radius:3px;border:2px solid #ffc94a;flex:none}
@@ -161,6 +163,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div id="alarmwhy" class="o hidden"></div>
   <canvas id="mm"></canvas>
   <ul id="ctr" class="o"></ul>
+  <div id="key" class="pill o hidden">🔑 KEYCARD</div>
   <div id="coins" class="pill o"><i class="coin"></i><span>×3</span></div>
   <div id="tr">
     <div id="time" class="pill o">0:00</div>
@@ -188,7 +191,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div class="levels">
     <button class="card" id="lvl1"><div class="art">$</div><span class="n">LEVEL 1</span><span class="t">Safe House</span><span class="stars" id="lvl1stars"></span><span class="n" id="lvl1best">New!</span></button>
     <button class="card daily" id="daily"><div class="art" id="dArt"></div><span class="n">DAILY CHALLENGE</span><span class="t" id="dMut">—</span><span class="n" id="dDesc"></span><span class="n" id="dBest"></span></button>
-    <button class="card lock" id="lvl2"><div class="art">🔒</div><span class="n">LEVEL 2</span><span class="t">The Bank</span><span class="n">Coming soon</span></button>
+    <button class="card lock" id="lvl2"><div class="art" id="lvl2art">🔒</div><span class="n">LEVEL 2</span><span class="t">The Bank</span><span class="stars" id="lvl2stars"></span><span class="n" id="lvl2best">Escape Safe House to unlock</span></button>
   </div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>
   <button class="btn" id="bPlay">PLAY</button>

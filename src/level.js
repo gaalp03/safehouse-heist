@@ -2,7 +2,7 @@
 export const FLOOR = { '.': 'wood', _: 'carpet', ',': 'tile', g: 'grass', p: 'road' };
 export const FURN = {
   h: 'shelf', f: 'fridge', b: 'bed', t: 'desk', k: 'counter', c: 'couch', e: 'tv', i: 'table', u: 'tub',
-  q: 'plant', n: 'night', r: 'stove', y: 'chair', o: 'toilet', w: 'sink', x: 'wardrobe',
+  q: 'plant', n: 'night', r: 'stove', y: 'chair', o: 'toilet', w: 'sink', x: 'wardrobe', z: 'teller',
 };
 const TALL = new Set(['h', 'f', 'x']);
 export const LOOT = { $: 'cash', G: 'gold', J: 'jewel', A: 'art' };
@@ -18,10 +18,13 @@ export function parseLevel(def) {
   const floor = new Array(N);
   const loot = [], furn = [];
   let start = { x: 1, y: 1 }, safe = null, van = null;
+  const doors = [], keys = [];
 
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x, c = ch[i];
     if (c === '#') { opaque[i] = 1; continue; }
+    if (c === 'D') { opaque[i] = 1; walk[i] = 0; doors.push({ x, y }); continue; }
+    if (c === 'K') keys.push({ x, y });
     if (FURN[c]) { opaque[i] = TALL.has(c) ? 1 : 0; walk[i] = 0; }
     else if (c === 'S') { safe = { x, y }; walk[i] = 0; }
     else walk[i] = 1;
@@ -78,5 +81,5 @@ export function parseLevel(def) {
     furn.push({ c, type: FURN[c], x0, y0, w: x1 - x0 + 1, d: y1 - y0 + 1 });
   }
 
-  return { W, H, ch, walk, opaque, outdoor, floor, loot, furn, start, safe, van, exit, def };
+  return { W, H, ch, walk, opaque, outdoor, floor, loot, furn, start, safe, van, exit, def, doors, keys };
 }

@@ -4,7 +4,7 @@ import {
   CylinderGeometry, Object3D, Vector3, DoubleSide, BoxGeometry,
 } from 'three';
 import { parseLevel } from './level.js';
-import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel } from './world.js';
+import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildKeycard, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
@@ -70,12 +70,25 @@ export class Game {
     this.root.add(buildWorld(L));
 
     this.safe = buildSafe();
+    this.prev = null;
     this.safe.group.position.set(L.safe.x + 0.5, 0, L.safe.y + 0.5);
+    this.safeScale = def.safeScale || 1;
+    this.safe.group.scale.setScalar(this.safeScale);
+    // security doors + keycards
+    const isW = (x, y) => L.ch[y * L.W + x] === '#';
+    this.doors = L.doors.map((d) => {
+      const m = buildSecDoor(isW(d.x - 1, d.y) && isW(d.x + 1, d.y));
+      m.group.position.set(d.x + 0.5, 0, d.y + 0.5);
+      this.root.add(m.group);
+      return { ...d, m, open: false, t: 0 };
+    });
+    this.keyMeshes = L.keys.map((k) => { const m = buildKeycard(); m.position.set(k.x + 0.5, 0.8, k.y + 0.5); this.root.add(m); return { ...k, m }; });
     this.root.add(this.safe.group);
 
     this.police = buildPolice();
     this.police.group.visible = false;
     this.root.add(this.police.group);
+    this.panel = null;
     if (def.panel) {
       const pd = def.panel;
       this.panel = buildPanel();
@@ -196,6 +209,14 @@ export class Game {
     const L = this.L, def = this.def;
     this.state = 'play';
     this.time = 0; this.lootGot = 0; this.spotted = false; this.kos = 0;
+    this.hasKey = false; this.objText = ''; this.crackNoiseT = 0;
+    for (const d of this.doors || []) {
+      const i = d.y * this.L.W + d.x;
+      d.open = false; d.t = 0; this.L.walk[i] = 0; this.L.opaque[i] = 1;
+      d.m.group.position.y = 0; d.m.group.visible = true; d.m.led.material.color.setHex(0xff2a3a);
+    }
+    for (const k of this.keyMeshes || []) k.m.visible = true;
+    this.app.onKey && this.app.onKey(false);
     this.hasStash = false; this.safeOpen = false; this.safeProg = 0; this.safeTick = 0; this.doorT = 0;
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
@@ -207,7 +228,7 @@ export class Game {
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
-    this.contracts = pickContracts(3, this.daily ? mulberry32(this.daily.seed) : Math.random);
+    this.contracts = pickContracts(3, this.daily ? mulberry32(this.daily.seed) : Math.random, this);
     this.alarm = false; this.alarmT = 0; this.alarmTotal = this.D.alarm; this.disarmProg = 0; this.alarms = 0; this.policeBusted = false;
     if (this.police) this.police.group.visible = false;
     this.app.onAlarm && this.app.onAlarm(false);
@@ -493,7 +514,7 @@ export class Game {
 
     // ---- interactions ----
     const sx = this.L.safe.x + 0.5, sz = this.L.safe.y + 0.5;
-    const nearSafe = !this.safeOpen && Math.hypot(p.x - sx, p.z - sz) < 1.45 && Math.abs(angDiff(p.face, Math.atan2(sx - p.x, sz - p.z))) < 1.1;
+    const nearSafe = !this.safeOpen && Math.hypot(p.x - sx, p.z - sz) < 1.45 + (this.safeScale - 1) * 0.8 && Math.abs(angDiff(p.face, Math.atan2(sx - p.x, sz - p.z))) < 1.1;
     let ko = null, best = 9;
     for (const g of this.guards) {
       if (!this.canKO(g)) continue;
@@ -505,6 +526,23 @@ export class Game {
     const pressed = inp.consumeAct();
     p.crack = false;
     // alarm keypad
+    // keycards + security doors
+    for (const k of this.keyMeshes) {
+      if (!k.m.visible) continue;
+      k.m.rotation.y = this.t * 2; k.m.position.y = 0.8 + Math.sin(this.t * 3) * 0.06;
+      if (Math.hypot(p.x - (k.x + 0.5), p.z - (k.y + 0.5)) < 0.85) {
+        k.m.visible = false; this.hasKey = true;
+        app.audio.play('gold'); app.onKey(true); app.hint('door');
+        app.floaters.spawn('KEYCARD!', k.x + 0.5, 1.3, k.y + 0.5, 'big', 1.2);
+        app.particles.burst(k.x + 0.5, 0.8, k.y + 0.5, { count: 12, colors: [0x2f7ae8, 0xffffff, 0xf2c94c], speed: 2, up: 2, size: 0.04, life: 0.6 });
+      }
+    }
+    let nearDoor = null;
+    for (const d of this.doors) {
+      if (d.open) continue;
+      const dx = d.x + 0.5, dz = d.y + 0.5;
+      if (Math.hypot(p.x - dx, p.z - dz) < 1.5 && Math.abs(angDiff(p.face, Math.atan2(dx - p.x, dz - p.z))) < 1.0) nearDoor = d;
+    }
     let nearPanel = false;
     const hide = this.nearHide();
     if (this.alarm && this.panel) {
@@ -520,7 +558,11 @@ export class Game {
     if (nearSafe) {
       app.hint('safe');
       if (inp.act) {
-        this.safeProg += dt / 1.4;
+        this.safeProg += dt / (this.def.crackTime || 1.4);
+        if (this.def.crackNoise) {
+          this.crackNoiseT -= dt;
+          if (this.crackNoiseT <= 0) { this.crackNoiseT = 1.1; this.makeNoise(sx, sz, this.def.crackNoise, null); app.hint('drill'); }
+        }
         this.safeTick -= dt;
         p.crack = true;
         if (this.safeTick <= 0) {
@@ -533,6 +575,15 @@ export class Game {
     if (ko) {
       app.hint('ko');
       if (pressed && !nearSafe) this.knockout(ko);
+    }
+    if (nearDoor && !nearSafe && !ko) {
+      if (pressed) {
+        if (this.hasKey) this.openDoor(nearDoor);
+        else if (this.nopeT <= 0) { this.nopeT = 1.5; app.audio.play('nope'); app.floaters.spawn('Need the keycard!', nearDoor.x + 0.5, 1.3, nearDoor.y + 0.5, 'warn', 1.2); app.hint('key'); }
+      }
+      app.setPrompt(this.hasKey ? 'door' : 'locked');
+      this.updateObjective();
+      return;
     }
     const hideOk = hide && !nearPanel && !nearSafe && !ko;
     if (hideOk) { app.hint('hide'); if (pressed) { this.enterHide(hide); return; } }
@@ -552,6 +603,7 @@ export class Game {
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
     if (inp.consumeThrow()) this.throwCoin();
     this.checkContracts(false);
+    this.updateObjective();
 
     // contextual hints
     if (this.time > 3.5) app.hint('dash');
@@ -1143,13 +1195,12 @@ export class Game {
     for (let i = 0; i < v.bundles; i++) {
       const a = -0.9 + (1.8 * i) / (v.bundles - 1);
       this.loot.push({
-        type: 'cash', x: sx, y: 0.7, z: sz + 0.5, vx: Math.sin(a) * rand(2, 3.2), vy: rand(5, 7), vz: Math.cos(a) * rand(1.5, 3),
+        type: 'cash', x: sx, y: 0.7, z: sz + 0.4 * this.safeScale + 0.1, vx: Math.sin(a) * rand(2, 3.2), vy: rand(5, 7), vz: Math.cos(a) * rand(1.5, 3),
         st: 'fly', t: 0, value: v.bundle, ph: i, ms: 0, s: 1, rot: i, bundle: true,
       });
     }
     this.exitRing.visible = this.exitBeam.visible = true;
     app.onLoot(true);
-    app.setObjective('Escape to the van!');
     app.hintDone('safe');
     app.hint('stash');
   }
@@ -1224,6 +1275,7 @@ export class Game {
   }
 
   updateProps(dt) {
+    for (const d of this.doors) if (d.open && d.t < 1) { d.t = Math.min(1, d.t + dt * 1.6); d.m.group.position.y = (1 - Math.pow(1 - d.t, 3)) * (WALL_H - 0.12); }
     if (this.safeOpen && this.doorT < 1) {
       this.doorT = Math.min(1, this.doorT + dt * 3);
       const k = this.doorT, e = 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
@@ -1421,6 +1473,31 @@ export class Game {
     if (g) { this.knockout(g); this.kos--; }
     for (const o of this.guards) if (o.state === 'alert') { o.state = 'search'; o.tx = o.lastX; o.tz = o.lastZ; o.hurry = 2.4; o.susp = 0.5; }
   }
+  openDoor(d) {
+    const app = this.app, i = d.y * this.L.W + d.x;
+    d.open = true; d.t = 0;
+    this.L.walk[i] = 1; this.L.opaque[i] = 0;
+    for (const g of this.guards) g.navGoal = -1;
+    d.m.led.material.color.setHex(0x3ddc84);
+    app.audio.play('disarm'); app.audio.play('creak');
+    app.shake.add(0.25);
+    app.particles.burst(d.x + 0.5, 1.5, d.y + 0.5, { count: 18, colors: [0xd8deea, 0xffffff], speed: 1.5, up: 0.5, size: 0.06, life: 0.8 });
+    app.floaters.spawn('ACCESS GRANTED', d.x + 0.5, 1.6, d.y + 0.5, 'big', 1.2);
+  }
+  objectiveTarget() {
+    const L = this.L;
+    if (this.hasStash) return { x: L.exit.x, z: L.exit.z, label: 'VAN' };
+    const closed = this.doors.find((d) => !d.open);
+    if (closed && !this.hasKey) { const k = this.keyMeshes.find((k) => k.m.visible); if (k) return { x: k.x + 0.5, z: k.y + 0.5, label: 'KEYCARD' }; }
+    if (closed) return { x: closed.x + 0.5, z: closed.y + 0.5, label: 'DOOR' };
+    return { x: L.safe.x + 0.5, z: L.safe.y + 0.5, label: (this.def.safeName || 'safe').toUpperCase() };
+  }
+  updateObjective() {
+    const closed = this.doors.find((d) => !d.open);
+    const t = this.hasStash ? 'Escape to the van!' : closed && !this.hasKey ? 'Find the keycard!' : closed ? 'Open the vault door!' : `Crack the ${this.def.safeName || 'safe'}!`;
+    if (t !== this.objText) { this.objText = t; this.app.setObjective(t); }
+  }
+
   checkContracts(end) {
     for (const c of this.contracts) {
       if (c.st !== 'pending') continue;

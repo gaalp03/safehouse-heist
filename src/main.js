@@ -22,6 +22,9 @@ const HINTS = {
   loot: ['Extra loot = more stars. Grab it all!', 'Extra loot = more stars. Grab it all!'],
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
   dog: ['A guard dog! It follows your scent and barks. Coins distract it.', 'A guard dog! It follows your scent and barks. Coins distract it.'],
+  key: ['The vault door needs a keycard. Search the offices!', 'The vault door needs a keycard. Search the offices!'],
+  door: ['Got the keycard! Swipe it at the vault door', 'Got the keycard! Swipe it at the vault door'],
+  drill: ['Cracking the vault is LOUD. Guards will hear it!', 'Cracking the vault is LOUD. Guards will hear it!'],
   hide: ['E at a wardrobe: hide inside. Guards lose you if they did not see you!', 'Tap the hand at a wardrobe to hide inside'],
   coin: ['Q: throw a coin to lure guards away', 'Tap the coin to lure guards away'],
   alarm: ['ALARM! Escape or hold E at the keypad by the front door', 'ALARM! Escape or hold the hand at the keypad by the front door'],
@@ -78,9 +81,8 @@ class App {
     this.floaters = new Floaters(this.els.fxl);
     this.dust = new Dust(this.scene);
     this.game = new Game(this);
-    this.level = await loadLevel(0);
-    this.game.load(this.level);
-    this.buildMinimap();
+    this.levelIdx = 0;
+    await this.useLevel(0);
 
     this.bindUI();
     addEventListener('resize', () => this.resize());
@@ -97,21 +99,21 @@ class App {
   // ---------------- UI ----------------
   bindUI() {
     const click = (id, fn) => $(id).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); fn(); });
-    click('bPlay', () => this.start('classic'));
+    click('bPlay', () => this.start('classic', this.levelIdx || 0));
     for (const el of document.querySelectorAll('#diff button')) {
       el.addEventListener('click', (e) => {
         e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
         this.diff = el.dataset.d; this.save.diff = this.diff; SDK.store(this.save); this.showMenu();
       });
     }
-    click('lvl1', () => this.start('classic'));
-    click('lvl2', () => this.showSoon());
+    click('lvl1', () => this.start('classic', 0));
+    click('lvl2', () => { if (this.bankUnlocked()) this.start('classic', 1); else { this.audio.play('nope'); const c = $('lvl2'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } });
     click('daily', () => this.start('daily'));
     click('bResume', () => this.resume());
     click('bRestart', () => this.start());
     click('bPMenu', () => this.showMenu());
     click('bRetry', () => this.retry());
-    click('bNext', () => this.showSoon());
+    click('bNext', () => { if (this.levelIdx === 0 && this.mode !== 'daily' && this.bankUnlocked()) this.start('classic', 1); else this.showSoon(); });
     click('bRMenu', () => this.showMenu());
     click('bBRetry', () => this.retry());
     click('bBMenu', () => this.showMenu());
@@ -160,6 +162,11 @@ class App {
     this.state = 'menu';
     this.game.reset();
     const b = this.save.best[diffKey('safehouse', this.diff)];
+    const bu = this.bankUnlocked(), bb = this.save.best[diffKey('bank', this.diff)];
+    $('lvl2').classList.toggle('lock', !bu);
+    $('lvl2art').textContent = bu ? '🏦' : '🔒';
+    $('lvl2stars').innerHTML = bu ? this.starsHTML(bb ? bb.stars : 0) : '';
+    $('lvl2best').textContent = bu ? (bb ? 'Best ' + fmtMoney(bb.score) : 'New!') : 'Escape Safe House to unlock';
     for (const el of document.querySelectorAll('#diff button')) el.classList.toggle('on', el.dataset.d === this.diff);
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
     $('lvl1best').textContent = b ? 'Best ' + fmtMoney(b.score) : 'New!';
@@ -171,13 +178,24 @@ class App {
     $('dBest').textContent = (db ? 'Today ' + fmtMoney(db.score) : this.daily.label) + ((this.save.streak && this.save.streak.n > 1 && (this.save.streak.last === this.daily.key || this.save.streak.last === prevDayKey())) ? ` · 🔥${this.save.streak.n}` : '');
     this.screen('menu');
   }
-  async showSoon() {
+  showSoon() {
     SDK.gameplayStop();
     this.state = 'soon';
-    const def = await loadLevel(1);
-    $('soonName').textContent = def.name;
-    $('soonList').innerHTML = def.teaser.map((t) => `<li>${t}</li>`).join('');
+    $('soonName').textContent = 'More heists';
+    $('soonList').innerHTML = ['Downtown jewelry store', 'Penthouse with laser grids', 'Night train job'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
+  }
+  bankUnlocked() {
+    const b = this.save.best;
+    return !!(b.safehouse || b.safehouse_easy || b.safehouse_hard || this.save.bankOpen);
+  }
+  async useLevel(i) {
+    if (this.loadedIdx === i) return;
+    this.level = await loadLevel(i);
+    this.game.load(this.level);
+    this.buildMinimap();
+    this.loadedIdx = i;
+    this.renderer.compile(this.scene, this.camera);
   }
   starsHTML(n) {
     let s = '';
@@ -185,9 +203,12 @@ class App {
     return s;
   }
 
-  start(mode) {
+  async start(mode, idx) {
     if (mode) this.mode = mode;
     if (!this.mode) this.mode = 'classic';
+    if (this.mode === 'daily') idx = 0;
+    if (idx != null) this.levelIdx = idx;
+    if (this.loadedIdx !== this.levelIdx) await this.useLevel(this.levelIdx);
     if (this.mode === 'daily' && (!this.daily || this.daily.key !== todaysDaily().key)) this.daily = todaysDaily();
     this.audio.unlock();
     this.audio.siren(false);
@@ -209,7 +230,6 @@ class App {
       t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 3200);
     } else $('ctoast').classList.add('hidden');
-    this.setObjective('Crack the safe!');
     this.hint('move');
     SDK.gameplayStart();
   }
@@ -295,14 +315,15 @@ class App {
   }
   setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
-    const txt = kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK' : 'HOLD E / CLICK TO CRACK') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
+    const sn = (this.level && this.level.safeName ? this.level.safeName : 'safe').toUpperCase();
+    const txt = kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.textContent = txt;
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind);
-      this.els.bAct.lastChild.textContent = kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
+      this.els.bAct.lastChild.textContent = kind === 'door' ? 'OPEN' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
     if ((kind === 'safe' || kind === 'panel') && prog > 0) {
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));
@@ -351,6 +372,7 @@ class App {
       this.shake.add(0.1);
     } else if (c.st === 'fail' && this.game.state === 'play') this.audio.play('lost');
   }
+  onKey(on) { $('key').classList.toggle('hidden', !on); if (on) { const k = $('key'); k.classList.remove('punch'); void k.offsetWidth; k.classList.add('punch'); } }
   onHide(on) {
     $('slats').classList.toggle('hidden', !on);
     $('xh').classList.toggle('hidden', on);
@@ -400,7 +422,7 @@ class App {
       this.save.streak = st;
       for (const key of Object.keys(dd).sort().slice(0, -14)) delete dd[key];
     } else {
-      const bk = diffKey('safehouse', this.diff);
+      const bk = diffKey(this.level.id, this.diff);
       prev = this.save.best[bk] || { score: 0, stars: 0 };
       newBest = res.score > prev.score;
       this.save.best[bk] = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
@@ -483,9 +505,7 @@ class App {
     this.drawMinimap();
     // objective marker (clamped to screen edges when off-screen / behind)
     const wp = $('wp');
-    let tx, tz, label;
-    if (g.hasStash) { tx = g.L.exit.x; tz = g.L.exit.z; label = 'VAN'; }
-    else { tx = g.L.safe.x + 0.5; tz = g.L.safe.y + 0.5; label = 'SAFE'; }
+    const ot = g.objectiveTarget(), tx = ot.x, tz = ot.z, label = ot.label;
     const dist = Math.hypot(tx - p.x, tz - p.z);
     if (g.state !== 'play' || dist < 1.6) wp.classList.add('hidden');
     else {
@@ -496,6 +516,7 @@ class App {
       if (behind) { x = -x; y = -y; }
       const m = 0.88, off = behind || Math.abs(x) > m || Math.abs(y) > m;
       if (off) { const k = m / Math.max(Math.abs(x), Math.abs(y), 0.001); x *= k; y *= k; if (behind && Math.abs(y) < m - 0.01) y = -m; }
+      if (off && x < -0.4 && y > -0.3) x = -0.4;
       wp.classList.toggle('edge', off);
       wp.style.transform = `translate(${((x + 1) / 2) * this.w}px,${((1 - y) / 2) * this.h}px) translate(-50%,-50%)`;
       const txt = label + ' ' + Math.round(dist * 1.5) + 'm';
@@ -547,6 +568,8 @@ class App {
       }
       x.fillStyle = col; x.beginPath(); x.arc(gd.x * S, gd.z * S, 2.6, 0, 6.3); x.fill();
     }
+    for (const d of g.doors) { x.fillStyle = d.open ? '#3ddc84' : '#ff3b4e'; x.fillRect(d.x * S, d.y * S, S, S); }
+    for (const k of g.keyMeshes) if (k.m.visible) { x.fillStyle = '#2f7ae8'; x.fillRect(k.x * S + 0.5, k.y * S + 0.5, S - 1, S - 1); }
     for (const d of g.dogs) { x.fillStyle = d.state === 'bark' || d.state === 'barkHide' ? '#ff3b4e' : '#c98a4a'; x.fillRect(d.x * S - 2, d.z * S - 2, 4, 4); }
     // player arrow
     const a = -p.face + Math.PI / 2, px = p.x * S, pz = p.z * S;

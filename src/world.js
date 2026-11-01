@@ -268,6 +268,23 @@ function furniture(L, f, B, rng, lights) {
       b(P, 0, 0.12, 0.33, 0.012, 1.54, 0.02, dk, { faces: PZ });
       break;
     }
+    case 'teller': {
+      const wd = 0x5a3a2a, top = 0xe8e2d6, glass = 0xbfe2ee;
+      b(WD, 0, 0, 0.05, W, 1.0, D - 0.3, wd, { top: shade(wd, 1.1) });
+      b(P, 0, 0.08, D / 2 - 0.1, W - 0.02, 0.84, 0.01, shade(wd, 1.25), { faces: PZ });
+      b(P, 0, 1.0, 0.05, W + 0.02, 0.06, D - 0.2, top);
+      const n = Math.max(1, Math.round(W));
+      for (let k = 0; k <= n; k++) b(P, -W / 2 + (k * W) / n, 1.06, 0.05, 0.05, 0.62, 0.05, 0xd9b45a);
+      b(P, 0, 1.68, 0.05, W, 0.05, 0.08, 0xd9b45a);
+      b(U, 0, 1.2, 0.05, W - 0.05, 0.46, 0.01, glass, { faces: PZ | NZ });
+      for (let k = 0; k < n; k++) {
+        const x = -W / 2 + (k + 0.5) * (W / n);
+        b(P, x, 1.06, 0.05, 0.36, 0.1, 0.06, 0x2a2b36);
+        if (k % 2 === 0) { b(P, x + 0.15, 1.06, -0.2, 0.3, 0.22, 0.04, 0x22232d); b(U, x + 0.15, 1.1, -0.177, 0.26, 0.15, 0.005, 0x5fb4ff, { faces: PZ }); }
+        else b(P, x - 0.1, 1.06, -0.15, 0.22, 0.04, 0.16, 0x4fae5a, { top: 0x8fe08a });
+      }
+      break;
+    }
     case 'plant': {
       b(P, 0, 0, 0, 0.36, 0.34, 0.36, 0xc8673f, { top: 0x4a3426 });
       b(P, 0, 0.3, 0, 0.42, 0.06, 0.42, 0xd8774f);
@@ -400,7 +417,8 @@ export function buildWorld(L) {
         room[k] = id; st.push(k);
       }
     }
-    rooms.push({ id, cells, pal: ROOMS[id % ROOMS.length] });
+    const PAL = L.def.palette || ROOMS;
+    rooms.push({ id, cells, pal: PAL[id % PAL.length] });
   }
   for (let i = 0; i < W * H; i++) if (room[i] < 0 && isDoor(i % W, (i / W) | 0)) {
     const x = i % W, y = (i / W) | 0;
@@ -544,8 +562,8 @@ export function buildWorld(L) {
       B.plain.box(x + 0.5, 1.55, y + 0.5, 1, WALL_H - 1.55, 1, pal.wall, { faces: doorX ? (NY | PZ | NZ) : (NY | PX | NX) });
       B.plain.box(x + 0.5, 1.55, y + 0.5, doorX ? 1.04 : 1.12, 0.07, doorX ? 1.12 : 1.04, CROWN, { faces: 63 & ~PY });
       for (const s of [-1, 1]) B.plain.box(x + 0.5 + (doorX ? s * 0.48 : 0), 0, y + 0.5 + (doorY ? s * 0.48 : 0), doorX ? 0.07 : 1.12, 1.55, doorY ? 0.07 : 1.12, CROWN, { faces: 63 & ~NY & ~PY });
-      // open door leaf resting against an adjacent wall
-      const opts = doorX ? [[-1, 1], [1, 1], [-1, -1], [1, -1]] : [[1, -1], [1, 1], [-1, -1], [-1, 1]];
+      // open door leaf resting against an adjacent wall (not for security doors)
+      const opts = c === 'D' ? [] : doorX ? [[-1, 1], [1, 1], [-1, -1], [1, -1]] : [[1, -1], [1, 1], [-1, -1], [-1, 1]];
       for (const [a, bb] of opts) {
         const cx = doorX ? x + a : x + bb, cy = doorX ? y + bb : y + a;
         if (!isWall(doorX ? x + a : x, doorX ? y : y + a) || isWall(cx, cy) || isOut(cx, cy)) continue;
@@ -725,6 +743,31 @@ export function buildPolice() {
   red.position.set(-0.1, 1.11, 0.26); blue.position.set(-0.1, 1.11, -0.26);
   grp.add(red, blue);
   return { group: grp, red, blue };
+}
+
+export function buildSecDoor(alongX) {
+  const g = new GeoBuilder();
+  const w = 1.0, h = 1.55, t = 0.16;
+  g.box(0, 0, 0, alongX ? w : t, h, alongX ? t : w, 0x8a94a4, { faces: 63, top: 0x6a7484 });
+  for (let k = 0; k < 6; k++) g.box(0, 0.08 + k * 0.08, 0, alongX ? w + 0.004 : t + 0.004, 0.04, alongX ? t + 0.004 : w + 0.004, k % 2 ? 0x22242f : 0xf2c94c, { faces: 1 | 2 | 16 | 32 });
+  g.box(0, 0.75, 0, alongX ? 0.3 : t + 0.02, 0.3, alongX ? t + 0.02 : 0.3, 0x3a4252, { faces: 63 });
+  g.box(0, 1.2, 0, alongX ? 0.5 : t + 0.01, 0.08, alongX ? t + 0.01 : 0.5, 0x5a6474, { faces: 63 });
+  const grp = new Group();
+  grp.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
+  const led = new Mesh(new BoxGeometry(alongX ? 0.12 : t + 0.04, 0.12, alongX ? t + 0.04 : 0.12), new MeshBasicMaterial({ color: 0xff2a3a }));
+  led.position.y = 0.95;
+  grp.add(led);
+  return { group: grp, led };
+}
+export function buildKeycard() {
+  const g = new GeoBuilder();
+  g.box(0, -0.1, 0, 0.34, 0.22, 0.03, 0x2f7ae8, { faces: 63 });
+  g.box(0, -0.06, 0, 0.35, 0.05, 0.035, 0xf2c94c, { faces: 63 });
+  g.box(-0.09, -0.16, 0, 0.1, 0.06, 0.036, 0xffffff, { faces: 63 });
+  g.box(0.12, 0.0, 0, 0.05, 0.05, 0.036, 0x22242f, { faces: 63 });
+  const m = new Mesh(g.build(), new MeshBasicMaterial({ vertexColors: true }));
+  const grp = new Group(); grp.add(m);
+  return grp;
 }
 
 export function buildPanel() {

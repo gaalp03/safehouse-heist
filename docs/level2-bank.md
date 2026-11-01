@@ -1,6 +1,8 @@
 # Level 2: The Bank (plan)
 
-Status: **planned**. The code stub lives in `src/levels/level2-bank.js` (`comingSoon: true`), is lazy-loaded through `src/levels/index.js`, and the menu shows a "Coming soon" screen for it.
+Status: **playable (v1)**. `src/levels/level2-bank.js`, lazy-loaded, unlocked after escaping Safe House once.
+
+Implemented in v1: lobby with teller counters (`z`), back offices, manager office, security room, keycard (`K`) + security door (`D`) to the vault, big vault safe (`safeScale`, `crackTime`) whose cracking makes periodic noise (`crackNoise`), 4 guards, 2 cameras, alarm keypad, per-level palette. Still planned: laser grids, breaker, clerk, heavy loot, two floors.
 
 ## Fantasy
 
