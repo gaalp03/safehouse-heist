@@ -46,12 +46,25 @@ body{font-family:"Trebuchet MS","Arial Rounded MT Bold","Segoe UI",system-ui,san
 .ib svg{width:22px;height:22px;fill:#fff}#bMute.off .w{display:none}#bMute:not(.off) .x{display:none}
 #prompt{position:fixed;left:50%;bottom:20%;transform:translateX(-50%);background:var(--y);color:var(--ink);padding:10px 18px;border-radius:14px;font-size:18px;pointer-events:none;box-shadow:0 4px 0 #b8901a;animation:objp .35s cubic-bezier(.2,1.8,.4,1)}
 #hint{position:fixed;left:50%;bottom:calc(8% + env(safe-area-inset-bottom));transform:translateX(-50%);background:rgba(29,33,64,.88);padding:12px 20px;border-radius:16px;font-size:17px;pointer-events:none;text-align:center;max-width:min(92vw,560px);border:3px solid var(--y);animation:objp .4s cubic-bezier(.2,1.8,.4,1)}
-body.touch #hint{bottom:auto;top:76px}body.touch #prompt{bottom:auto;top:132px}
-@media (max-width:640px){#obj{top:66px;font-size:15px;padding:6px 12px}.pill{font-size:17px;padding:6px 10px}#lootv{font-size:19px}#loot{min-width:110px}.ib{width:38px;height:38px}body.touch #hint{top:112px;font-size:15px}body.touch #prompt{top:168px;font-size:16px}.card{width:142px}.card .art{height:44px}#bAct{width:86px;height:86px}#bDash{width:68px;height:68px;right:calc(max(22px,env(safe-area-inset-right)) + 100px)}}
-#ring{position:fixed;left:0;top:0;width:54px;height:54px;pointer-events:none}
+body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
+@media (max-width:640px){#obj{top:66px;font-size:15px;padding:6px 12px}.pill{font-size:17px;padding:6px 10px}#lootv{font-size:19px}#loot{min-width:110px}.ib{width:38px;height:38px}body.touch #hint{top:104px;font-size:14px;left:calc(50% + 54px);max-width:calc(100vw - 132px)}#prompt{font-size:15px}#mm{width:96px;top:104px}.card{width:142px}.card .art{height:44px}#bAct{width:86px;height:86px}#bDash{width:68px;height:68px;right:calc(max(22px,env(safe-area-inset-right)) + 100px)}}
+#fp{position:fixed;inset:0;pointer-events:none}
+#xh{position:fixed;left:50%;top:50%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(29,33,64,.7);transition:all .12s}
+#xh.ready{width:22px;height:22px;margin:-11px 0 0 -11px;background:transparent;border:4px solid var(--y);box-shadow:0 0 0 2px var(--ink)}
+#ring{position:fixed;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;pointer-events:none}
+#wp{position:fixed;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:13px;color:var(--y)}
+#wp::before{content:"";width:16px;height:16px;background:var(--y);transform:rotate(45deg);border:3px solid var(--ink);border-radius:3px}
+#wp.edge{opacity:.85}
+#ind{position:fixed;left:50%;top:50%;width:0;height:0}
+#ind i{position:absolute;left:0;top:0;width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-bottom:20px solid var(--y);filter:drop-shadow(0 0 2px var(--ink))}
+#ind i.alert{border-bottom-color:var(--r)}
+#mm{position:absolute;left:12px;top:86px;width:150px;border-radius:10px;border:3px solid rgba(29,33,64,.85);opacity:.92;image-rendering:pixelated}
+.badge.off{display:none!important}
+#vigfp{position:fixed;inset:0;pointer-events:none;box-shadow:inset 0 0 90px rgba(20,22,48,.35)}
 #ring circle{fill:none;stroke-width:6}#ring .bg{stroke:rgba(29,33,64,.7)}#ring .fg{stroke:var(--y);stroke-dasharray:126;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
 #touch{position:fixed;inset:0;pointer-events:none}
-#joyzone{position:absolute;left:0;top:64px;bottom:0;right:0;pointer-events:auto;touch-action:none}
+#joyzone{position:absolute;left:0;top:64px;bottom:0;width:50%;pointer-events:auto;touch-action:none}
+#lookzone{position:absolute;right:0;top:64px;bottom:0;width:50%;pointer-events:auto;touch-action:none}
 #joy{position:absolute;left:0;top:0;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(255,255,255,.15);border:4px solid rgba(255,255,255,.35);display:none;pointer-events:none}
 #knob{position:absolute;left:50%;top:50%;width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.85);transform:translate(-50%,-50%);box-shadow:0 4px 0 rgba(0,0,0,.2)}
 #touch button{position:absolute;pointer-events:auto;border-radius:50%;border:4px solid var(--ink);font:inherit;color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;touch-action:none;box-shadow:0 6px 0 var(--ink)}
@@ -90,6 +103,7 @@ body.touch #hint{bottom:auto;top:76px}body.touch #prompt{bottom:auto;top:132px}
 #loading{background:#1d2140;z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
 @media (max-height:500px){.screen{gap:8px;padding:10px}.panel{padding:12px 18px;gap:8px}#rStars span{font-size:42px}.logo{font-size:44px}.btn{font-size:20px;padding:10px 26px}.card .art{height:40px}}
+@media (max-width:640px){#mm{width:96px;top:104px}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -101,6 +115,7 @@ body.touch #hint{bottom:auto;top:76px}body.touch #prompt{bottom:auto;top:132px}
 <div id="hud" class="hidden">
   <div id="loot" class="pill o"><div class="row"><span id="lootv">$0</span><span id="lootp">0%</span></div><div class="bar"><div id="lootbar"></div></div></div>
   <div id="obj" class="pill o">Crack the safe!</div>
+  <canvas id="mm"></canvas>
   <div id="tr">
     <div id="time" class="pill o">0:00</div>
     <button id="bMute" class="ib" aria-label="Sound"><svg viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3z"/><path class="w" d="M15 8.5a5 5 0 0 1 0 7l1.4 1.4a7 7 0 0 0 0-9.8zM17.8 5.7a9 9 0 0 1 0 12.6l1.4 1.4a11 11 0 0 0 0-15.4z"/><path class="x" d="M15 9.4l1.4-1.4 2.1 2.1 2.1-2.1 1.4 1.4-2.1 2.1 2.1 2.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg></button>
@@ -109,9 +124,10 @@ body.touch #hint{bottom:auto;top:76px}body.touch #prompt{bottom:auto;top:132px}
 </div>
 <div id="prompt" class="hidden"></div>
 <div id="hint" class="hidden"></div>
-<svg id="ring" class="hidden" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="20"/><circle class="fg" cx="27" cy="27" r="20"/></svg>
+<div id="fp" class="hidden"><div id="vigfp"></div><div id="ind"></div><div id="wp" class="hidden"><span></span></div><div id="xh"></div>
+<svg id="ring" class="hidden" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="20"/><circle class="fg" cx="27" cy="27" r="20"/></svg></div>
 <div id="touch" class="hidden">
-  <div id="joyzone"></div><div id="joy"><div id="knob"></div></div>
+  <div id="joyzone"></div><div id="lookzone"></div><div id="joy"><div id="knob"></div></div>
   <button id="bDash">⚡<span>DASH</span></button>
   <button id="bAct">✋<span>GRAB</span></button>
 </div>
@@ -126,7 +142,7 @@ body.touch #hint{bottom:auto;top:76px}body.touch #prompt{bottom:auto;top:132px}
     <button class="card lock" id="lvl2"><div class="art">🔒</div><span class="n">LEVEL 2</span><span class="t">The Bank</span><span class="n">Coming soon</span></button>
   </div>
   <button class="btn" id="bPlay">PLAY</button>
-  <p class="keys o"><span class="kb">WASD move · SPACE dash · E / Click knock out &amp; crack · R restart · P pause</span><span class="tc">Drag to move · ⚡ dash · ✋ knock out &amp; crack</span></p>
+  <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · ✋ knock out &amp; crack</span></p>
 </div>
 
 <div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>

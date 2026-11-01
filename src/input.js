@@ -1,16 +1,20 @@
-// Keyboard + mouse + touch (dynamic virtual joystick + buttons). Auto-switches mode on use.
+// Keyboard + mouse (pointer-lock look) + touch (left: dynamic joystick, right: drag to look, buttons).
 const MOVE = {
   KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r',
 };
 const GAME_KEYS = new Set([...Object.keys(MOVE), 'Space', 'ShiftLeft', 'ShiftRight', 'KeyE', 'KeyF', 'Enter']);
+const TOUCH_LOOK = 2.4; // touch px -> "mouse px" scale
 
 export class Input {
   constructor(els) {
     this.k = {}; this.act = false; this.actP = false; this.dashP = false;
+    this.lx = 0; this.ly = 0;
     this.joy = { id: -1, ox: 0, oy: 0, x: 0, y: 0 };
+    this.look = { id: -1, x: 0, y: 0 };
     this.handlers = {};
     this.touch = (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) && !matchMedia('(pointer: fine)').matches;
     this.els = els;
+    this.locked = false; this.lockFailed = false; this.active = false; this.dragLook = false;
 
     addEventListener('keydown', (e) => {
       if (GAME_KEYS.has(e.code)) e.preventDefault();
@@ -28,19 +32,34 @@ export class Input {
       if (MOVE[e.code]) this.k[MOVE[e.code]] = 0;
       if (e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') this.act = false;
     });
-    addEventListener('blur', () => { this.k = {}; this.act = false; this.joyEnd(); });
+    addEventListener('blur', () => { this.k = {}; this.act = false; this.joyEnd(); this.look.id = -1; });
 
+    // ---- mouse ----
     const cv = els.canvas;
     cv.addEventListener('mousedown', (e) => {
+      if (!this.active) return;
+      if (!this.locked && !this.lockFailed && !this.touch) { this.requestLock(); return; }
       if (e.button === 0) { this.act = true; this.actP = true; }
       if (e.button === 2) this.dashP = true;
+      this.dragLook = true;
     });
-    addEventListener('mouseup', (e) => { if (e.button === 0) this.act = false; });
+    addEventListener('mouseup', (e) => { if (e.button === 0) this.act = false; this.dragLook = false; });
     addEventListener('contextmenu', (e) => e.preventDefault());
+    addEventListener('mousemove', (e) => {
+      if (!this.active) return;
+      // pointer lock = free look; fallback (lock unavailable) = drag to look
+      if (this.locked || (this.lockFailed && this.dragLook)) { this.lx += e.movementX || 0; this.ly += e.movementY || 0; }
+    });
     addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && (e.movementX || e.movementY)) this.setTouch(false); });
     addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') this.setTouch(true); }, true);
+    document.addEventListener('pointerlockchange', () => {
+      const was = this.locked;
+      this.locked = document.pointerLockElement === cv;
+      if (was && !this.locked) this.emit('unlock');
+    });
+    document.addEventListener('pointerlockerror', () => { this.lockFailed = true; });
 
-    // joystick zone (left part of the screen)
+    // ---- touch: joystick (left half) ----
     const z = els.joyzone;
     z.addEventListener('pointerdown', (e) => {
       if (this.joy.id !== -1) return;
@@ -57,7 +76,6 @@ export class Input {
       let dx = e.clientX - this.joy.ox, dy = e.clientY - this.joy.oy;
       const d = Math.hypot(dx, dy);
       if (d > R) {
-        // drag the base along so it never feels stuck
         this.joy.ox += (dx / d) * (d - R); this.joy.oy += (dy / d) * (d - R);
         els.joy.style.transform = `translate(${this.joy.ox}px,${this.joy.oy}px)`;
         dx = (dx / d) * R; dy = (dy / d) * R;
@@ -69,14 +87,42 @@ export class Input {
     z.addEventListener('pointerup', end);
     z.addEventListener('pointercancel', end);
 
+    // ---- touch: look (right half) ----
+    const lz = els.lookzone;
+    lz.addEventListener('pointerdown', (e) => {
+      if (this.look.id !== -1) return;
+      e.preventDefault();
+      this.look.id = e.pointerId; this.look.x = e.clientX; this.look.y = e.clientY;
+      try { lz.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    lz.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== this.look.id) return;
+      this.lx += (e.clientX - this.look.x) * TOUCH_LOOK;
+      this.ly += (e.clientY - this.look.y) * TOUCH_LOOK;
+      this.look.x = e.clientX; this.look.y = e.clientY;
+    });
+    const lend = (e) => { if (e.pointerId === this.look.id) this.look.id = -1; };
+    lz.addEventListener('pointerup', lend);
+    lz.addEventListener('pointercancel', lend);
+
     const btn = (el, down, up) => {
       el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); el.classList.add('down'); down(); });
-      const u = (e) => { el.classList.remove('down'); up && up(); };
+      const u = () => { el.classList.remove('down'); up && up(); };
       el.addEventListener('pointerup', u); el.addEventListener('pointercancel', u); el.addEventListener('pointerleave', u);
     };
     btn(els.bAct, () => { this.act = true; this.actP = true; }, () => { this.act = false; });
     btn(els.bDash, () => { this.dashP = true; });
   }
+  requestLock() {
+    if (this.touch || this.locked) return;
+    const cv = this.els.canvas;
+    if (!cv.requestPointerLock) { this.lockFailed = true; return; }
+    try {
+      const r = cv.requestPointerLock();
+      if (r && r.catch) r.catch(() => { this.lockFailed = true; });
+    } catch (_) { this.lockFailed = true; }
+  }
+  exitLock() { if (document.pointerLockElement) try { document.exitPointerLock(); } catch (_) {} }
   joyEnd() {
     this.joy.id = -1; this.joy.x = 0; this.joy.y = 0;
     if (this.els.joy) this.els.joy.style.display = 'none';
@@ -99,7 +145,8 @@ export class Input {
     out.x = x; out.y = y;
     return out;
   }
+  consumeLook(out) { out.x = this.lx; out.y = this.ly; this.lx = 0; this.ly = 0; return out; }
   consumeAct() { const v = this.actP; this.actP = false; return v; }
   consumeDash() { const v = this.dashP; this.dashP = false; return v; }
-  clear() { this.actP = false; this.dashP = false; }
+  clear() { this.actP = false; this.dashP = false; this.lx = 0; this.ly = 0; }
 }

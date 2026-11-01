@@ -1,6 +1,6 @@
 # Safehouse Heist
 
-A tiny, juicy voxel stealth-heist game for the browser. Sneak into the house, crack the safe, grab the loot and get back to the getaway van. Three stars per level: **escape**, **70%+ loot**, **ghost (never spotted)**.
+A tiny, juicy first-person voxel stealth-heist game for the browser. Through the robber's eyes (gloved hands + crowbar, head bob, mouse/touch look), sneak into the house, crack the safe, grab the loot and get back to the getaway van. Three stars per level: **escape**, **70%+ loot**, **ghost (never spotted)**.
 
 - Three.js (bundled locally, tree-shaken), no runtime CDN for game code
 - All geometry and all audio are procedural: **zero image/audio/model files**
@@ -22,10 +22,13 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 
 | | Desktop | Touch |
 |---|---|---|
-| Move | WASD / Arrows | Drag anywhere |
+| Look | Mouse (pointer lock, click the game to capture) | Drag on the right half |
+| Move | WASD / Arrows | Drag on the left half (joystick) |
 | Dash (noisy!) | Space / Shift / Right click | ⚡ |
 | Knock out (from behind) / crack safe (hold) | E / Left click | ✋ |
-| Pause / Restart / Mute | P or Esc / R / M | ⏸ button |
+| Pause / Restart / Mute | Esc or P / R / M | ⏸ button |
+
+HUD: crosshair (turns into a ring when an action is possible), minimap with guards and vision cones, objective marker with distance, threat arrows around the crosshair for suspicious/alerted guards, detection badges above heads. Leaving pointer lock (Esc) pauses the game. If pointer lock is unavailable the mouse falls back to drag-to-look.
 
 ## Development
 
@@ -37,12 +40,13 @@ npm run build   # bundles src/ -> js/ (esbuild, minified, code-split)
 ```
 index.html            page, UI and CSS (upload entry point)
 js/                   build output (commit it)
-src/main.js           app shell: renderer, camera, UI flow, SDK calls, dynamic resolution
+src/main.js           app shell: renderer, camera, FP HUD (minimap, markers), UI flow, SDK calls, dynamic resolution
 src/game.js           gameplay: player, guards AI (vision cones, suspicion, chase, noise), loot, safe, scoring
 src/world.js          procedural level mesh (merged into 1 draw call), safe, van, loot geometry
 src/level.js          ASCII level parser (walkability, vision, furniture grouping)
 src/levels/           data-driven levels; index.js is the lazy-loading registry
-src/chars.js          box characters, x-ray silhouette, squash & stretch
+src/chars.js          box characters (guards, owner), squash & stretch
+src/viewmodel.js      first-person hands + crowbar (2nd render pass, never clips into walls)
 src/fx.js             instanced particles, screen shake, floating text
 src/audio.js          WebAudio synth SFX + adaptive music
 src/input.js          keyboard / mouse / touch
@@ -53,7 +57,7 @@ Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` 
 
 ## Performance
 
-- Whole static level is one merged vertex-colored mesh; ~50 draw calls total in play
+- Whole static level (walls, ceilings, furniture, decor) is one merged vertex-colored mesh; ~50 draw calls total in play
 - Instanced loot and particles, blob shadows instead of shadow maps
 - Pixel ratio capped (1.25 on mobile, 1.75 desktop), no MSAA on mobile, automatic resolution scaling if FPS drops
 

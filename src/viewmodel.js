@@ -1,0 +1,110 @@
+// First-person hands + crowbar, rendered in a 2nd pass (depth cleared) so they never clip into walls.
+import { Scene, PerspectiveCamera, Group, Mesh, MeshLambertMaterial, HemisphereLight, DirectionalLight } from 'three';
+import { GeoBuilder } from './geo.js';
+import { damp, clamp } from './util.js';
+
+const SLEEVE = 0x17c3a2, CUFF = 0x10a888, GLOVE = 0x2a2c3d;
+
+export class ViewModel {
+  constructor() {
+    this.scene = new Scene();
+    this.camera = new PerspectiveCamera(60, 1, 0.01, 10);
+    this.scene.add(new HemisphereLight(0xffffff, 0x8f96c0, 2.1));
+    const sun = new DirectionalLight(0xffffff, 1.3);
+    sun.position.set(-1, 2, 1.5);
+    this.scene.add(sun);
+    const mat = (this.mat = new MeshLambertMaterial({ vertexColors: true }));
+    this.root = new Group();
+    this.scene.add(this.root);
+
+    const armGeo = (palmOpen) => {
+      const g = new GeoBuilder();
+      g.box(0, -0.07, -0.22, 0.13, 0.13, 0.46, SLEEVE, { faces: 63 });
+      g.box(0, -0.075, -0.47, 0.145, 0.145, 0.07, CUFF, { faces: 63 });
+      g.box(0, -0.07, -0.57, palmOpen ? 0.15 : 0.12, 0.12, 0.14, GLOVE, { faces: 63 });
+      if (palmOpen) for (let k = 0; k < 4; k++) g.box(-0.055 + k * 0.037, -0.04, -0.67, 0.03, 0.06, 0.08, GLOVE, { faces: 63 });
+      else g.box(0.06, -0.04, -0.56, 0.05, 0.05, 0.08, GLOVE, { faces: 63 });
+      return g.build();
+    };
+    // right arm + crowbar
+    this.R = new Group();
+    this.R.position.set(0.3, -0.27, 0.02);
+    this.R.rotation.y = 0.14;
+    this.root.add(this.R);
+    this.R.add(new Mesh(armGeo(false), mat));
+    const bar = new GeoBuilder();
+    bar.box(0, -0.12, 0, 0.04, 0.16, 0.04, 0x9aa4b8, { faces: 63 });
+    bar.box(0, 0.03, 0, 0.045, 0.34, 0.045, 0xff4f5a, { faces: 63 });
+    bar.box(0, 0.37, 0, 0.04, 0.06, 0.04, 0x9aa4b8, { faces: 63 });
+    bar.box(0, 0.41, -0.05, 0.04, 0.04, 0.12, 0x9aa4b8, { faces: 63 });
+    bar.box(0, 0.37, -0.11, 0.04, 0.06, 0.03, 0x9aa4b8, { faces: 63 });
+    this.bar = new Mesh(bar.build(), mat);
+    this.bar.position.set(0, -0.02, -0.57);
+    this.bar.rotation.set(-0.35, 0, -0.25);
+    this.R.add(this.bar);
+    // left hand (appears when grabbing / cracking)
+    this.L = new Group();
+    this.L.position.set(-0.3, -0.27, 0.02);
+    this.L.rotation.y = -0.14;
+    this.root.add(this.L);
+    this.L.add(new Mesh(armGeo(true), mat));
+
+    this.swX = 0; this.swY = 0; this.down = 0; this.lIn = 0; this.t = 0; this.kick = 0;
+    this.visible = true;
+  }
+
+  resize(aspect, fov) {
+    this.camera.aspect = aspect;
+    this.camera.fov = aspect < 1 ? 70 : 60;
+    this.camera.updateProjectionMatrix();
+    // keep hands inside narrow portrait screens
+    this.root.scale.setScalar(aspect < 1 ? 0.68 : 1);
+    this.root.userData.px = aspect < 1 ? -0.03 : 0;
+  }
+
+  // s: {move, bob, lookX, lookY, punch (0..1 or <0), crack, grab, dash, busted}
+  update(dt, s) {
+    this.t += dt;
+    const R = this.R, L = this.L;
+    this.swX = damp(this.swX, clamp(-s.lookX * 0.0009, -0.06, 0.06), 10, dt);
+    this.swY = damp(this.swY, clamp(s.lookY * 0.0009, -0.06, 0.06), 10, dt);
+    this.down = damp(this.down, s.busted ? 0.7 : 0, 6, dt);
+    this.kick = damp(this.kick, s.dash ? 1 : 0, 14, dt);
+    const m = s.move;
+    const bx = Math.cos(s.bob) * 0.014 * m, by = -Math.abs(Math.sin(s.bob)) * 0.02 * m + Math.sin(this.t * 1.8) * 0.004;
+    this.root.position.set((this.root.userData.px || 0) + this.swX + bx, this.swY + by - this.down, -0.12 + this.kick * 0.08);
+    this.root.rotation.z = this.kick * 0.08;
+
+    // right arm: idle pose / swing / crack jiggle
+    let rx = 0, rz = 0, rpz = 0.02;
+    if (s.punch > 0) {
+      const t = 1 - s.punch; // 0..1
+      if (t < 0.3) rx = (t / 0.3) * 0.9;
+      else if (t < 0.55) rx = 0.9 - ((t - 0.3) / 0.25) * 1.9;
+      else rx = -1.0 + ((t - 0.55) / 0.45) * 1.0;
+      rz = -rx * 0.3;
+    } else if (s.crack) {
+      rx = 0.35 + Math.sin(this.t * 38) * 0.08;
+      rz = Math.sin(this.t * 23) * 0.1;
+      rpz = -0.06;
+    }
+    R.rotation.x = damp(R.rotation.x, rx, s.punch > 0 ? 40 : 14, dt);
+    R.rotation.z = damp(R.rotation.z, rz, 20, dt);
+    R.position.z = damp(R.position.z, rpz, 12, dt);
+
+    // left hand slides in for grabs and while cracking
+    const want = s.grab > 0 || s.crack ? 1 : 0;
+    this.lIn = damp(this.lIn, want, want ? 18 : 8, dt);
+    L.visible = this.lIn > 0.02;
+    L.position.y = -0.27 - (1 - this.lIn) * 0.45;
+    L.position.z = 0.02 - (s.grab > 0 ? Math.sin(Math.min(1, s.grab) * Math.PI) * 0.12 : 0);
+    L.rotation.x = s.crack ? 0.25 : 0.1;
+    L.rotation.z = s.crack ? Math.sin(this.t * 9) * 0.35 : 0;
+  }
+
+  render(renderer) {
+    if (!this.visible) return;
+    renderer.clearDepth();
+    renderer.render(this.scene, this.camera);
+  }
+}

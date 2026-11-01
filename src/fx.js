@@ -96,6 +96,7 @@ export class Floaters {
         this.live.splice(i, 1); continue;
       }
       _v.set(f.x, f.y, f.z).project(camera);
+      f.el.style.visibility = _v.z > 1 ? 'hidden' : '';
       f.el.style.transform = `translate(${((_v.x + 1) / 2) * w}px,${((1 - _v.y) / 2) * h}px) translate(-50%,-50%)`;
       if (f.t > f.life * 0.6) f.el.style.opacity = String(1 - (f.t - f.life * 0.6) / (f.life * 0.4));
     }

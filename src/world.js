@@ -3,9 +3,9 @@ import { Mesh, Group, MeshLambertMaterial, OctahedronGeometry } from 'three';
 import { GeoBuilder, PX, NX, PY, PZ, NZ } from './geo.js';
 import { mulberry32, shade } from './util.js';
 
-export const WALL_H = 1.45;
+export const WALL_H = 1.9;
 const C = {
-  wallIn: 0xf4eee4, wallOut: 0xd2694c, wallTop: 0x2d3150, base: 0x2d3150, window: 0x9fd8ff, frame: 0xf4eee4,
+  wallIn: 0xf4eee4, wallOut: 0xd2694c, wallTop: 0x2d3150, base: 0x2d3150, window: 0x9fd8ff, frame: 0xf4eee4, ceil: 0xf2eef8, lamp: 0xfffbe0, trim: 0xa8754a,
   wood: [0xe0a96e, 0xd59b5d], carpet: [0x8090ec, 0x7a8ae6], tile: [0xf1f5f8, 0xd6e1ea],
   grass: [0x78cc5c, 0x6fc354, 0x82d466], walk: 0xc8ced8, asphalt: 0x4a5162, line: 0xffe066,
   trunk: 0x8b5a3c, leaf: [0x4fb04a, 0x5cc254, 0x3e9e45], fence: 0xffffff,
@@ -144,15 +144,27 @@ export function buildWorld(L) {
         faces |= bit;
         const out = isOut(x + dx, y + dy);
         fc[fi] = out ? C.wallOut : C.wallIn;
+        const wx = x + 0.5 + dx * 0.505, wz = y + 0.5 + dy * 0.505;
+        const oppOut = isOut(x - dx, y - dy) && !isWall(x - dx, y - dy);
         if (!out) {
           // baseboard strip
           const bx = x + 0.5 + dx * 0.515, bz = y + 0.5 + dy * 0.515;
           g.box(bx, 0, bz, dx ? 0.03 : 1, 0.14, dy ? 0.03 : 1, C.base, { faces: bit | PY });
-        } else if ((x + y) % 3 === 0) {
-          // little windows on outside walls
-          const wx = x + 0.5 + dx * 0.505, wz = y + 0.5 + dy * 0.505;
-          g.box(wx, 0.55, wz, dx ? 0.02 : 0.6, 0.55, dy ? 0.02 : 0.6, C.window, { faces: bit });
-          g.box(wx, 0.5, wz, dx ? 0.03 : 0.74, 0.07, dy ? 0.03 : 0.74, C.frame, { faces: bit | PY });
+          // crown trim
+          g.box(bx, WALL_H - 0.08, bz, dx ? 0.03 : 1, 0.08, dy ? 0.03 : 1, C.base, { faces: bit | 8 });
+        }
+        if ((out || oppOut) && (x + y) % 3 === 0) {
+          // windows on outside walls (both faces)
+          g.box(wx, 0.75, wz, dx ? 0.02 : 0.62, 0.62, dy ? 0.02 : 0.62, C.window, { faces: bit });
+          g.box(wx, 0.7, wz, dx ? 0.03 : 0.76, 0.07, dy ? 0.03 : 0.76, C.frame, { faces: bit | PY });
+          g.box(wx, 1.0, wz, dx ? 0.025 : 0.05, 0.1, dy ? 0.025 : 0.05, C.frame, { faces: bit });
+          g.box(wx, 1.04, wz, dx ? 0.025 : 0.62, 0.04, dy ? 0.025 : 0.62, C.frame, { faces: bit });
+        } else if (!out && (x * 5 + y * 3) % 7 === 0) {
+          // framed pictures on interior walls
+          const art = [0xff6b6b, 0x4ecdc4, 0xffe66d, 0x6c7bf0, 0xff9f43][(x + y * 2) % 5];
+          g.box(wx, 0.85, wz, dx ? 0.04 : 0.5, 0.42, dy ? 0.04 : 0.5, 0x7d5535, { faces: 63 });
+          g.box(wx + dx * 0.01, 0.9, wz + dy * 0.01, dx ? 0.04 : 0.4, 0.32, dy ? 0.04 : 0.4, art, { faces: bit });
+          g.box(wx + dx * 0.015, 0.95, wz + dy * 0.015, dx ? 0.04 : 0.16, 0.14, dy ? 0.04 : 0.16, shade(art, 0.7), { faces: bit });
         }
       }
       g.box(x + 0.5, 0, y + 0.5, 1, WALL_H, 1, C.wallIn, { faces, fc });
@@ -172,6 +184,15 @@ export function buildWorld(L) {
       col = shade(col, ao * (0.97 + rng() * 0.06));
     }
     g.box(x + 0.5, -0.05, y + 0.5, 1, 0.05, 1, col, { faces: PY });
+    if (f !== 'grass' && f !== 'road') {
+      g.box(x + 0.5, WALL_H, y + 0.5, 1, 0.05, 1, C.ceil, { faces: 8 });
+      if (x % 4 === 1 && y % 3 === 0) g.box(x + 0.5, WALL_H - 0.04, y + 0.5, 0.5, 0.04, 0.5, C.lamp, { faces: 8 | PX | NX | PZ | NZ });
+    }
+    const doorX = isWall(x - 1, y) && isWall(x + 1, y), doorY = isWall(x, y - 1) && isWall(x, y + 1);
+    if (doorX || doorY) {
+      g.box(x + 0.5, 1.5, y + 0.5, 1, WALL_H - 1.5, 1, C.wallIn, { faces: doorX ? (PY | 8 | PZ | NZ) : (PY | 8 | PX | NX), fc: [C.wallIn, C.wallIn, C.wallTop, C.trim, C.wallIn, C.wallIn] });
+      for (const s of [-1, 1]) g.box(x + 0.5 + (doorX ? s * 0.47 : 0), 0, y + 0.5 + (doorY ? s * 0.47 : 0), doorX ? 0.06 : 1.04, 1.5, doorY ? 0.06 : 1.04, C.trim, { faces: 63 & ~8 & ~4 });
+    }
     if (f === 'road' && y === roadTop + 1 && x % 2 === 0) g.box(x + 1, -0.01, y + 1, 1.1, 0.02, 0.12, C.line, { faces: PY });
   }
   for (const d of L.def.decor || []) {

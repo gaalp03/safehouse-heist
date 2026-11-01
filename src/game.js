@@ -5,13 +5,13 @@ import {
 } from 'three';
 import { parseLevel } from './level.js';
 import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat } from './world.js';
-import { makeCharacter, addXray, animateChar, squash } from './chars.js';
+import { makeCharacter, animateChar, squash } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 
-const PR = 0.3, P_SPEED = 4.6, DASH_V = 13, DASH_T = 0.18, DASH_CD = 0.8;
+const PR = 0.3, P_SPEED = 3.7, DASH_V = 11, DASH_T = 0.18, DASH_CD = 0.8, EYE = 1.02, CHASE = 3.2;
 const CONE_N = 20;
 const COL = { cone: 0xffe14d, sus: 0xff9f1c, alert: 0xff3b4e };
-const _o = new Object3D(), _v = new Vector3(), _mv = { x: 0, y: 0 };
+const _o = new Object3D(), _v = new Vector3(), _mv = { x: 0, y: 0 }, _lk = { x: 0, y: 0 };
 const turn = (a, b, r) => a + clamp(angDiff(a, b), -r, r);
 
 const shadowGeo = new CircleGeometry(0.36, 12).rotateX(-Math.PI / 2);
@@ -85,7 +85,6 @@ export class Game {
 
     // player
     const pc = makeCharacter('player');
-    addXray(pc, 0x0e8f78);
     pc.root.rotation.order = 'YXZ';
     this.root.add(pc.root);
     this.player = { c: pc, shadow: this.addShadow() };
@@ -162,12 +161,13 @@ export class Game {
     this.time = 0; this.lootGot = 0; this.spotted = false; this.kos = 0;
     this.hasStash = false; this.safeOpen = false; this.safeProg = 0; this.safeTick = 0; this.doorT = 0;
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
-    this.nopeT = 0; this.tension = 0; this.catcher = null;
+    this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
 
     const p = this.player;
     Object.assign(p, {
       x: L.start.x + 0.5, z: L.start.y + 0.5, vx: 0, vz: 0, face: Math.PI, dashT: 0, dashCd: 0, ddx: 0, ddz: 0,
       inv: 0, stepAcc: 0, bagS: 0.5, bagV: 0, punchT: 0, hidden: false, y: 0, moving: 0,
+      yaw: 0, pitch: -0.05, roll: 0, bob: 0, strafe: 0, lookX: 0, lookY: 0, grabT: 0, crack: false,
     });
     p.c.root.visible = true;
     p.c.root.rotation.set(0, Math.PI, 0);
@@ -370,16 +370,25 @@ export class Game {
   updatePlayer(dt) {
     const p = this.player, app = this.app, inp = app.input;
     inp.move(_mv);
+    inp.consumeLook(_lk);
+    const sens = app.sens || 0.0024;
+    p.lookX = _lk.x; p.lookY = _lk.y;
+    p.yaw -= _lk.x * sens;
+    p.pitch = clamp(p.pitch - _lk.y * sens, -1.25, 1.2);
+    p.face = p.yaw + Math.PI;
+    const fx = Math.sin(p.face), fz = Math.cos(p.face), rx = -fz, rz = fx;
+    const wx = rx * _mv.x - fx * _mv.y, wz = rz * _mv.x - fz * _mv.y;
+    p.strafe = _mv.x;
     const frac = this.lootGot / this.lootTotal;
-    const spd = P_SPEED * (1 - 0.15 * frac);
-    p.vx = damp(p.vx, _mv.x * spd, 16, dt);
-    p.vz = damp(p.vz, _mv.y * spd, 16, dt);
+    const spd = P_SPEED * (1 - 0.1 * frac);
+    p.vx = damp(p.vx, wx * spd, 14, dt);
+    p.vz = damp(p.vz, wz * spd, 14, dt);
     p.dashCd -= dt; p.inv -= dt; p.punchT -= dt;
     if (inp.consumeDash() && p.dashCd <= 0) {
-      let dx = _mv.x, dz = _mv.y;
-      if (!dx && !dz) { dx = Math.sin(p.face); dz = Math.cos(p.face); }
+      let dx = wx, dz = wz;
+      if (Math.abs(dx) + Math.abs(dz) < 0.01) { dx = fx; dz = fz; }
       const l = Math.hypot(dx, dz); dx /= l; dz /= l;
-      p.dashT = DASH_T; p.dashCd = DASH_CD; p.ddx = dx; p.ddz = dz; p.face = Math.atan2(dx, dz);
+      p.dashT = DASH_T; p.dashCd = DASH_CD; p.ddx = dx; p.ddz = dz;
       app.audio.play('dash');
       app.shake.add(0.18);
       squash(p.c, 0.7);
@@ -403,35 +412,30 @@ export class Game {
     }
     const sp = Math.hypot(vx, vz);
     p.moving = Math.min(1, sp / P_SPEED);
-    if (sp > 0.3) p.face = turn(p.face, Math.atan2(vx, vz), 15 * dt);
-    p.stepAcc += sp * dt;
-    if (p.stepAcc > 0.9) {
-      p.stepAcc = 0; app.audio.play('step');
-      app.particles.burst(p.x, 0.05, p.z, { count: 2, colors: [0xe8e8e8], speed: 0.6, up: 0.6, size: 0.08, gravity: 1, life: 0.35 });
-    }
+    const ph = Math.floor(p.bob / Math.PI);
+    p.bob += Math.min(sp, P_SPEED) * dt * 2.6;
+    if (Math.floor(p.bob / Math.PI) !== ph) app.audio.play('step');
     if (sp > 0.5) app.hintDone('move');
 
     // ---- interactions ----
     const sx = this.L.safe.x + 0.5, sz = this.L.safe.y + 0.5;
-    const nearSafe = !this.safeOpen && Math.hypot(p.x - sx, p.z - sz) < 1.35;
+    const nearSafe = !this.safeOpen && Math.hypot(p.x - sx, p.z - sz) < 1.45 && Math.abs(angDiff(p.face, Math.atan2(sx - p.x, sz - p.z))) < 1.1;
     let ko = null, best = 9;
     for (const g of this.guards) {
       if (!this.canKO(g)) continue;
       const d = Math.hypot(p.x - g.x, p.z - g.z);
+      if (p.dashT <= 0 && Math.abs(angDiff(p.face, Math.atan2(g.x - p.x, g.z - p.z))) > 0.9) continue;
       if (d < best) { best = d; ko = g; }
       if (p.dashT > 0 && d < 0.95) { this.knockout(g); ko = null; break; }
     }
     const pressed = inp.consumeAct();
-    p.c.armOverride = false;
+    p.crack = false;
     if (nearSafe) {
       app.hint('safe');
       if (inp.act) {
         this.safeProg += dt / 1.4;
         this.safeTick -= dt;
-        p.face = turn(p.face, Math.atan2(sx - p.x, sz - p.z), 12 * dt);
-        p.c.armOverride = true;
-        p.c.armL.rotation.x = -1.4 + Math.sin(this.t * 30) * 0.2;
-        p.c.armR.rotation.x = -1.4 - Math.sin(this.t * 30) * 0.2;
+        p.crack = true;
         if (this.safeTick <= 0) {
           this.safeTick = 0.11; app.audio.play('tick', this.safeProg);
           app.particles.burst(sx, 0.7, sz + 0.4, { count: 1, colors: [0xffd23f, 0xffffff], speed: 1.5, up: 2, size: 0.06, life: 0.3 });
@@ -443,8 +447,7 @@ export class Game {
       app.hint('ko');
       if (pressed && !nearSafe) this.knockout(ko);
     }
-    app.setPrompt(nearSafe ? 'safe' : ko ? 'ko' : '', this.safeProg, sx, sz);
-    if (p.punchT > 0) { p.c.armOverride = true; p.c.armR.rotation.x = -2.2 * Math.sin((p.punchT / 0.25) * Math.PI); }
+    app.setPrompt(nearSafe ? 'safe' : ko ? 'ko' : '', this.safeProg);
 
     // exit
     const ex = this.L.exit;
@@ -454,7 +457,7 @@ export class Game {
       if (this.hasStash) this.escape();
       else if (this.nopeT <= 0) {
         this.nopeT = 3; app.audio.play('nope');
-        app.floaters.spawn('Crack the safe first!', p.x, 1.8, p.z, 'warn', 1.4);
+        app.floaters.spawn('Crack the safe first!', p.x + fx * 1.6, 1.2, p.z + fz * 1.6, 'warn', 1.4);
       }
     }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
@@ -485,7 +488,7 @@ export class Game {
     this.kos++;
     this.hitstop = 0.08;
     app.shake.add(0.35);
-    p.punchT = 0.25;
+    p.punchT = 0.28;
     squash(p.c, 1.25);
     app.audio.play('ko');
     app.particles.burst(g.x, 1.0, g.z, { count: 14, colors: [0xffd23f, 0xffffff, 0xff9f1c], speed: 3.5, up: 4, size: 0.13, life: 0.7 });
@@ -550,7 +553,7 @@ export class Game {
     switch (g.state) {
       case 'sleep':
         g.zz -= dt;
-        if (g.zz <= 0) { g.zz = 1.5; app.floaters.spawn('z', g.x + 0.3, 1.0, g.z - 0.4, 'zz', 1.4); }
+        if (g.zz <= 0) { g.zz = 1.5; if (Math.hypot(p.x - g.x, p.z - g.z) < 7 || !perceive) app.floaters.spawn('z', g.x + 0.3, 1.0, g.z - 0.4, 'zz', 1.4); }
         return;
       case 'waking':
         g.t -= dt;
@@ -627,7 +630,7 @@ export class Game {
       }
       case 'alert': {
         const tx = seen ? p.x : g.lastX, tz = seen ? p.z : g.lastZ;
-        this.navTo(g, tx, tz, 4.0, dt);
+        this.navTo(g, tx, tz, CHASE, dt);
         if (!seen && g.lostT > 2.2) {
           g.state = 'search'; g.tx = g.lastX; g.tz = g.lastZ; g.hurry = 2.8; g.susp = 0.6;
           app.audio.play('lost');
@@ -695,7 +698,8 @@ export class Game {
       g.badge.lastChild.textContent = b === 'alert' ? '!' : '?';
     }
     if (b) {
-      _v.set(g.x, 2.0, g.z).project(this.app.camera);
+      _v.set(g.x, 1.8, g.z).project(this.app.camera);
+      g.badge.classList.toggle('off', _v.z > 1);
       g.badge.style.transform = `translate(${((_v.x + 1) / 2) * this.app.w}px,${((1 - _v.y) / 2) * this.app.h}px) translate(-50%,-50%)`;
       g.badge.style.setProperty('--p', b === 'alert' ? 1 : g.susp.toFixed(2));
     }
@@ -770,13 +774,16 @@ export class Game {
     this.combo = this.comboT > 0 ? this.combo + 1 : 1;
     this.comboT = 1.6;
     const cls = it.type === 'cash' ? 'cash' : it.type === 'gold' ? 'gold' : it.type === 'jewel' ? 'jewel' : 'art';
-    app.floaters.spawn('+$' + it.value, it.x, 1.3, it.z, cls, 0.9);
+    const p = this.player, fx = Math.sin(p.face), fz = Math.cos(p.face), j = rand(-0.35, 0.35);
+    const ox = p.x + fx * 1.4 - fz * j, oz = p.z + fz * 1.4 + fx * j;
+    app.floaters.spawn('+$' + it.value, ox, 1.0, oz, cls, 0.9);
+    p.grabT = 1;
     if (this.combo >= 3) {
-      app.floaters.spawn('COMBO x' + this.combo, this.player.x, 2.1, this.player.z, 'combo', 0.8);
+      app.floaters.spawn('COMBO x' + this.combo, p.x + fx * 1.4, 1.45, p.z + fz * 1.4, 'combo', 0.8);
       app.audio.play('combo', this.combo);
     }
     const cols = { cash: [0x3fb950, 0x9df59f, 0xffffff], gold: [0xffd23f, 0xfff1a8], jewel: [0x3ee8ff, 0xffffff, 0xb7f6ff], art: [0xff6b6b, 0x4ecdc4, 0xffe66d] }[it.type];
-    app.particles.burst(it.x, it.y, it.z, { count: it.type === 'cash' ? 7 : 14, colors: cols, speed: 2.5, up: 3, size: 0.1, life: 0.6 });
+    app.particles.burst(p.x + fx * 0.9, 0.75, p.z + fz * 0.9, { count: it.type === 'cash' ? 7 : 14, colors: cols, speed: 1.6, up: 2, size: 0.05, life: 0.5 });
     app.audio.play(it.type === 'cash' ? 'pick' : it.type, this.combo);
     this.player.bagV += 4;
     squash(this.player.c, 1.12);
@@ -789,7 +796,7 @@ export class Game {
     for (let i = this.loot.length - 1; i >= 0; i--) {
       const it = this.loot[i];
       it.t += dt;
-      const base = it.type === 'art' ? 0.75 : 0.45;
+      const base = it.type === 'art' ? 0.9 : 0.62;
       if (it.st === 'fly') {
         it.vy -= 18 * dt;
         const ox = it.x, oz = it.z;
@@ -804,17 +811,17 @@ export class Game {
         if (playing && Math.hypot(p.x - it.x, p.z - it.z) < 1.5) { it.st = 'mag'; it.ms = 2; }
       } else {
         it.ms += dt * 30;
-        const dx = p.x - it.x, dy = 0.75 - it.y, dz = p.z - it.z, d = Math.hypot(dx, dy, dz);
+        const dx = p.x - it.x, dy = 0.7 - it.y, dz = p.z - it.z, d = Math.hypot(dx, dy, dz);
         const step = Math.min(d, it.ms * dt);
         it.x += (dx / d) * step; it.y += (dy / d) * step; it.z += (dz / d) * step;
         it.rot += dt * 12;
-        if (d < 0.35) { this.collect(it); this.loot.splice(i, 1); continue; }
+        if (d < 0.45) { this.collect(it); this.loot.splice(i, 1); continue; }
       }
       const m = this.lootMeshes[it.type];
       const s = it.st === 'mag' ? Math.max(0.4, 1 - it.ms * 0.02) : 1 + (it.type === 'art' ? 0 : Math.sin(this.t * 6 + it.ph) * 0.06);
       _o.position.set(it.x, it.y, it.z);
       _o.rotation.set(0, it.rot, 0);
-      _o.scale.setScalar(s * (it.type === 'jewel' ? 1.2 : 1));
+      _o.scale.setScalar(s * (it.type === 'jewel' ? 1.5 : 1.25));
       _o.updateMatrix();
       m.setMatrixAt(n[it.type]++, _o.matrix);
     }
@@ -836,36 +843,53 @@ export class Game {
       this.exitRing.scale.set(s, 1, s);
       this.exitBeam.material.opacity = 0.16 + Math.sin(this.t * 4) * 0.06;
     }
-    // objective arrow
-    const p = this.player, a = this.arrow;
-    let tx, tz;
-    if (this.hasStash) { tx = this.L.exit.x; tz = this.L.exit.z; }
-    else { tx = this.L.safe.x + 0.5; tz = this.L.safe.y + 0.5; }
-    const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
-    a.visible = this.state === 'play' && d > 2.6 && !p.hidden;
-    if (a.visible) {
-      const r = 1.05 + Math.sin(this.t * 6) * 0.08;
-      a.position.set(p.x + (dx / d) * r, 0.06, p.z + (dz / d) * r);
-      a.rotation.y = Math.atan2(dx, dz);
-    }
+    this.arrow.visible = false;
   }
 
   syncPlayer(dt) {
     const p = this.player, c = p.c;
-    c.root.position.set(p.x, p.y, p.z);
-    c.root.rotation.y = p.face;
-    p.shadow.position.set(p.x, 0.02, p.z);
-    p.shadow.visible = c.root.visible;
-    c.body.rotation.x = p.dashT > 0 ? 0.35 : damp(c.body.rotation.x, 0, 12, dt);
-    animateChar(c, dt, p.moving, this.t);
-    // bag grows with loot (springy)
-    const target = 0.5 + 0.95 * Math.min(1, this.lootGot / this.lootTotal);
-    p.bagV += (target - p.bagS) * 180 * dt;
-    p.bagV *= Math.exp(-10 * dt);
-    p.bagS += p.bagV * dt * 0.1;
-    c.bag.scale.setScalar(Math.max(0.3, p.bagS));
-    if (p.inv > 0) c.root.visible = Math.sin(this.t * 40) > -0.3;
-    else if (!p.hidden) c.root.visible = true;
+    const show = this.state === 'escape' && !p.hidden;
+    c.root.visible = show; p.shadow.visible = show;
+    if (show) {
+      c.root.position.set(p.x, p.y, p.z);
+      c.root.rotation.y = p.face;
+      p.shadow.position.set(p.x, 0.02, p.z);
+      animateChar(c, dt, 1, this.t);
+      c.bag.scale.setScalar(0.5 + 0.95 * Math.min(1, this.lootGot / this.lootTotal));
+    }
+    if (this.state !== 'play') p.moving = damp(p.moving, 0, 8, dt);
+    p.grabT = Math.max(0, p.grabT - dt * 4);
+    this.app.vm.update(dt, {
+      move: p.moving, bob: p.bob, lookX: p.lookX, lookY: p.lookY, punch: p.punchT > 0 ? p.punchT / 0.28 : 0,
+      crack: p.crack && this.state === 'play', grab: p.grabT, dash: p.dashT > 0, busted: this.state === 'caught',
+    });
+    p.lookX = p.lookY = 0;
+  }
+
+  // first-person camera (plus escape cinematic)
+  applyCamera(cam, dt) {
+    const p = this.player, app = this.app;
+    if (this.state === 'escape') {
+      const v = this.van.group.position, ex = this.L.exit;
+      if (!this.cineInit) { this.cineInit = true; cam.position.set(ex.x - 2.5, 1.6, ex.z + 5); }
+      cam.position.x += (v.x - 1.5 - cam.position.x) * Math.min(1, dt * 1.2);
+      cam.lookAt(v.x + 0.3, 0.7, v.z);
+      this.fovKick = 0;
+      return;
+    }
+    if (this.state === 'caught' && this.catcher) {
+      const g = this.catcher, ty = Math.atan2(g.x - p.x, g.z - p.z) - Math.PI;
+      p.yaw += angDiff(p.yaw, ty) * Math.min(1, dt * 8);
+      p.pitch += (0.08 - p.pitch) * Math.min(1, dt * 8);
+    }
+    const m = p.moving;
+    const bobY = Math.abs(Math.sin(p.bob)) * 0.05 * m, bobX = Math.cos(p.bob) * 0.03 * m;
+    const fz = Math.cos(p.yaw + Math.PI), fx = Math.sin(p.yaw + Math.PI), rx = -fz, rz = fx;
+    p.roll = damp(p.roll, -p.strafe * 0.03 * m, 8, dt);
+    this.fovKick = damp(this.fovKick, p.dashT > 0 ? 12 : 0, p.dashT > 0 ? 25 : 6, dt);
+    const sh = app.shake, drop = this.state === 'caught' ? 0.3 * Math.min(1, this.endT * 3) : 0;
+    cam.position.set(p.x + rx * bobX, EYE + bobY - drop, p.z + rz * bobX);
+    cam.rotation.set(p.pitch + sh.y * 0.06, p.yaw + sh.x * 0.06, p.roll + sh.x * 0.02);
   }
 
   updateNoiseRings(dt) {
@@ -883,7 +907,7 @@ export class Game {
   // ---------- endings ----------
   escape() {
     const app = this.app;
-    this.state = 'escape'; this.endT = 0; this.endSent = false;
+    this.state = 'escape'; this.endT = 0; this.endSent = false; this.cineInit = false;
     const p = this.player;
     p.sx = p.x; p.sz = p.z;
     app.setPrompt('');
@@ -927,7 +951,7 @@ export class Game {
     app.shake.add(0.7);
     app.flash('red');
     app.audio.play('bust');
-    app.floaters.spawn('BUSTED!', this.player.x, 2.0, this.player.z, 'alert big', 1.2);
+    app.floaters.spawn('BUSTED!', g.x, 1.5, g.z, 'alert big', 1.2);
     app.setPrompt('');
   }
   revive() {
@@ -949,11 +973,5 @@ export class Game {
     };
   }
 
-  // camera focus point
-  focus(out) {
-    if (this.state === 'escape' && this.player.hidden) out.set(this.van.group.position.x, 0, this.van.group.position.z);
-    else out.set(this.player.x, 0, this.player.z);
-    return out;
-  }
   hideBadges() { for (const g of this.guards) { g.badge.className = 'badge'; g.prevBadge = ''; } }
 }

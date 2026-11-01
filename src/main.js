@@ -5,11 +5,12 @@ import { Input } from './input.js';
 import { Particles, Shake, Floaters } from './fx.js';
 import { SDK } from './sdk.js';
 import { LEVELS, loadLevel } from './levels/index.js';
-import { fmtTime, fmtMoney, damp } from './util.js';
+import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
+import { ViewModel } from './viewmodel.js';
 
 const $ = (id) => document.getElementById(id);
 const HINTS = {
-  move: ['WASD / Arrows to move', 'Drag anywhere to move'],
+  move: ['WASD to move · Mouse to look', 'Left side: move · Right side: look'],
   dash: ['SPACE / SHIFT to dash. Careful, it\'s noisy!', 'Tap DASH to dash. Careful, it\'s noisy!'],
   cone: ['Stay out of the vision cones!', 'Stay out of the vision cones!'],
   ko: ['Behind a guard? E / Click = knock out!', 'Behind a guard? Tap the hand = knock out!'],
@@ -22,7 +23,7 @@ const HINTS = {
 class App {
   constructor() {
     this.els = {
-      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'),
+      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'),
     };
     this.state = 'boot';
     this.hShown = new Set(); this.hDone = new Set(); this.hQ = []; this.hT = 0; this.hCur = null;
@@ -47,8 +48,11 @@ class App {
     r.setPixelRatio(this.dpr);
     this.scene = new Scene();
     this.scene.background = new Color(0x9ad8ff);
-    this.camera = new PerspectiveCamera(42, 1, 0.5, 120);
-    this.scene.add(new HemisphereLight(0xffffff, 0x9aa0c8, 1.9));
+    r.autoClear = false;
+    this.camera = new PerspectiveCamera(42, 1, 0.05, 120);
+    this.camera.rotation.order = 'YXZ';
+    this.vm = new ViewModel();
+    this.scene.add(new HemisphereLight(0xffffff, 0xc4c8e8, 1.9));
     const sun = new DirectionalLight(0xffffff, 1.7);
     sun.position.set(-4, 10, 6);
     this.scene.add(sun);
@@ -62,6 +66,7 @@ class App {
     this.game = new Game(this);
     this.level = await loadLevel(0);
     this.game.load(this.level);
+    this.buildMinimap();
 
     this.bindUI();
     addEventListener('resize', () => this.resize());
@@ -101,6 +106,7 @@ class App {
       else if ((code === 'Enter' || code === 'Space') && (this.state === 'result' || this.state === 'busted')) { this.audio.unlock(); this.retry(); }
     });
     this.input.on('mode', () => this.syncTouch());
+    this.input.on('unlock', () => { if (this.state === 'play' && this.game.state === 'play' && !this.input.touch) this.pause(); });
     addEventListener('pointerdown', () => this.audio.unlock(), { capture: true });
     addEventListener('keydown', () => this.audio.unlock(), { capture: true });
     addEventListener('blur', () => { if (this.state === 'play') this.pause(); });
@@ -114,6 +120,9 @@ class App {
   screen(id) {
     for (const s of document.querySelectorAll('.screen')) s.classList.toggle('hidden', s.id !== id);
     const inGame = this.state === 'play';
+    this.input.active = inGame;
+    if (!inGame) this.input.exitLock();
+    $('fp').classList.toggle('hidden', !inGame);
     $('hud').classList.toggle('hidden', !inGame && this.state !== 'pause');
     this.syncTouch();
     if (!inGame) { this.setPrompt(''); this.game && this.game.hideBadges(); }
@@ -152,6 +161,7 @@ class App {
     this.game.reset();
     this.input.clear();
     this.state = 'play';
+    this.input.requestLock();
     this.runs++;
     this.startT = this.time;
     this.screen(null);
@@ -176,6 +186,7 @@ class App {
     if (this.state !== 'pause') return;
     this.state = 'play';
     this.input.clear();
+    this.input.requestLock();
     this.last = performance.now();
     this.screen(null);
     SDK.gameplayStart();
@@ -239,19 +250,18 @@ class App {
       this.hT = 3.4;
     }
   }
-  setPrompt(kind, prog = 0, sx = 0, sz = 0) {
+  setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
-    const txt = kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK' : 'HOLD E TO CRACK') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E: KNOCK OUT') : '';
+    const txt = kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK' : 'HOLD E / CLICK TO CRACK') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.textContent = txt;
       p.classList.toggle('hidden', !kind);
+      $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind);
       this.els.bAct.lastChild.textContent = kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
     if (kind === 'safe' && prog > 0) {
-      const v = this._d.set(sx, 1.4, sz).project(this.camera);
-      ring.style.transform = `translate(${((v.x + 1) / 2) * this.w}px,${((1 - v.y) / 2) * this.h}px) translate(-50%,-50%)`;
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));
       ring.classList.remove('hidden');
     } else ring.classList.add('hidden');
@@ -275,7 +285,7 @@ class App {
     const f = $('flash');
     f.className = ''; void f.offsetWidth; f.className = kind;
   }
-  onEscapeStart() { $('touch').classList.add('hidden'); }
+  onEscapeStart() { $('touch').classList.add('hidden'); $('fp').classList.add('hidden'); this.input.exitLock(); }
   onBusted() {
     this.state = 'busted';
     SDK.gameplayStop();
@@ -334,6 +344,7 @@ class App {
     this.renderer.setSize(this.w, this.h, false);
     this.camera.aspect = this.aspect;
     this.camera.updateProjectionMatrix();
+    this.vm.resize(this.aspect);
   }
   frame() {
     const now = performance.now();
@@ -353,37 +364,107 @@ class App {
     if (st === 'play') this.updateHud();
     this.audio.tension = this.game.tension;
     $('vignette').style.opacity = st === 'play' && this.game.tension ? 1 : 0;
+    this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
+    this.vm.visible = (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught');
+    this.vm.render(this.renderer);
     this.adaptRes(rdt);
   }
   updateHud() {
-    const s = Math.floor(this.game.time);
+    const g = this.game, p = g.player;
+    const s = Math.floor(g.time);
     if (s !== this.lastSec) { this.lastSec = s; $('time').textContent = fmtTime(s); }
+    this.drawMinimap();
+    // objective marker (clamped to screen edges when off-screen / behind)
+    const wp = $('wp');
+    let tx, tz, label;
+    if (g.hasStash) { tx = g.L.exit.x; tz = g.L.exit.z; label = 'VAN'; }
+    else { tx = g.L.safe.x + 0.5; tz = g.L.safe.y + 0.5; label = 'SAFE'; }
+    const dist = Math.hypot(tx - p.x, tz - p.z);
+    if (g.state !== 'play' || dist < 1.6) wp.classList.add('hidden');
+    else {
+      wp.classList.remove('hidden');
+      const v = this._d.set(tx, 1.1, tz).project(this.camera);
+      let x = v.x, y = v.y;
+      const behind = v.z > 1;
+      if (behind) { x = -x; y = -y; }
+      const m = 0.88, off = behind || Math.abs(x) > m || Math.abs(y) > m;
+      if (off) { const k = m / Math.max(Math.abs(x), Math.abs(y), 0.001); x *= k; y *= k; if (behind && Math.abs(y) < m - 0.01) y = -m; }
+      wp.classList.toggle('edge', off);
+      wp.style.transform = `translate(${((x + 1) / 2) * this.w}px,${((1 - y) / 2) * this.h}px) translate(-50%,-50%)`;
+      const txt = label + ' ' + Math.round(dist * 1.5) + 'm';
+      if (wp.dataset.t !== txt) { wp.dataset.t = txt; wp.lastChild.textContent = txt; }
+    }
+    // threat indicators around the crosshair
+    const ind = $('ind');
+    g.guards.forEach((gd, i) => {
+      let el = ind.children[i];
+      if (!el) { el = document.createElement('i'); ind.appendChild(el); }
+      const alert = gd.state === 'alert', sus = !alert && (gd.susp > 0.04 || gd.state === 'investigate' || gd.state === 'search');
+      if (!alert && !sus) { el.style.display = 'none'; return; }
+      const rel = angDiff(p.face, Math.atan2(gd.x - p.x, gd.z - p.z));
+      el.style.display = '';
+      el.className = alert ? 'alert' : '';
+      el.style.opacity = alert ? 1 : (0.35 + gd.susp * 0.65).toFixed(2);
+      el.style.transform = `translate(-50%,-50%) rotate(${(-rel * 180) / Math.PI}deg) translateY(-${this.h < 500 ? 70 : 96}px)`;
+    });
+  }
+  buildMinimap() {
+    const L = this.game.L, S = 5, c = document.createElement('canvas');
+    c.width = L.W * S; c.height = L.H * S;
+    const x = c.getContext('2d');
+    for (let j = 0; j < L.H; j++) for (let i = 0; i < L.W; i++) {
+      const k = j * L.W + i, ch = L.ch[k];
+      x.fillStyle = ch === '#' ? '#1d2140' : !L.walk[k] && !L.outdoor[k] ? '#a7a3bd' : L.outdoor[k] ? (L.floor[k] === 'road' ? '#7d8596' : '#5fae4c') : '#efe9df';
+      x.fillRect(i * S, j * S, S, S);
+    }
+    this.mmBase = c; this.mmS = S;
+    const mm = $('mm');
+    mm.width = c.width; mm.height = c.height;
+    this.mmCtx = mm.getContext('2d');
+  }
+  drawMinimap() {
+    const g = this.game, x = this.mmCtx, S = this.mmS, p = g.player;
+    if (!x) return;
+    x.drawImage(this.mmBase, 0, 0);
+    for (const it of g.loot) { x.fillStyle = it.type === 'cash' ? '#2fbf5a' : it.type === 'gold' ? '#f5b301' : it.type === 'jewel' ? '#20c8e8' : '#ff6b9a'; x.fillRect(it.x * S - 1.5, it.z * S - 1.5, 3, 3); }
+    if (!g.safeOpen) { x.fillStyle = '#ffd23f'; x.fillRect((g.L.safe.x + 0.15) * S, (g.L.safe.y + 0.15) * S, S * 0.7, S * 0.7); }
+    if (g.hasStash) { x.strokeStyle = '#3ddc84'; x.lineWidth = 2; x.beginPath(); x.arc(g.L.exit.x * S, g.L.exit.z * S, S, 0, 6.3); x.stroke(); }
+    for (const gd of g.guards) {
+      const ko = gd.state === 'ko' || gd.state === 'getup' || gd.state === 'sleep';
+      const col = gd.state === 'alert' ? '#ff3b4e' : gd.susp > 0.25 ? '#ff9f1c' : ko ? '#8a8fae' : '#3f6fe0';
+      if (!ko) {
+        x.fillStyle = gd.state === 'alert' ? 'rgba(255,59,78,.3)' : 'rgba(255,225,77,.35)';
+        x.beginPath(); x.moveTo(gd.x * S, gd.z * S);
+        const a0 = -gd.face + Math.PI / 2;
+        x.arc(gd.x * S, gd.z * S, gd.range * S, a0 - gd.fov / 2, a0 + gd.fov / 2); x.closePath(); x.fill();
+      }
+      x.fillStyle = col; x.beginPath(); x.arc(gd.x * S, gd.z * S, 2.6, 0, 6.3); x.fill();
+    }
+    // player arrow
+    const a = -p.face + Math.PI / 2, px = p.x * S, pz = p.z * S;
+    x.fillStyle = '#fff'; x.strokeStyle = '#17c3a2'; x.lineWidth = 1.5;
+    x.beginPath();
+    x.moveTo(px + Math.cos(a) * 5, pz + Math.sin(a) * 5);
+    x.lineTo(px + Math.cos(a + 2.5) * 4, pz + Math.sin(a + 2.5) * 4);
+    x.lineTo(px + Math.cos(a - 2.5) * 4, pz + Math.sin(a - 2.5) * 4);
+    x.closePath(); x.fill(); x.stroke();
   }
   updateCamera(dt) {
-    const g = this.game, L = g.L;
+    const g = this.game, L = g.L, cam = this.camera;
     const zoom = this.aspect < 1 ? 1 + (1 - this.aspect) * 1.6 : 1;
-    let look, pos, lam;
+    let fov;
     if (this.state === 'menu' || this.state === 'soon') {
       const a = this.time * 0.07;
-      look = this._f.set(L.W / 2, 0, L.H / 2 - 2);
-      pos = this._d.set(look.x + Math.sin(a) * 17 * zoom, 19 * zoom, look.z + Math.cos(a) * 17 * zoom);
-      lam = 2;
+      const look = this._f.set(L.W / 2, 0, L.H / 2 - 2);
+      cam.position.set(look.x + Math.sin(a) * 17 * zoom, 19 * zoom, look.z + Math.cos(a) * 17 * zoom);
+      cam.lookAt(look);
+      fov = 42;
     } else {
-      look = g.focus(this._f);
-      const p = g.player;
-      if (g.state === 'play') { look.x += p.vx * 0.18; look.z += p.vz * 0.18 - 0.4; }
-      pos = this._d.set(look.x, look.y + 11.5 * zoom, look.z + 7.8 * zoom);
-      lam = this.state === 'play' && this.time - (this.startT || 0) > 1 ? 6 : 4;
+      g.applyCamera(cam, dt);
+      fov = (this.aspect < 1 ? 84 : 70) + g.fovKick;
     }
-    this.camPos.x = damp(this.camPos.x, pos.x, lam, dt);
-    this.camPos.y = damp(this.camPos.y, pos.y, lam, dt);
-    this.camPos.z = damp(this.camPos.z, pos.z, lam, dt);
-    this.camLook.x = damp(this.camLook.x, look.x, lam * 1.3, dt);
-    this.camLook.y = damp(this.camLook.y, look.y, lam * 1.3, dt);
-    this.camLook.z = damp(this.camLook.z, look.z, lam * 1.3, dt);
-    this.camera.position.set(this.camPos.x + this.shake.x, this.camPos.y + this.shake.y, this.camPos.z);
-    this.camera.lookAt(this.camLook.x + this.shake.x * 0.5, this.camLook.y, this.camLook.z + this.shake.y * 0.5);
+    if (Math.abs(cam.fov - fov) > 0.01) { cam.fov = fov; cam.updateProjectionMatrix(); }
   }
   adaptRes(dt) {
     // dynamic resolution: keep 60fps on weak devices
