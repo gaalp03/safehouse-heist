@@ -2,6 +2,7 @@
 //  #  wall            .  wood floor      _  carpet        ,  tile        g grass   p pavement/road
 //  h  shelf (tall)    f  fridge (tall)   b  bed           t  desk        k counter
 //  c  couch           e  tv stand        i  table         u  bathtub
+//  x  wardrobe (hide inside)
 //  q  plant         n  nightstand      r  stove         y  chair       o toilet  w sink
 //  $  cash            G  gold bar        J  jewel         A  painting    S  THE SAFE (stash)
 //  P  player start    V  getaway van (exit is the sidewalk tile above it)
@@ -13,21 +14,21 @@ export default {
   map: [
     'gggggggggggggggggggggggggggggg',
     'g############################g',
-    'g#hhh...q#___nbbn___#h.....h#g',
+    'g#hhh...q#x__nbbn___#h.....h#g',
     'g#.......#____bb____#.......#g',
     'g#..tt...#____bb____#...S...#g',
     'g#..tt.G.#__J____J__#.......#g',
-    'g#.......#_________q#q..A...#g',
+    'g#x......#_________q#q..A...#g',
     'g####.#######.########.######g',
     'g#...........................g',
-    'g#q...$.........$.......$...#g',
+    'g#q...$.........$..x....$...#g',
     'g#####.#########.######.#####g',
     'g#h....eee....h#,krkkf#,o,uu#g',
     'g#.............#,,,,,,#,,,uu#g',
     'g#..$.......$..#,yiiy,#,,,,J#g',
     'g#...ccccc.....#,$ii,,#,,,,,#g',
     'g#......G......#,,y,,,#,,,,,#g',
-    'g#q...........q#,,,,,f#w,,,,#g',
+    'g#q........x..q#,,,,,f#w,,,,#g',
     'g######.#####################g',
     'gggggggpgggggggggggggggggggggg',
     'pppppppPpppppppppppppppppppppp',

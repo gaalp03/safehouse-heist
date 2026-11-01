@@ -20,6 +20,7 @@ const HINTS = {
   owner: ['Shh... the owner is asleep. No dashing near the bed!', 'Shh... the owner is asleep. No dashing near the bed!'],
   loot: ['Extra loot = more stars. Grab it all!', 'Extra loot = more stars. Grab it all!'],
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
+  hide: ['E at a wardrobe: hide inside. Guards lose you if they did not see you!', 'Tap the hand at a wardrobe to hide inside'],
   coin: ['Q: throw a coin to lure guards away', 'Tap the coin to lure guards away'],
   alarm: ['ALARM! Escape or hold E at the keypad by the front door', 'ALARM! Escape or hold the hand at the keypad by the front door'],
 };
@@ -277,14 +278,14 @@ class App {
   }
   setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
-    const txt = kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK' : 'HOLD E / CLICK TO CRACK') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
+    const txt = kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK' : 'HOLD E / CLICK TO CRACK') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.textContent = txt;
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind);
-      this.els.bAct.lastChild.textContent = kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
+      this.els.bAct.lastChild.textContent = kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
     if ((kind === 'safe' || kind === 'panel') && prog > 0) {
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));
@@ -332,6 +333,10 @@ class App {
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 2200);
       this.shake.add(0.1);
     } else if (c.st === 'fail' && this.game.state === 'play') this.audio.play('lost');
+  }
+  onHide(on) {
+    $('slats').classList.toggle('hidden', !on);
+    $('xh').classList.toggle('hidden', on);
   }
   onCoins(n) {
     const c = $('coins');
@@ -436,7 +441,7 @@ class App {
     $('vignette').style.opacity = st === 'play' && this.game.tension ? 1 : 0;
     this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
-    this.vm.visible = (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught');
+    this.vm.visible = (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding;
     this.vm.render(this.renderer);
     this.adaptRes(rdt);
   }

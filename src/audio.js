@@ -137,6 +137,8 @@ export class Audio {
       case 'contract':
         [784, 988, 1175, 1568].forEach((f, i) => T(f, 0.16, { type: 'triangle', vol: 0.12, delay: i * 0.07 }));
         T(2093, 0.4, { type: 'sine', vol: 0.08, delay: 0.3 }); break;
+      case 'creak': N(0.35, { vol: 0.12, freq: 300, slide: 900, q: 8 }); T(140, 0.25, { type: 'sawtooth', slide: 190, vol: 0.03 }); break;
+      case 'beat': T(62, 0.12, { type: 'sine', slide: 40, vol: 0.45 }); T(58, 0.12, { type: 'sine', slide: 38, vol: 0.32, delay: 0.17 }); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
     }

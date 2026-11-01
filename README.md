@@ -31,6 +31,8 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 
 Difficulty: Easy / Normal / Hard (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.
 
+Hiding: press E at a wardrobe to climb in and peek out through the slats (heartbeat when guards are close). Alerted guards lose you, unless one saw you get in: then he comes and drags you out. Contract: hide from an alerted guard.
+
 Smarter guards: a guard who sees a knocked-out colleague runs over and revives them; a guard who spots the opened safe rushes over and raises the alarm (Normal/Hard).
 
 Bonus contracts: every run rolls 3 random side objectives (steal the painting, grab every jewel, lure a guard with a coin, no knockouts, never trigger the alarm, don't wake the owner, escape under 60s, never dash...). They are tracked live on the HUD, pay cash bonuses on the results screen and count toward an all-time total.

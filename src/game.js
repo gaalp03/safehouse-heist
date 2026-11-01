@@ -149,6 +149,14 @@ export class Game {
       const m = new Mesh(cg, new MeshBasicMaterial({ color: 0xffc83a }));
       m.visible = false; this.root.add(m); this.coinMeshes.push(m);
     }
+    // hiding spots (wardrobes): exit tile + facing direction
+    this.hides = L.furn.filter((f) => f.type === 'wardrobe').map((f) => {
+      const cx = f.x0 + 0.5, cz = f.y0 + 0.5;
+      for (const [dx, dz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+        if (this.walkable(f.x0 + dx, f.y0 + dz)) return { cx, cz, ex: cx + dx * 0.95, ez: cz + dz * 0.95, face: Math.atan2(dx, dz) };
+      }
+      return null;
+    }).filter(Boolean);
     this.arrow = makeArrow();
     this.root.add(this.arrow);
 
@@ -184,6 +192,7 @@ export class Game {
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
     this.D = DIFFS[this.app.diff] || DIFFS.normal;
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
+    this.hidFromAlert = false;
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
@@ -197,10 +206,12 @@ export class Game {
     Object.assign(p, {
       x: L.start.x + 0.5, z: L.start.y + 0.5, vx: 0, vz: 0, face: Math.PI, dashT: 0, dashCd: 0, ddx: 0, ddz: 0,
       inv: 0, stepAcc: 0, bagS: 0.5, bagV: 0, punchT: 0, hidden: false, y: 0, moving: 0,
-      yaw: 0, pitch: -0.05, roll: 0, bob: 0, strafe: 0, lookX: 0, lookY: 0, grabT: 0, crack: false,
+      hiding: null, hideT: 0, beatT: 0, yaw: 0, pitch: -0.05, roll: 0, bob: 0, strafe: 0, lookX: 0, lookY: 0, grabT: 0, crack: false,
     });
     p.c.root.visible = true;
     p.c.root.rotation.set(0, Math.PI, 0);
+    this.app.onHide && this.app.onHide(false);
+    for (const g of this.guards || []) g.knowsHide = false;
     squash(p.c, 1);
 
     for (const g of this.guards) this.resetGuard(g);
@@ -409,6 +420,7 @@ export class Game {
     p.yaw -= _lk.x * sens;
     p.pitch = clamp(p.pitch - _lk.y * sens, -1.25, 1.2);
     p.face = p.yaw + Math.PI;
+    if (p.hiding) { this.updateHiding(dt, inp); return; }
     const fx = Math.sin(p.face), fz = Math.cos(p.face), rx = -fz, rz = fx;
     const wx = rx * _mv.x - fx * _mv.y, wz = rz * _mv.x - fz * _mv.y;
     p.strafe = _mv.x;
@@ -465,6 +477,7 @@ export class Game {
     p.crack = false;
     // alarm keypad
     let nearPanel = false;
+    const hide = this.nearHide();
     if (this.alarm && this.panel) {
       const a = this.panel.at, pg = this.panel.group.position;
       nearPanel = Math.hypot(p.x - a.x, p.z - a.z) < 1.0 && Math.abs(angDiff(p.face, Math.atan2(pg.x - p.x, pg.z - p.z))) < 1.0;
@@ -492,7 +505,9 @@ export class Game {
       app.hint('ko');
       if (pressed && !nearSafe) this.knockout(ko);
     }
-    app.setPrompt(nearPanel ? 'panel' : nearSafe ? 'safe' : ko ? 'ko' : '', nearPanel ? this.disarmProg : this.safeProg);
+    const hideOk = hide && !nearPanel && !nearSafe && !ko;
+    if (hideOk) { app.hint('hide'); if (pressed) { this.enterHide(hide); return; } }
+    app.setPrompt(nearPanel ? 'panel' : nearSafe ? 'safe' : ko ? 'ko' : hideOk ? 'hide' : '', nearPanel ? this.disarmProg : this.safeProg);
 
     // exit
     const ex = this.L.exit;
@@ -544,6 +559,63 @@ export class Game {
     app.floaters.spawn('KO!', g.x, 1.7, g.z, 'ko', 0.9);
     this.makeNoise(g.x, g.z, 2.5, g);
     app.hintDone('ko');
+  }
+
+  nearHide() {
+    const p = this.player;
+    let best = null, bd = 1.25;
+    for (const h of this.hides) {
+      const d = Math.hypot(p.x - h.cx, p.z - h.cz);
+      if (d < bd && Math.abs(angDiff(p.face, Math.atan2(h.cx - p.x, h.cz - p.z))) < 0.9) { bd = d; best = h; }
+    }
+    return best;
+  }
+  enterHide(h) {
+    const p = this.player, app = this.app;
+    let witnessed = false, alertN = 0;
+    for (const g of this.guards) {
+      if (g.state === 'alert') alertN++;
+      if (g.state !== 'ko' && g.state !== 'sleep' && g.state !== 'getup' && this.canSee(g)) {
+        witnessed = true; g.knowsHide = true;
+        if (g.state !== 'alert') this.alert(g);
+        app.floaters.spawn('I saw that!', g.x, 2.0, g.z, 'alert', 1.2);
+      }
+    }
+    p.hiding = h; p.hideT = 0; p.vx = p.vz = 0; p.x = h.ex; p.z = h.ez;
+    p.yaw = h.face - Math.PI; p.pitch = -0.05;
+    if (alertN > 0 && !witnessed) {
+      this.hidFromAlert = true;
+      for (const g of this.guards) if (g.state === 'alert') { g.lostT = 99; }
+    }
+    app.audio.play('creak');
+    app.onHide(true);
+    app.hintDone('hide');
+  }
+  leaveHide(silent) {
+    const p = this.player;
+    if (!p.hiding) return;
+    const h = p.hiding;
+    p.hiding = null; p.x = h.ex; p.z = h.ez; p.yaw = h.face - Math.PI;
+    if (!silent) this.app.audio.play('creak');
+    this.app.onHide(false);
+  }
+  updateHiding(dt, inp) {
+    const p = this.player, h = p.hiding, app = this.app;
+    p.hideT += dt;
+    // look around through the slats (limited arc)
+    const base = h.face - Math.PI;
+    p.yaw = base + clamp(angDiff(base, p.yaw), -1.0, 1.0);
+    p.pitch = clamp(p.pitch, -0.5, 0.4);
+    p.moving = 0; p.crack = false;
+    inp.consumeDash(); inp.consumeThrow();
+    // heartbeat when a guard is close
+    let near = 9;
+    for (const g of this.guards) if (g.state !== 'ko' && g.state !== 'sleep') near = Math.min(near, Math.hypot(g.x - h.cx, g.z - h.cz));
+    p.beatT -= dt;
+    if (near < 4.5 && p.beatT <= 0) { p.beatT = 0.45 + near * 0.12; app.audio.play('beat'); app.shake.add(0.04); }
+    inp.move(_mv);
+    app.setPrompt('leave');
+    if (p.hideT > 0.35 && (inp.consumeAct() || Math.hypot(_mv.x, _mv.y) > 0.5)) this.leaveHide(false);
   }
 
   throwCoin() {
@@ -702,6 +774,7 @@ export class Game {
 
   canSee(g) {
     const p = this.player, dx = p.x - g.x, dz = p.z - g.z, d = Math.hypot(dx, dz);
+    if (p.hiding) return 0;
     if (d > g.range) return 0;
     if (d > 0.35 && Math.abs(angDiff(g.face, Math.atan2(dx, dz))) > g.fov / 2) return 0;
     if (!this.los(g.x, g.z, p.x, p.z)) return 0;
@@ -751,7 +824,7 @@ export class Game {
     // smarter guards: notice knocked-out colleagues and an open safe
     if (perceive && (g.state === 'patrol' || g.state === 'wait' || g.state === 'post' || g.state === 'look' || g.state === 'suspicious')) this.noticeThings(g);
     // bumping into a guard's face = instantly spotted
-    if (perceive && p.inv <= 0 && g.state !== 'alert') {
+    if (perceive && p.inv <= 0 && g.state !== 'alert' && !p.hiding) {
       const d = Math.hypot(p.x - g.x, p.z - g.z);
       if (d < 0.7 && !this.canKO(g) && Math.abs(angDiff(g.face, Math.atan2(p.x - g.x, p.z - g.z))) < 1.75) this.alert(g);
     }
@@ -794,14 +867,18 @@ export class Game {
         g.radioT = (g.radioT || 0) + dt;
         if (!this.alarm && g.radioT > 0.7 && !g.radioSaid) { g.radioSaid = true; app.floaters.spawn('Calling it in...', g.x, 2.0, g.z, 'warn', 1.4); }
         if (!this.alarm && g.radioT > this.D.radio) this.triggerAlarm('A guard radioed the police!');
-        const tx = seen ? p.x : g.lastX, tz = seen ? p.z : g.lastZ;
+        let tx = seen ? p.x : g.lastX, tz = seen ? p.z : g.lastZ;
+        if (g.knowsHide && p.hiding) {
+          tx = p.hiding.ex; tz = p.hiding.ez; g.lostT = 0;
+          if (this.state === 'play' && Math.hypot(tx - g.x, tz - g.z) < 0.9) { g.knowsHide = false; this.leaveHide(true); this.bust(g); break; }
+        }
         this.navTo(g, tx, tz, CHASE, dt);
         if (!seen && g.lostT > 2.2) {
           g.state = 'search'; g.tx = g.lastX; g.tz = g.lastZ; g.hurry = 2.8; g.susp = 0.6;
           app.audio.play('lost');
           app.floaters.spawn('?', g.x, 1.9, g.z, 'q', 0.8);
         }
-        if (this.state === 'play' && p.inv <= 0 && Math.hypot(p.x - g.x, p.z - g.z) < 0.78) this.bust(g);
+        if (this.state === 'play' && p.inv <= 0 && !p.hiding && Math.hypot(p.x - g.x, p.z - g.z) < 0.78) this.bust(g);
         break;
       }
       case 'investigate':
@@ -1056,6 +1133,13 @@ export class Game {
       cam.position.x += (v.x - 1.5 - cam.position.x) * Math.min(1, dt * 1.2);
       cam.lookAt(v.x + 0.3, 0.7, v.z);
       this.fovKick = 0;
+      return;
+    }
+    if (p.hiding) {
+      const h = p.hiding;
+      cam.position.set(h.cx + Math.sin(h.face) * 0.12, EYE - 0.06, h.cz + Math.cos(h.face) * 0.12);
+      cam.rotation.set(p.pitch + app.shake.y * 0.06, p.yaw + app.shake.x * 0.06, 0);
+      this.fovKick = damp(this.fovKick, -6, 6, dt);
       return;
     }
     if (this.state === 'caught' && this.catcher) {

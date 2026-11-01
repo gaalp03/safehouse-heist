@@ -2,9 +2,9 @@
 export const FLOOR = { '.': 'wood', _: 'carpet', ',': 'tile', g: 'grass', p: 'road' };
 export const FURN = {
   h: 'shelf', f: 'fridge', b: 'bed', t: 'desk', k: 'counter', c: 'couch', e: 'tv', i: 'table', u: 'tub',
-  q: 'plant', n: 'night', r: 'stove', y: 'chair', o: 'toilet', w: 'sink',
+  q: 'plant', n: 'night', r: 'stove', y: 'chair', o: 'toilet', w: 'sink', x: 'wardrobe',
 };
-const TALL = new Set(['h', 'f']);
+const TALL = new Set(['h', 'f', 'x']);
 export const LOOT = { $: 'cash', G: 'gold', J: 'jewel', A: 'art' };
 
 export function parseLevel(def) {

@@ -254,6 +254,20 @@ function furniture(L, f, B, rng, lights) {
       for (let k = 0; k < 3; k++) b(P, -W / 2 + 0.15 + k * 0.2, 0.6, D / 2 - 0.06, 0.04, 1.15, 0.035, 0xf6f0e6);
       break;
     }
+    case 'wardrobe': {
+      const wd = 0x8a5a3c, lt = shade(wd, 1.18), dk = shade(wd, 0.7);
+      b(WD, 0, 0, -0.06, 0.92, 1.72, 0.74, wd, { top: dk });
+      b(WD, 0, 1.72, -0.06, 0.98, 0.06, 0.8, dk);
+      b(WD, 0, 0, -0.06, 0.96, 0.08, 0.78, dk);
+      for (const s of [-1, 1]) {
+        b(WD, s * 0.225, 0.12, 0.315, 0.42, 1.54, 0.02, lt, { faces: PZ | PX | NX | PY });
+        for (let k = 0; k < 9; k++) b(P, s * 0.225, 0.78 + k * 0.09, 0.327, 0.34, 0.025, 0.01, dk, { faces: PZ | PY });
+        b(WD, s * 0.225, 0.2, 0.327, 0.34, 0.5, 0.008, shade(lt, 1.08), { faces: PZ });
+        b(P, s * 0.04, 0.8, 0.34, 0.03, 0.12, 0.03, 0xd9b45a);
+      }
+      b(P, 0, 0.12, 0.33, 0.012, 1.54, 0.02, dk, { faces: PZ });
+      break;
+    }
     case 'plant': {
       b(P, 0, 0, 0, 0.36, 0.34, 0.36, 0xc8673f, { top: 0x4a3426 });
       b(P, 0, 0.3, 0, 0.42, 0.06, 0.42, 0xd8774f);
