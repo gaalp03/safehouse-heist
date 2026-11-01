@@ -137,6 +137,16 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 #diff button{font:inherit;font-size:15px;padding:8px 16px;border:0;background:#e9dcc6;color:#5a4a6a;cursor:pointer}
 #diff button+button{border-left:3px solid var(--ink)}
 #diff button.on[data-d=easy]{background:#8ff0c4;color:var(--ink)}#diff button.on[data-d=normal]{background:#ffc94a;color:var(--ink)}#diff button.on[data-d=hard]{background:#ff6a7a;color:#fff}
+.panel.tr{max-width:min(94vw,720px)}
+#trStats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
+#trStats div{background:rgba(0,0,0,.22);border-radius:10px;padding:6px 8px;display:flex;flex-direction:column;align-items:center}
+#trStats small{font-size:11px;opacity:.7}#trStats b{font-size:17px;color:var(--y)}
+#trAch{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%;max-height:46vh;overflow:auto}
+.ach{background:rgba(0,0,0,.25);border-radius:10px;padding:6px;display:flex;flex-direction:column;align-items:center;text-align:center;opacity:.45;border:2px solid transparent}
+.ach.on{opacity:1;border-color:rgba(255,201,74,.6);background:linear-gradient(180deg,rgba(255,201,74,.18),rgba(0,0,0,.2))}
+.ach i{font-style:normal;font-size:24px}.ach b{font-size:13px}.ach small{font-size:10px;opacity:.75}
+#rAch{color:var(--y);font-size:13px;max-width:420px;text-align:center;animation:objp .5s cubic-bezier(.2,1.8,.4,1) 1.4s both}
+@media (max-width:640px){#trStats{grid-template-columns:repeat(4,1fr)}#trStats small{font-size:9px}#trStats b{font-size:13px}#trAch{grid-template-columns:repeat(2,1fr);max-height:52vh}}
 .keys{font-size:13px;opacity:.75;max-width:520px}body.touch .kb{display:none}body:not(.touch) .tc{display:none}
 #loading{background:radial-gradient(ellipse at center,#3d2c62,#1c1330);z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
@@ -200,7 +210,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
     <button class="card lock" id="lvl2"><div class="art" id="lvl2art">🔒</div><span class="n">LEVEL 2</span><span class="t">The Bank</span><span class="stars" id="lvl2stars"></span><span class="n" id="lvl2best">Escape Safe House to unlock</span></button>
   </div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>
-  <button class="btn" id="bPlay">PLAY</button>
+  <div class="row"><button class="btn s" id="bTrophy">🏆 TROPHIES</button><button class="btn" id="bPlay">PLAY</button></div>
   <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
 </div>
 
@@ -212,7 +222,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div id="rStars"></div>
   <ul class="goals" id="rGoals"></ul>
   <div class="stats"><span>Loot</span><b id="rLoot"></b><span>Time</span><b id="rTime"></b><span>Ghost bonus</span><b id="rGhost"></b></div>
-  <ul class="ctrs" id="rCtr"></ul><div id="rCtrTotal" class="sub" style="font-size:12px;opacity:.6"></div>
+  <ul class="ctrs" id="rCtr"></ul><div id="rAch" class="hidden"></div><div id="rCtrTotal" class="sub" style="font-size:12px;opacity:.6"></div>
   <div id="rMult" class="sub" style="font-size:13px;color:#ff9fd0"></div>
   <div id="rScore">$0</div><div id="rBest"></div>
   <div class="row"><button class="btn s" id="bRMenu">MENU</button><button class="btn" id="bRetry">RETRY</button><button class="btn g" id="bNext">NEXT</button></div>
@@ -221,11 +231,18 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <div id="busted" class="screen solid hidden"><div class="panel">
   <div class="big bust o">BUSTED!</div>
   <p class="sub" id="bustTip"></p>
+  <div id="bAch" style="color:var(--y);font-size:15px"></div>
   <button class="btn" id="bBRetry">RETRY</button>
   <button class="btn p hidden" id="bRevive">▶ SECOND CHANCE</button>
   <button class="btn s" id="bBMenu">MENU</button>
 </div></div>
 
+<div id="trophies" class="screen solid hidden"><div class="panel tr">
+  <div class="big o" style="font-size:40px">TROPHIES <small id="trCount" style="font-size:18px;color:var(--y)"></small></div>
+  <div id="trStats"></div>
+  <div id="trAch"></div>
+  <button class="btn" id="bTrBack">BACK</button>
+</div></div>
 <div id="soon" class="screen solid hidden"><div class="panel">
   <span class="sub">LEVEL 2</span><div class="big o" id="soonName">The Bank</div>
   <div class="o" style="color:var(--y);font-size:22px">COMING SOON</div>

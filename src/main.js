@@ -10,6 +10,7 @@ import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
 import { DIFFS, diffKey } from './difficulty.js';
 import { todaysDaily, prevDayKey } from './daily.js';
+import { ACH, recordRun, blankStats } from './achievements.js';
 
 const $ = (id) => document.getElementById(id);
 const HINTS = {
@@ -122,6 +123,8 @@ class App {
     click('bBMenu', () => this.showMenu());
     click('bRevive', () => this.reviveAd());
     click('bSoonBack', () => this.showMenu());
+    click('bTrophy', () => this.showTrophies());
+    click('bTrBack', () => this.showMenu());
     click('bPause', () => this.pause());
     click('bMute', () => this.toggleMute());
     this.input.on('pause', () => { if (this.state === 'play') this.pause(); else if (this.state === 'pause') this.resume(); });
@@ -180,6 +183,31 @@ class App {
     $('dDesc').textContent = this.daily.mutator.desc;
     $('dBest').textContent = (db ? 'Today ' + fmtMoney(db.score) : this.daily.label) + ((this.save.streak && this.save.streak.n > 1 && (this.save.streak.last === this.daily.key || this.save.streak.last === prevDayKey())) ? ` · 🔥${this.save.streak.n}` : '');
     this.screen('menu');
+  }
+  runRecord(win, res) {
+    const g = this.game;
+    return {
+      win, level: this.level.id, diff: this.mode === 'daily' ? 'daily' : this.diff, ghost: win && res.ghost, time: g.time, kos: g.kos,
+      frac: g.lootGot / g.lootTotal, loot: g.lootGot, contractsDone: win ? res.contracts.filter((c) => c.st === 'ok').length : 0,
+      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown,
+    };
+  }
+  showTrophies() {
+    SDK.gameplayStop();
+    this.state = 'trophies';
+    const s = Object.assign(blankStats(), this.save.stats || {}), got = this.save.ach || {};
+    const bt = (id) => (s.best[id] != null ? fmtTime(s.best[id]) : '—');
+    const rows = [['Heists', s.runs], ['Escapes', s.escapes], ['Busted', s.busts], ['Total loot', fmtMoney(s.loot)], ['Guards KO', s.kos],
+      ['Contracts', s.contracts], ['Best Safe House', bt('safehouse')], ['Best Bank', bt('bank')]];
+    $('trStats').innerHTML = rows.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
+    $('trAch').innerHTML = ACH.map((a) => `<div class="ach ${got[a.id] ? 'on' : ''}"><i>${got[a.id] ? a.icon : '🔒'}</i><b>${a.name}</b><small>${a.desc}</small></div>`).join('');
+    $('trCount').textContent = `${Object.keys(got).filter((k) => ACH.some((a) => a.id === k)).length} / ${ACH.length}`;
+    this.screen('trophies');
+  }
+  showAchToast(list) {
+    $('rAch').innerHTML = list.length ? '🏆 Unlocked: ' + list.map((a) => `<b>${a.icon} ${a.name}</b>`).join(' · ') : '';
+    $('rAch').classList.toggle('hidden', !list.length);
+    if (list.length) setTimeout(() => this.audio.play('contract'), 1600);
   }
   showSoon() {
     SDK.gameplayStop();
@@ -419,6 +447,9 @@ class App {
       'Tip: the camera in the office sweeps. Time your move!',
       'Tip: try the side door on the east of the house.',
     ][(Math.random() * 5) | 0];
+    const fresh = recordRun(this.save, this.runRecord(false));
+    SDK.store(this.save);
+    $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).join('<br>');
     this.screen('busted');
   }
   onWin(res) {
@@ -460,6 +491,8 @@ class App {
     $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day streak` : '');
     $('rMult').textContent = res.mult === 1 ? '' : `${res.diff} ×${res.mult}`;
     $('rBest').classList.toggle('new', newBest);
+    this.showAchToast(recordRun(this.save, this.runRecord(true, res)));
+    SDK.store(this.save);
     this.screen('result');
     const stars = $('rStars').children;
     res.stars.forEach((s, i) => {

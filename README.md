@@ -32,6 +32,8 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 
 Level 2 — The Bank (unlocks after escaping Safe House): find the keycard in the manager's office, swipe it at the security door, crack the big vault (slow and loud: guards hear the drilling), then escape. Teller counters, offices, security room, 4 guards, 2 cameras. Bank clerks stand behind the teller counters: if one spots you they scream and sprint for a silent alarm button; knock them out before they reach it. Pulsing laser grids in the corridor and across the vault trip the alarm; time your run or hold E at the breaker in the security room to cut the power.
 
+Trophies (menu): lifetime stats (heists, escapes, busts, total loot, KOs, contracts, best times per level) and 16 achievements (Ghost, Speed Demon, Pacifist, Clean Sweep, Phantom of the Vault, Wardrobe Ninja...), unlocks announced on the results screen.
+
 Daily Challenge: one seeded run per day (Normal rules) with a mutator of the day (Paranoid Guards, Insomniac Owner, Gold Rush, Butterfingers, Rapid Response, Hungry Hound) and fixed contracts; separate daily best and a day streak.
 
 Difficulty: Easy / Normal / Hard (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.

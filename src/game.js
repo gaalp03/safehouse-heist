@@ -263,7 +263,7 @@ export class Game {
     this.lootTotal = this.baseLootTotal;
     this.smokesLeft = this.D.smoke; this.clouds = []; this.smokeHid = false; for (const s of this.smokeFx || []) s.pts.visible = false;
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
-    this.hidFromAlert = false; this.clerkStopped = false;
+    this.hidFromAlert = false; this.clerkStopped = false; this.hidesUsed = 0; this.smokesUsed = 0; this.coinsThrown = 0;
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
@@ -711,6 +711,7 @@ export class Game {
     return best;
   }
   enterHide(h) {
+    this.hidesUsed++;
     const p = this.player, app = this.app;
     let witnessed = false, alertN = 0;
     for (const g of this.guards) {
@@ -763,7 +764,7 @@ export class Game {
     const p = this.player, app = this.app;
     if (this.smokesLeft <= 0) { app.audio.play('nope'); return; }
     if (this.clouds.length >= this.smokeFx.length) return;
-    this.smokesLeft--;
+    this.smokesLeft--; this.smokesUsed++;
     let x = p.x + Math.sin(p.face) * 0.7, z = p.z + Math.cos(p.face) * 0.7;
     if (!this.walkable(Math.floor(x), Math.floor(z))) { x = p.x; z = p.z; }
     const fx = this.smokeFx.find((f) => !f.pts.visible);
@@ -819,7 +820,7 @@ export class Game {
     if (this.coinsLeft <= 0) { app.audio.play('nope'); app.floaters.spawn('No coins!', p.x + Math.sin(p.face) * 1.5, 1.2, p.z + Math.cos(p.face) * 1.5, 'warn', 0.9); return; }
     const mesh = this.coinMeshes.find((m) => !m.visible);
     if (!mesh) return;
-    this.coinsLeft--;
+    this.coinsLeft--; this.coinsThrown++;
     const fx = Math.sin(p.face), fz = Math.cos(p.face), cp = Math.cos(p.pitch), sp = Math.sin(p.pitch);
     const v = 7.5;
     this.coins.push({ mesh, x: p.x + fx * 0.35, y: 0.95, z: p.z + fz * 0.35, vx: fx * cp * v + p.vx * 0.5, vy: sp * v + 2.6, vz: fz * cp * v + p.vz * 0.5, st: 'fly', t: 0, bounces: 0 });
