@@ -2,6 +2,8 @@
 const SAVE_KEY = 'safehouse-heist-v1';
 let sdk = null;
 let playing = false;
+// Ads are OFF until full launch. Flip to true to enable midgame + rewarded ads (hooks are already wired).
+export const ADS_ENABLED = false;
 
 export const SDK = {
   available: false,
@@ -29,7 +31,7 @@ export const SDK = {
   // type: 'midgame' | 'rewarded'. Resolves true if the ad finished (reward granted).
   ad(type) {
     return new Promise((resolve) => {
-      if (!sdk) { resolve(false); return; }
+      if (!sdk || !ADS_ENABLED) { resolve(false); return; }
       let started = false;
       const done = (ok) => { if (started) this.hooks.adEnd(); resolve(ok); };
       try {

@@ -3,7 +3,7 @@ import { Game } from './game.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { Particles, Shake, Floaters } from './fx.js';
-import { SDK } from './sdk.js';
+import { SDK, ADS_ENABLED } from './sdk.js';
 import { LEVELS, loadLevel } from './levels/index.js';
 import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
@@ -202,13 +202,13 @@ class App {
 
   async maybeMidgame() {
     const now = performance.now();
-    if (!SDK.available || this.runs < 2 || now - this.lastAd < 150000) return;
+    if (!ADS_ENABLED || !SDK.available || this.runs < 2 || now - this.lastAd < 150000) return;
     this.lastAd = now;
     this.state = 'ad';
     await SDK.ad('midgame');
   }
   async reviveAd() {
-    if (!SDK.available || this.game.revived) return;
+    if (!ADS_ENABLED || !SDK.available || this.game.revived) return;
     this.state = 'ad';
     const ok = await SDK.ad('rewarded');
     if (ok) {
@@ -289,7 +289,7 @@ class App {
   onBusted() {
     this.state = 'busted';
     SDK.gameplayStop();
-    $('bRevive').classList.toggle('hidden', !SDK.available || this.game.revived);
+    $('bRevive').classList.toggle('hidden', !ADS_ENABLED || !SDK.available || this.game.revived);
     $('bustTip').textContent = [
       'Tip: guards can\'t see behind them. Sneak up and knock them out!',
       'Tip: dashing is loud. Walk near guards and the sleeping owner.',

@@ -69,7 +69,7 @@ Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` 
    - `SDK.init()` on boot; `loadingStart()` / `loadingStop()` around level setup
    - `gameplayStart()` when a run starts or resumes; `gameplayStop()` on pause, menu, results, busted and during ads
    - `happytime()` on a successful escape
-   - Midgame ad (`requestAd('midgame')`) only on Retry, at most every 150 s and never on the first run
+   - **Ads are disabled until full launch** (`ADS_ENABLED = false` in `src/sdk.js`); when enabled: midgame ad (`requestAd('midgame')`) only on Retry, at most every 150 s and never on the first run
    - Rewarded ad: optional "Second chance" button on the Busted screen (once per run, only shown when the SDK is active)
    - Audio is muted and suspended while an ad plays; the game pauses on tab blur / visibility change
    - Saves via `SDK.data` with a `localStorage` fallback
