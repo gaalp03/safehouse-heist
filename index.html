@@ -110,7 +110,21 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 .stats{display:grid;grid-template-columns:auto auto;gap:4px 18px;font-size:16px;text-align:left}.stats b{color:var(--y);text-align:right}
 #rScore{font-size:34px;color:#7dff9b}#rBest{font-size:15px;opacity:.8}#rBest.new{color:var(--y);opacity:1;animation:bob .5s infinite alternate}
 #soonList{list-style:none;font-size:16px;display:flex;flex-direction:column;gap:6px}#soonList li::before{content:"★ ";color:var(--y)}
-#coins{top:206px}@media (max-width:640px){#coins{top:178px}}
+#coins{top:206px}
+#ctr{position:absolute;left:12px;top:250px;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13px;max-width:230px}
+#ctr li{display:flex;align-items:center;gap:6px;background:rgba(28,19,48,.72);border-radius:9px;padding:4px 8px;border:1px solid rgba(255,214,160,.18)}
+#ctr li i{width:12px;height:12px;border-radius:3px;border:2px solid #ffc94a;flex:none}
+#ctr li b{margin-left:auto;padding-left:8px;color:#ffc94a;font-size:11px}
+#ctr li.ok{color:#9dffb8}#ctr li.ok i{background:#4fe0a0;border-color:#4fe0a0}
+#ctr li.fail{opacity:.45;text-decoration:line-through}#ctr li.fail i{border-color:#ff5a6a;background:#ff5a6a}
+#ctoast{position:fixed;left:50%;top:34%;transform:translateX(-50%);text-align:center;font-size:24px;color:#fff6e8;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;animation:objp .45s cubic-bezier(.2,1.8,.4,1)}
+#ctoast small{font-size:13px;color:#4fe0a0;letter-spacing:2px}#ctoast b{color:#ffc94a;font-size:20px}
+.ctrs{list-style:none;font-size:14px;text-align:left;display:flex;flex-direction:column;gap:3px;width:100%;border-top:2px dashed rgba(255,214,160,.2);padding-top:8px}
+.ctrs li{display:flex;gap:6px}.ctrs li b{margin-left:auto;padding-left:14px;color:#ffc94a}.ctrs li.ok{color:#9dffb8}.ctrs li.no{opacity:.5}
+@media (max-width:640px){#ctr{top:226px;font-size:10px;max-width:150px;gap:3px}#ctr li{padding:3px 6px;opacity:.9}#ctr li i{width:9px;height:9px}#ctr li b{display:none}}
+.screen{justify-content:safe center}
+@media (max-height:700px){#result .panel{gap:6px;padding:12px 20px}#result .big{font-size:40px}#rStars span{font-size:44px}.goals,.ctrs{font-size:13px}#rScore{font-size:28px}}
+@media (max-height:500px){#ctr{display:none}}@media (max-width:640px){#coins{top:178px}}
 .keys{font-size:13px;opacity:.75;max-width:520px}body.touch .kb{display:none}body:not(.touch) .tc{display:none}
 #loading{background:radial-gradient(ellipse at center,#3d2c62,#1c1330);z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
@@ -131,6 +145,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div id="alarm" class="pill o hidden"><b>POLICE</b><span id="alarmt">0:45</span></div>
   <div id="alarmwhy" class="o hidden"></div>
   <canvas id="mm"></canvas>
+  <ul id="ctr" class="o"></ul>
   <div id="coins" class="pill o"><i class="coin"></i><span>×3</span></div>
   <div id="tr">
     <div id="time" class="pill o">0:00</div>
@@ -139,6 +154,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   </div>
 </div>
 <div id="prompt" class="hidden"></div>
+<div id="ctoast" class="hidden o"></div>
 <div id="hint" class="hidden"></div>
 <div id="fp" class="hidden"><div id="vigfp"></div><div id="speed"></div><div id="ind"></div><div id="wp" class="hidden"><span></span></div><div id="xh"></div>
 <svg id="ring" class="hidden" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="20"/><circle class="fg" cx="27" cy="27" r="20"/></svg></div>
@@ -170,9 +186,9 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div id="rStars"></div>
   <ul class="goals" id="rGoals"></ul>
   <div class="stats"><span>Loot</span><b id="rLoot"></b><span>Time</span><b id="rTime"></b><span>Ghost bonus</span><b id="rGhost"></b></div>
+  <ul class="ctrs" id="rCtr"></ul><div id="rCtrTotal" class="sub" style="font-size:12px;opacity:.6"></div>
   <div id="rScore">$0</div><div id="rBest"></div>
-  <div class="row"><button class="btn" id="bRetry">RETRY</button><button class="btn g" id="bNext">NEXT</button></div>
-  <button class="btn s" id="bRMenu">MENU</button>
+  <div class="row"><button class="btn s" id="bRMenu">MENU</button><button class="btn" id="bRetry">RETRY</button><button class="btn g" id="bNext">NEXT</button></div>
 </div></div>
 
 <div id="busted" class="screen solid hidden"><div class="panel">

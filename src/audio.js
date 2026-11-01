@@ -134,6 +134,9 @@ export class Audio {
         break;
       }
       case 'disarm': [1046, 1318, 1568, 2093].forEach((f, i) => T(f, 0.12, { type: 'square', vol: 0.07, delay: i * 0.06 })); break;
+      case 'contract':
+        [784, 988, 1175, 1568].forEach((f, i) => T(f, 0.16, { type: 'triangle', vol: 0.12, delay: i * 0.07 }));
+        T(2093, 0.4, { type: 'sine', vol: 0.08, delay: 0.3 }); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
     }

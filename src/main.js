@@ -180,6 +180,8 @@ class App {
     this.lastLoot = -1; this.lastSec = -1;
     this.onLoot(false, true);
     this.onCoins(this.game.coinsLeft);
+    this.renderContracts(this.game.contracts);
+    $('ctoast').classList.add('hidden');
     this.setObjective('Crack the safe!');
     this.hint('move');
     SDK.gameplayStart();
@@ -308,6 +310,20 @@ class App {
     $('alarm').classList.toggle('hurry', s <= 10);
     if (s <= 10 && s > 0) this.audio.play('tick', 1.5);
   }
+  renderContracts(list) {
+    $('ctr').innerHTML = list.map((c) => `<li class="${c.st}"><i></i>${c.text}<b>+${fmtMoney(c.bonus)}</b></li>`).join('');
+  }
+  onContract(c, list) {
+    this.renderContracts(list);
+    if (c.st === 'ok' && this.game.state === 'play') {
+      this.audio.play('contract');
+      const t = $('ctoast');
+      t.innerHTML = `<small>CONTRACT COMPLETE</small>${c.text}<b>+${fmtMoney(c.bonus)}</b>`;
+      t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
+      clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 2200);
+      this.shake.add(0.1);
+    } else if (c.st === 'fail' && this.game.state === 'play') this.audio.play('lost');
+  }
   onCoins(n) {
     const c = $('coins');
     c.lastChild.textContent = '×' + n;
@@ -344,6 +360,7 @@ class App {
     const prev = this.save.best.safehouse || { score: 0, stars: 0 };
     const newBest = res.score > prev.score;
     this.save.best.safehouse = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
+    this.save.contracts = (this.save.contracts || 0) + res.contracts.filter((c) => c.st === 'ok').length;
     SDK.store(this.save);
     $('rStars').innerHTML = this.starsHTML(0);
     const labels = ['Escaped with the stash', 'Loot 70%+ (' + Math.round(res.frac * 100) + '%)', 'Ghost: never spotted'];
@@ -352,6 +369,8 @@ class App {
     $('rTime').textContent = fmtTime(res.time) + (res.timeBonus ? `  (+${fmtMoney(res.timeBonus)})` : '');
     $('rGhost').textContent = res.ghost ? '+' + fmtMoney(res.ghostBonus) : '—';
     $('rScore').textContent = '$0';
+    $('rCtr').innerHTML = res.contracts.map((c) => `<li class="${c.st === 'ok' ? 'ok' : 'no'}">${c.st === 'ok' ? '✔' : '✖'} ${c.text}<b>${c.st === 'ok' ? '+' + fmtMoney(c.bonus) : '—'}</b></li>`).join('');
+    $('rCtrTotal').textContent = 'Contracts done (all time): ' + (this.save.contracts || 0);
     $('rBest').textContent = newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(this.save.best.safehouse.score);
     $('rBest').classList.toggle('new', newBest);
     this.screen('result');

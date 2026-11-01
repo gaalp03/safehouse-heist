@@ -7,6 +7,7 @@ import { parseLevel } from './level.js';
 import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel } from './world.js';
 import { makeCharacter, animateChar, squash, probe } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
+import { pickContracts } from './contracts.js';
 
 const PR = 0.3, P_SPEED = 3.7, DASH_V = 11, DASH_T = 0.18, DASH_CD = 0.8, EYE = 1.02, CHASE = 3.2;
 const CONE_N = 20;
@@ -181,6 +182,10 @@ export class Game {
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
     this.coinsLeft = 3; this.coins = []; this.lures = 0;
+    this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
+    this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
+    for (const l of this.L.loot) this.totals[l.type]++;
+    this.contracts = pickContracts(3);
     this.alarm = false; this.alarmT = 0; this.alarmTotal = this.def.alarmTime || 45; this.disarmProg = 0; this.alarms = 0; this.policeBusted = false;
     if (this.police) this.police.group.visible = false;
     this.app.onAlarm && this.app.onAlarm(false);
@@ -413,7 +418,7 @@ export class Game {
       let dx = wx, dz = wz;
       if (Math.abs(dx) + Math.abs(dz) < 0.01) { dx = fx; dz = fz; }
       const l = Math.hypot(dx, dz); dx /= l; dz /= l;
-      p.dashT = DASH_T; p.dashCd = DASH_CD; p.ddx = dx; p.ddz = dz;
+      p.dashT = DASH_T; p.dashCd = DASH_CD; p.ddx = dx; p.ddz = dz; this.dashes++;
       app.audio.play('dash');
       app.shake.add(0.18);
       squash(p.c, 0.7);
@@ -499,6 +504,7 @@ export class Game {
     }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
     if (inp.consumeThrow()) this.throwCoin();
+    this.checkContracts(false);
 
     // contextual hints
     if (this.time > 3.5) app.hint('dash');
@@ -616,6 +622,7 @@ export class Game {
 
   wake(g, x, z) {
     const b = g.def.owner.bed;
+    this.ownerWoke = true;
     g.state = 'waking'; g.t = 0.9; g.tx = x; g.tz = z; g.hurry = g.speed * 1.3;
     g.x = b[0] - 0.5; g.z = b[1] + 1.5;
     g.c.root.rotation.x = 0; g.c.root.position.y = 0;
@@ -871,7 +878,7 @@ export class Game {
       const a = -0.9 + (1.8 * i) / (v.bundles - 1);
       this.loot.push({
         type: 'cash', x: sx, y: 0.7, z: sz + 0.5, vx: Math.sin(a) * rand(2, 3.2), vy: rand(5, 7), vz: Math.cos(a) * rand(1.5, 3),
-        st: 'fly', t: 0, value: v.bundle, ph: i, ms: 0, s: 1, rot: i,
+        st: 'fly', t: 0, value: v.bundle, ph: i, ms: 0, s: 1, rot: i, bundle: true,
       });
     }
     this.exitRing.visible = this.exitBeam.visible = true;
@@ -884,6 +891,8 @@ export class Game {
   collect(it) {
     const app = this.app;
     this.lootGot += it.value;
+    this.got[it.type]++;
+    if (it.type === 'cash' && !it.bundle) this.got.cashLoose++;
     this.combo = this.comboT > 0 ? this.combo + 1 : 1;
     this.comboT = 1.6;
     const cls = it.type === 'cash' ? 'cash' : it.type === 'gold' ? 'gold' : it.type === 'jewel' ? 'jewel' : 'art';
@@ -1024,6 +1033,7 @@ export class Game {
   // ---------- endings ----------
   escape() {
     const app = this.app;
+    this.checkContracts(true);
     this.state = 'escape'; this.endT = 0; this.endSent = false; this.cineInit = false;
     const p = this.player;
     p.sx = p.x; p.sz = p.z;
@@ -1138,14 +1148,26 @@ export class Game {
     if (g) { this.knockout(g); this.kos--; }
     for (const o of this.guards) if (o.state === 'alert') { o.state = 'search'; o.tx = o.lastX; o.tz = o.lastZ; o.hurry = 2.4; o.susp = 0.5; }
   }
+  checkContracts(end) {
+    for (const c of this.contracts) {
+      if (c.st !== 'pending') continue;
+      const r = c.check(this, end);
+      if (r === 'pending') continue;
+      c.st = r;
+      this.app.onContract(c, this.contracts);
+    }
+  }
+
   results() {
     const par = this.def.parTime, frac = this.lootGot / this.lootTotal;
+    const contractBonus = this.contracts.reduce((s, c) => s + (c.st === 'ok' ? c.bonus : 0), 0);
     const timeBonus = Math.max(0, Math.round((par - this.time) * 25));
     const ghost = !this.spotted;
     const stars = [true, frac >= 0.7, ghost];
     return {
       loot: this.lootGot, total: this.lootTotal, frac, time: this.time, ghost, kos: this.kos, stars,
-      timeBonus, ghostBonus: ghost ? 1000 : 0, score: this.lootGot + timeBonus + (ghost ? 1000 : 0),
+      timeBonus, ghostBonus: ghost ? 1000 : 0, contracts: this.contracts, contractBonus,
+      score: this.lootGot + timeBonus + (ghost ? 1000 : 0) + contractBonus,
     };
   }
 
