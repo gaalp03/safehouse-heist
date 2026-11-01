@@ -13,6 +13,7 @@ const A = 63;
 const LOOKS = {
   player: { skin: 0xf2c6a0, shirt: 0x2fa89a, pants: 0x3a3d55, shoe: 0x22242f, belt: 0x272a3a, hat: 0xe8483f, vest: 0x2fa89a },
   guard: { skin: 0xe8b58a, shirt: 0x7fa7d9, pants: 0x2a3150, shoe: 0x1b1e2b, belt: 0x1b1e2b, hat: 0x1f2a52, vest: 0x26304f },
+  clerk: { skin: 0xd9a77a, shirt: 0xf4f1ea, pants: 0x34384a, shoe: 0x2a1e18, belt: 0x22242f, hat: 0x3a2a22, vest: 0x34384a },
   owner: { skin: 0xf4c6a2, shirt: 0xf28fb0, pants: 0xf28fb0, shoe: 0xfff0f5, belt: 0xd96d92, hat: 0x8fc8f0, vest: 0xf28fb0 },
 };
 
@@ -46,6 +47,13 @@ function headGeo(kind, s) {
       g.box(0, 0.2, 0.29, 0.5, 0.04, 0.2, shade(s.hat, 0.8), { faces: A });
       g.box(0, 0.26, 0.245, 0.11, 0.1, 0.02, 0xf2c94c, { faces: 16 });
       g.box(0, 0.282, 0.256, 0.05, 0.05, 0.01, 0xe8483f, { faces: 16 });
+    } else if (kind === 'clerk') {
+      face(g, s, kind);
+      g.box(0, -0.12, 0.225, 0.12, 0.03, 0.02, 0x9a5a4a, { faces: 16 });
+      g.box(0, 0.2, -0.02, 0.53, 0.14, 0.47, s.hat, { faces: A });
+      g.box(-0.18, 0.12, 0.2, 0.18, 0.08, 0.1, s.hat, { faces: A });
+      g.box(0, 0.13, 0.226, 0.4, 0.035, 0.015, 0x22242f, { faces: 16 });
+      for (const ex of [-0.11, 0.11]) g.box(ex, 0.13, 0.232, 0.13, 0.12, 0.01, 0x22242f, { faces: 16 });
     } else {
       face(g, s, kind);
       g.box(0, -0.12, 0.225, 0.12, 0.04, 0.02, 0xc0606a, { faces: 16 });
@@ -89,6 +97,12 @@ export function makeCharacter(kind) {
       g.box(0, 0.33, 0, 0.52, 0.08, 0.32, s.belt, { faces: A });
       g.box(0, 0.42, 0.155, 0.3, 0.14, 0.02, shade(s.shirt, 0.8), { faces: 16 });
       g.box(0, 0.72, -0.12, 0.42, 0.14, 0.12, shade(s.shirt, 0.85), { faces: A });
+    } else if (kind === 'clerk') {
+      g.box(0, 0.33, 0, 0.52, 0.06, 0.32, s.belt, { faces: A });
+      g.box(0, 0.42, 0.156, 0.07, 0.34, 0.015, 0xb33951, { faces: 16 });
+      g.box(0, 0.73, 0.156, 0.1, 0.05, 0.016, 0xb33951, { faces: 16 });
+      g.box(-0.13, 0.62, 0.157, 0.12, 0.06, 0.01, 0xf2c94c, { faces: 16 });
+      for (const sx of [-1, 1]) g.box(sx * 0.07, 0.72, 0.155, 0.1, 0.07, 0.015, 0xffffff, { faces: 16, ry: sx * 0.3 });
     } else {
       for (let k = 0; k < 4; k++) g.box(0, 0.38 + k * 0.1, 0, 0.51, 0.035, 0.31, 0xffffff, { faces: A & ~4 & ~8 });
       for (let k = 0; k < 3; k++) g.box(0, 0.42 + k * 0.11, 0.155, 0.04, 0.04, 0.02, 0xffffff, { faces: 16 });
@@ -133,7 +147,7 @@ export function makeCharacter(kind) {
     armR.add(beam);
   }
   // natural slim proportions (body group is scaled in animateChar; head + beam are counter-scaled)
-  const WX = { player: 0.76, guard: 0.72, owner: 0.78 }[kind], WZ = { player: 0.88, guard: 0.8, owner: 0.86 }[kind];
+  const WX = { player: 0.76, guard: 0.72, owner: 0.78, clerk: 0.74 }[kind], WZ = { player: 0.88, guard: 0.8, owner: 0.86, clerk: 0.84 }[kind];
   if (kind !== 'player') head.scale.set(0.9 / WX, 1, 0.92 / WZ);
   if (beam) beam.scale.set(1 / WX, 1 / WZ, 1);
   return { kind, root, body, legL, legR, armL, armR, head, bag, beam, mat, meshes, phase: 0, sq: 1, sqv: 0, flash: 0, wx: WX, wz: WZ };

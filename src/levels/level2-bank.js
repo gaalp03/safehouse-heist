@@ -53,6 +53,10 @@ export default {
     { post: [14, 5], face: 0, sweep: 0.9, sweepSpeed: 0.7 },
     { path: [[20, 3], [28, 6]], wait: 1.6, speed: 1.4 },
   ],
+  clerks: [
+    { post: [9, 11], face: 0, sweep: 0.5, sweepSpeed: 0.5, button: { x: 13, y: 8, dx: 0, dy: -1 } },
+    { post: [24, 11], face: 0, sweep: 0.5, sweepSpeed: 0.6, button: { x: 26, y: 8, dx: 0, dy: -1 } },
+  ],
   panel: { x: 14, y: 18, dx: 0, dy: -1 },
   lasers: [
     { cells: [[19, 6], [20, 6], [21, 6], [22, 6], [23, 6], [24, 6], [25, 6], [26, 6], [27, 6], [28, 6], [29, 6]], on: 1.9, off: 1.3, phase: 0 },

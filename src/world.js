@@ -269,19 +269,18 @@ function furniture(L, f, B, rng, lights) {
       break;
     }
     case 'teller': {
-      const wd = 0x5a3a2a, top = 0xe8e2d6, glass = 0xbfe2ee;
-      b(WD, 0, 0, 0.05, W, 1.0, D - 0.3, wd, { top: shade(wd, 1.1) });
-      b(P, 0, 0.08, D / 2 - 0.1, W - 0.02, 0.84, 0.01, shade(wd, 1.25), { faces: PZ });
-      b(P, 0, 1.0, 0.05, W + 0.02, 0.06, D - 0.2, top);
+      const wd = 0x5a3a2a, top = 0xe8e2d6, H = 0.78;
+      b(WD, 0, 0, 0.05, W, H, D - 0.3, wd, { top: shade(wd, 1.1) });
+      b(P, 0, 0.08, D / 2 - 0.1, W - 0.02, H - 0.16, 0.01, shade(wd, 1.25), { faces: PZ });
+      b(P, 0, H, 0.05, W + 0.02, 0.05, D - 0.2, top);
       const n = Math.max(1, Math.round(W));
-      for (let k = 0; k <= n; k++) b(P, -W / 2 + (k * W) / n, 1.06, 0.05, 0.05, 0.62, 0.05, 0xd9b45a);
-      b(P, 0, 1.68, 0.05, W, 0.05, 0.08, 0xd9b45a);
-      b(U, 0, 1.2, 0.05, W - 0.05, 0.46, 0.01, glass, { faces: PZ | NZ });
+      for (let k = 0; k <= n; k++) b(P, -W / 2 + (k * W) / n, H + 0.05, 0.05, 0.04, 0.82, 0.04, 0xd9b45a);
+      b(P, 0, H + 0.87, 0.05, W, 0.04, 0.06, 0xd9b45a);
       for (let k = 0; k < n; k++) {
         const x = -W / 2 + (k + 0.5) * (W / n);
-        b(P, x, 1.06, 0.05, 0.36, 0.1, 0.06, 0x2a2b36);
-        if (k % 2 === 0) { b(P, x + 0.15, 1.06, -0.2, 0.3, 0.22, 0.04, 0x22232d); b(U, x + 0.15, 1.1, -0.177, 0.26, 0.15, 0.005, 0x5fb4ff, { faces: PZ }); }
-        else b(P, x - 0.1, 1.06, -0.15, 0.22, 0.04, 0.16, 0x4fae5a, { top: 0x8fe08a });
+        b(P, x, H + 0.05, 0.05, 0.3, 0.06, 0.05, 0x2a2b36);
+        if (k % 2 === 0) { b(P, x + 0.15, H + 0.05, -0.2, 0.3, 0.22, 0.04, 0x22232d); b(U, x + 0.15, H + 0.09, -0.177, 0.26, 0.15, 0.005, 0x5fb4ff, { faces: PZ }); }
+        else b(P, x - 0.1, H + 0.05, -0.15, 0.22, 0.04, 0.16, 0x4fae5a, { top: 0x8fe08a });
       }
       break;
     }

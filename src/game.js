@@ -142,6 +142,18 @@ export class Game {
       return g;
     };
     for (const gd of def.guards) mkGuard('guard', gd);
+    this.buttons = [];
+    for (const cd of def.clerks || []) {
+      const g = mkGuard('clerk', cd), bd = cd.button;
+      const m = new Mesh(new BoxGeometry(0.2, 0.26, 0.06), new MeshBasicMaterial({ color: 0xd8dde6 }));
+      const btn = new Mesh(new BoxGeometry(0.11, 0.11, 0.05), new MeshBasicMaterial({ color: 0xff2a3a }));
+      btn.position.z = 0.04; m.add(btn);
+      m.position.set(bd.x + 0.5 + bd.dx * 0.53, 1.05, bd.y + 0.5 + bd.dy * 0.53);
+      m.rotation.y = Math.atan2(-bd.dx, -bd.dy);
+      this.root.add(m);
+      g.button = { x: bd.x + 0.5 + bd.dx * 0.15, z: bd.y + 0.5 + bd.dy * 0.15, btn };
+      this.buttons.push(g.button);
+    }
     if (def.owner) {
       const o = def.owner;
       mkGuard('owner', { path: o.patrol, wait: 1.2, speed: o.speed, loop: true, owner: o });
@@ -219,6 +231,7 @@ export class Game {
     this.state = 'play';
     this.time = 0; this.lootGot = 0; this.spotted = false; this.kos = 0;
     this.hasKey = false; this.objText = ''; this.crackNoiseT = 0;
+    for (const b of this.buttons || []) b.btn.material.color.setHex(0xff2a3a);
     this.powerOff = false; this.breakProg = 0; this.lasersTripped = 0;
     if (this.breaker) { this.breaker.lever.rotation.x = 0; this.breaker.led.material.color.setHex(0xff2a3a); }
     for (const l of this.lasers || []) l.group.visible = true;
@@ -236,7 +249,7 @@ export class Game {
     this.D = this.daily ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
     this.lootTotal = this.baseLootTotal;
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
-    this.hidFromAlert = false;
+    this.hidFromAlert = false; this.clerkStopped = false;
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
@@ -289,6 +302,7 @@ export class Game {
       tx: 0, tz: 0, hurry: 0, baseFace: 0, fallT: 0, zz: 0.5, prevBadge: '',
       speed: (d.speed || 1.8) * this.D.speed, range: (g.kind === 'owner' ? 4.6 : 5.6) * this.D.range, fov: g.kind === 'owner' ? 1.2 : 1.35,
       reviveT: null, sawSafe: false, safeRun: false,
+      ...(g.kind === 'clerk' ? { range: 4.6 * this.D.range, fov: 1.5 } : {}),
     });
     g.c.root.rotation.set(0, 0, 0);
     g.c.root.position.y = 0;
@@ -442,7 +456,7 @@ export class Game {
     for (const g of this.guards) {
       g.moving = 0;
       this.updateGuard(g, dt, playing);
-      if (g.state === 'alert') alertN++;
+      if (g.state === 'alert' || g.state === 'flee') alertN++;
       this.syncGuard(g, dt);
     }
     for (const cam of this.cams) this.updateCam(cam, dt, playing);
@@ -655,6 +669,7 @@ export class Game {
     const app = this.app, p = this.player;
     if (g.reviveT) { g.reviveT.claimed = false; g.reviveT = null; }
     g.safeRun = false; g.claimed = false;
+    if (g.kind === 'clerk' && g.state === 'flee') { this.clerkStopped = true; this.app.floaters.spawn('ALARM STOPPED', g.x, 2.2, g.z, 'big', 1.2); }
     g.state = 'ko'; g.koT = 9; g.susp = 0; g.fallT = 0;
     g.c.flash = 0.2;
     squash(g.c, 0.6);
@@ -683,7 +698,7 @@ export class Game {
     const p = this.player, app = this.app;
     let witnessed = false, alertN = 0;
     for (const g of this.guards) {
-      if (g.state === 'alert') alertN++;
+      if (g.state === 'alert' || g.state === 'flee') alertN++;
       if (g.state !== 'ko' && g.state !== 'sleep' && g.state !== 'getup' && this.canSee(g)) {
         witnessed = true; g.knowsHide = true;
         if (g.state !== 'alert') this.alert(g);
@@ -971,6 +986,17 @@ export class Game {
   }
 
   alert(g) {
+    if (g.kind === 'clerk') {
+      if (g.state === 'flee' || g.state === 'cower') return;
+      g.state = 'flee'; g.susp = 1; g.navGoal = -1;
+      this.spotted = true;
+      this.app.audio.play('scream');
+      this.app.floaters.spawn('AAAH! A ROBBER!', g.x, 2.0, g.z, 'alert', 1.2);
+      this.app.shake.add(0.12);
+      squash(g.c, 1.35);
+      this.app.hint('clerk');
+      return;
+    }
     g.state = 'alert'; g.susp = 1; g.lostT = 0; g.radioT = 0; g.radioSaid = false;
     if (!this.spotted) this.app.hintDone('cone');
     this.spotted = true;
@@ -1072,7 +1098,7 @@ export class Game {
       case 'suspicious': {
         const a = Math.atan2(g.lastX - g.x, g.lastZ - g.z);
         g.face = turn(g.face, a, 5 * dt);
-        if (Math.hypot(g.lastX - g.x, g.lastZ - g.z) > 1.6 && g.susp > 0.45) this.navTo(g, g.lastX, g.lastZ, g.speed * 0.6, dt);
+        if (g.kind !== 'clerk' && Math.hypot(g.lastX - g.x, g.lastZ - g.z) > 1.6 && g.susp > 0.45) this.navTo(g, g.lastX, g.lastZ, g.speed * 0.6, dt);
         if (g.susp < 0.1) this.baseState(g);
         break;
       }
@@ -1100,6 +1126,18 @@ export class Game {
           g.state = 'look'; g.t = 2.2; g.baseFace = g.face;
           this.arrive(g);
         }
+        break;
+      case 'flee':
+        if (this.navTo(g, g.button.x, g.button.z, 3.4, dt)) {
+          g.state = 'cower'; g.t = 0;
+          g.face = Math.atan2(g.button.x - g.x, g.button.z - g.z) ;
+          g.button.btn.material.color.setHex(0x3ddc84);
+          if (this.state === 'play' && !this.alarm) { this.triggerAlarm('The clerk hit the silent alarm!'); }
+          app.audio.play('click');
+        }
+        break;
+      case 'cower':
+        g.face += Math.sin(this.t * 9) * dt * 2;
         break;
       case 'look':
         g.t -= dt;
@@ -1147,12 +1185,12 @@ export class Game {
     const showCone = g.state !== 'ko' && g.state !== 'getup' && g.state !== 'sleep' && g.state !== 'waking';
     g.cone.visible = showCone;
     if (showCone) {
-      const col = g.state === 'alert' ? COL.alert : g.susp > 0.25 ? COL.sus : COL.cone;
+      const col = g.state === 'alert' || g.state === 'flee' ? COL.alert : g.susp > 0.25 ? COL.sus : COL.cone;
       this.updateCone(g.cone, g.x, g.z, g.face, g.fov, g.range, col);
     }
     // status badge (DOM)
     let b = '';
-    if (g.state === 'alert') b = 'alert';
+    if (g.state === 'alert' || g.state === 'flee') b = 'alert';
     else if (g.state === 'investigate' || g.state === 'search' || g.state === 'look' || g.susp > 0.04) b = 'sus';
     if (b !== g.prevBadge) {
       g.prevBadge = b;

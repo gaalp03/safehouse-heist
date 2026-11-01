@@ -22,6 +22,7 @@ const HINTS = {
   loot: ['Extra loot = more stars. Grab it all!', 'Extra loot = more stars. Grab it all!'],
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
   dog: ['A guard dog! It follows your scent and barks. Coins distract it.', 'A guard dog! It follows your scent and barks. Coins distract it.'],
+  clerk: ['The clerk is running for the alarm button! Knock them out first!', 'The clerk is running for the alarm button! Knock them out first!'],
   laser: ['Laser grid! Time your run, or cut the power at the breaker in the security room', 'Laser grid! Time your run, or cut the power at the breaker in the security room'],
   key: ['The vault door needs a keycard. Search the offices!', 'The vault door needs a keycard. Search the offices!'],
   door: ['Got the keycard! Swipe it at the vault door', 'Got the keycard! Swipe it at the vault door'],
@@ -529,7 +530,7 @@ class App {
     g.guards.forEach((gd, i) => {
       let el = ind.children[i];
       if (!el) { el = document.createElement('i'); ind.appendChild(el); }
-      const alert = gd.state === 'alert', sus = !alert && (gd.susp > 0.04 || gd.state === 'investigate' || gd.state === 'search');
+      const alert = gd.state === 'alert' || gd.state === 'flee', sus = !alert && (gd.susp > 0.04 || gd.state === 'investigate' || gd.state === 'search');
       if (!alert && !sus) { el.style.display = 'none'; return; }
       const rel = angDiff(p.face, Math.atan2(gd.x - p.x, gd.z - p.z));
       el.style.display = '';
@@ -561,7 +562,7 @@ class App {
     if (g.hasStash) { x.strokeStyle = '#3ddc84'; x.lineWidth = 2; x.beginPath(); x.arc(g.L.exit.x * S, g.L.exit.z * S, S, 0, 6.3); x.stroke(); }
     for (const gd of g.guards) {
       const ko = gd.state === 'ko' || gd.state === 'getup' || gd.state === 'sleep';
-      const col = gd.state === 'alert' ? '#ff3b4e' : gd.susp > 0.25 ? '#ff9f1c' : ko ? '#8a8fae' : '#3f6fe0';
+      const col = gd.state === 'alert' || gd.state === 'flee' ? '#ff3b4e' : gd.kind === 'clerk' ? '#f4f1ea' : gd.susp > 0.25 ? '#ff9f1c' : ko ? '#8a8fae' : '#3f6fe0';
       if (!ko) {
         x.fillStyle = gd.state === 'alert' ? 'rgba(255,59,78,.3)' : 'rgba(255,225,77,.35)';
         x.beginPath(); x.moveTo(gd.x * S, gd.z * S);
