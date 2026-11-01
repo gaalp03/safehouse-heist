@@ -132,7 +132,11 @@ export function makeCharacter(kind) {
     beam.renderOrder = 6;
     armR.add(beam);
   }
-  return { kind, root, body, legL, legR, armL, armR, head, bag, beam, mat, meshes, phase: 0, sq: 1, sqv: 0, flash: 0, wx: kind === 'player' ? 0.76 : 1, wz: kind === 'player' ? 0.88 : 1 };
+  // natural slim proportions (body group is scaled in animateChar; head + beam are counter-scaled)
+  const WX = { player: 0.76, guard: 0.72, owner: 0.78 }[kind], WZ = { player: 0.88, guard: 0.8, owner: 0.86 }[kind];
+  if (kind !== 'player') head.scale.set(0.9 / WX, 1, 0.92 / WZ);
+  if (beam) beam.scale.set(1 / WX, 1 / WZ, 1);
+  return { kind, root, body, legL, legR, armL, armR, head, bag, beam, mat, meshes, phase: 0, sq: 1, sqv: 0, flash: 0, wx: WX, wz: WZ };
 }
 
 export function animateChar(c, dt, move, t) {
