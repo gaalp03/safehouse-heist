@@ -21,7 +21,7 @@ export class ViewModel {
     const armGeo = (left) => {
       const g = new GeoBuilder();
       // hoodie sleeve with folds
-      g.box(0, -0.075, -0.24, 0.14, 0.14, 0.26, SLEEVE, { faces: 63 });
+      g.box(0, -0.075, -0.285, 0.14, 0.14, 0.17, SLEEVE, { faces: 63 });
       g.box(0, -0.082, -0.24, 0.152, 0.152, 0.05, SLEEVE2, { faces: 63 });
       g.box(0, -0.08, -0.36, 0.148, 0.148, 0.1, SLEEVE, { faces: 63 });
       g.box(0, -0.082, -0.44, 0.155, 0.155, 0.07, CUFF, { faces: 63 });
@@ -41,10 +41,12 @@ export class ViewModel {
     };
     // right arm + crowbar
     this.R = new Group();
-    this.R.position.set(0.28, -0.29, 0.0);
+    this.R.position.set(0.2, -0.27, 0.0);
     this.R.rotation.y = 0.16;
     this.root.add(this.R);
-    this.R.add(new Mesh(armGeo(false), mat));
+    const armR = new Mesh(armGeo(false), mat);
+    armR.scale.set(0.56, 0.6, 1);
+    this.R.add(armR);
     const bar = new GeoBuilder();
     const red = 0xd8333a, steel = 0xb8c2d0, dark = 0x7a8496;
     bar.box(0, -0.2, 0, 0.034, 0.08, 0.034, steel, { faces: 63 });
@@ -57,15 +59,18 @@ export class ViewModel {
     bar.box(0, 0.305, -0.1, 0.03, 0.03, 0.022, steel, { faces: 63 });
     bar.box(0.02, -0.05, 0.022, 0.006, 0.3, 0.002, 0xff8a8a, { faces: 16 });
     this.bar = new Mesh(bar.build(), mat);
-    this.bar.position.set(0, -0.02, -0.57);
+    this.bar.position.set(0, -0.035, -0.57);
+    this.bar.scale.set(0.75, 0.95, 0.75);
     this.bar.rotation.set(-0.35, 0, -0.25);
     this.R.add(this.bar);
     // left hand (appears when grabbing / cracking)
     this.L = new Group();
-    this.L.position.set(-0.28, -0.29, 0.0);
+    this.L.position.set(-0.2, -0.27, 0.0);
     this.L.rotation.y = -0.16;
     this.root.add(this.L);
-    this.L.add(new Mesh(armGeo(true), mat));
+    const armL = new Mesh(armGeo(true), mat);
+    armL.scale.set(0.56, 0.6, 1);
+    this.L.add(armL);
 
     this.swX = 0; this.swY = 0; this.down = 0; this.lIn = 0; this.t = 0; this.kick = 0;
     this.visible = true;
@@ -73,11 +78,11 @@ export class ViewModel {
 
   resize(aspect, fov) {
     this.camera.aspect = aspect;
-    this.camera.fov = aspect < 1 ? 70 : 60;
+    this.camera.fov = aspect < 1 ? 88 : 60;
     this.camera.updateProjectionMatrix();
     // keep hands inside narrow portrait screens
-    this.root.scale.setScalar(aspect < 1 ? 0.6 : 0.92);
-    this.root.userData.px = aspect < 1 ? 0.01 : 0;
+    this.root.scale.setScalar(aspect < 1 ? 0.9 : 0.92);
+    this.root.userData.px = aspect < 1 ? -0.03 : 0;
   }
 
   // s: {move, bob, lookX, lookY, punch (0..1 or <0), crack, grab, dash, busted}
@@ -114,7 +119,7 @@ export class ViewModel {
     const want = s.grab > 0 || s.crack ? 1 : 0;
     this.lIn = damp(this.lIn, want, want ? 18 : 8, dt);
     L.visible = this.lIn > 0.02;
-    L.position.y = -0.29 - (1 - this.lIn) * 0.45;
+    L.position.y = -0.27 - (1 - this.lIn) * 0.45;
     L.position.z = 0.02 - (s.grab > 0 ? Math.sin(Math.min(1, s.grab) * Math.PI) * 0.12 : 0);
     L.rotation.x = s.crack ? 0.25 : 0.1;
     L.rotation.z = s.crack ? Math.sin(this.t * 9) * 0.35 : 0;

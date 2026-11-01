@@ -132,7 +132,7 @@ export function makeCharacter(kind) {
     beam.renderOrder = 6;
     armR.add(beam);
   }
-  return { kind, root, body, legL, legR, armL, armR, head, bag, beam, mat, meshes, phase: 0, sq: 1, sqv: 0, flash: 0 };
+  return { kind, root, body, legL, legR, armL, armR, head, bag, beam, mat, meshes, phase: 0, sq: 1, sqv: 0, flash: 0, wx: kind === 'player' ? 0.76 : 1, wz: kind === 'player' ? 0.88 : 1 };
 }
 
 export function animateChar(c, dt, move, t) {
@@ -150,7 +150,7 @@ export function animateChar(c, dt, move, t) {
   c.sqv *= Math.exp(-11 * dt);
   c.sq += c.sqv * dt;
   const sq = Math.max(0.5, c.sq), w = 1 / Math.sqrt(sq);
-  c.body.scale.set(w, sq, w);
+  c.body.scale.set(w * c.wx, sq, w * c.wz);
   if (c.flash > 0) {
     c.flash -= dt;
     const k = Math.max(0, c.flash) * 6;
