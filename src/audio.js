@@ -133,8 +133,29 @@ export class Audio {
         if (p > 0.5) T(3100, 0.25, { type: 'sine', vol: v * 0.5, delay: 0.09 });
         break;
       }
+      case 'disarm': [1046, 1318, 1568, 2093].forEach((f, i) => T(f, 0.12, { type: 'square', vol: 0.07, delay: i * 0.06 })); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
+    }
+  }
+
+  siren(on) {
+    if (!this.ctx) return;
+    if (on && !this.sir) {
+      const ctx = this.ctx, o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = 780;
+      lfo.type = 'square'; lfo.frequency.value = 1.6; lg.gain.value = 170;
+      lfo.connect(lg).connect(o.frequency);
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1800;
+      g.gain.value = 0.0001; g.gain.setTargetAtTime(0.045, ctx.currentTime, 0.2);
+      o.connect(f).connect(g).connect(this.sfx);
+      o.start(); lfo.start();
+      this.sir = { o, lfo, g };
+    } else if (!on && this.sir) {
+      const s = this.sir, t = this.ctx.currentTime;
+      s.g.gain.setTargetAtTime(0.0001, t, 0.1);
+      s.o.stop(t + 0.5); s.lfo.stop(t + 0.5);
+      this.sir = null;
     }
   }
 

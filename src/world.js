@@ -2,7 +2,7 @@
 // Each material is one merged mesh (~15 draw calls for the whole house). Unlit (MeshBasic) = cheap on mobile.
 import {
   Mesh, Group, MeshLambertMaterial, MeshBasicMaterial, OctahedronGeometry, Points, PointsMaterial,
-  BufferGeometry, BufferAttribute, AdditiveBlending, DoubleSide,
+  BufferGeometry, BufferAttribute, AdditiveBlending, DoubleSide, BoxGeometry,
 } from 'three';
 import { GeoBuilder, PX, NX, PY, NY, PZ, NZ } from './geo.js';
 import { mulberry32, shade, clamp } from './util.js';
@@ -691,6 +691,39 @@ export function buildVan() {
   const grp = new Group();
   grp.add(m);
   return { group: grp, body: m };
+}
+
+export function buildPolice() {
+  const g = new GeoBuilder();
+  const white = 0xf4f6f8, black = 0x22242f, glass = 0x24304f;
+  g.box(0, 0.22, 0, 2.5, 0.45, 1.2, white, { top: 0xffffff });
+  g.box(-0.1, 0.67, 0, 1.3, 0.38, 1.1, white);
+  g.box(-0.1, 0.72, 0, 1.32, 0.28, 1.12, glass, { faces: PX | NX | PZ | NZ });
+  g.box(0, 0.3, 0, 2.52, 0.16, 1.22, black, { faces: PX | NX | PZ | NZ });
+  g.box(1.26, 0.32, 0.38, 0.03, 0.1, 0.22, 0xfff3b0, { faces: PX });
+  g.box(1.26, 0.32, -0.38, 0.03, 0.1, 0.22, 0xfff3b0, { faces: PX });
+  for (const wx of [-0.8, 0.8]) for (const wz of [-0.56, 0.56]) g.box(wx, 0, wz, 0.46, 0.46, 0.2, 0x1c1e28, { faces: 63 });
+  const body = new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true }));
+  const grp = new Group();
+  grp.add(body);
+  const red = new Mesh(new BoxGeometry(0.3, 0.12, 0.5), new MeshBasicMaterial({ color: 0xff2a3a }));
+  const blue = new Mesh(new BoxGeometry(0.3, 0.12, 0.5), new MeshBasicMaterial({ color: 0x2a6aff }));
+  red.position.set(-0.1, 1.11, 0.26); blue.position.set(-0.1, 1.11, -0.26);
+  grp.add(red, blue);
+  return { group: grp, red, blue };
+}
+
+export function buildPanel() {
+  const g = new GeoBuilder();
+  g.box(0, 0, 0, 0.32, 0.42, 0.06, 0xe8e2d6, { faces: 63 });
+  g.box(0, 0.24, 0.031, 0.22, 0.1, 0.01, 0x1f3a2f, { faces: 16 });
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) g.box(-0.07 + c * 0.07, 0.04 + r * 0.06, 0.035, 0.05, 0.04, 0.012, 0x9aa4b0, { faces: 63 });
+  const grp = new Group();
+  grp.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
+  const led = new Mesh(new BoxGeometry(0.05, 0.05, 0.02), new MeshBasicMaterial({ color: 0x3ddc84 }));
+  led.position.set(0.11, 0.36, 0.035);
+  grp.add(led);
+  return { group: grp, led };
 }
 
 // geometries centered at origin, used by InstancedMesh per loot type

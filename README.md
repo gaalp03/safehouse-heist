@@ -29,6 +29,8 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 | Knock out (from behind) / crack safe (hold) | E / Left click | ✋ |
 | Pause / Restart / Mute | Esc or P / R / M | ⏸ button |
 
+Alarm: an alerted guard radios the police after ~2.5 s (knock them out or break line of sight first), and the office camera trips it too. A 45 s police countdown starts with a siren and a police car closing in on the street; escape in time or hold E at the keypad by the front door to disarm.
+
 HUD: crosshair (turns into a ring when an action is possible), minimap with guards and vision cones, objective marker with distance, threat arrows around the crosshair for suspicious/alerted guards, detection badges above heads. Leaving pointer lock (Esc) pauses the game. If pointer lock is unavailable the mouse falls back to drag-to-look.
 
 ## Development

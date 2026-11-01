@@ -20,6 +20,7 @@ const HINTS = {
   loot: ['Extra loot = more stars. Grab it all!', 'Extra loot = more stars. Grab it all!'],
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
   coin: ['Q: throw a coin to lure guards away', 'Tap the coin to lure guards away'],
+  alarm: ['ALARM! Escape or hold E at the keypad by the front door', 'ALARM! Escape or hold the hand at the keypad by the front door'],
 };
 
 class App {
@@ -143,6 +144,7 @@ class App {
   }
   showMenu() {
     SDK.gameplayStop();
+    this.audio.siren(false);
     this.state = 'menu';
     this.game.reset();
     const b = this.save.best.safehouse;
@@ -166,6 +168,7 @@ class App {
 
   start() {
     this.audio.unlock();
+    this.audio.siren(false);
     this.game.reset();
     this.input.clear();
     this.state = 'play';
@@ -187,6 +190,7 @@ class App {
   }
   pause() {
     if (this.state !== 'play') return;
+    this.audio.siren(false);
     this.state = 'pause';
     SDK.gameplayStop();
     this.screen('pause');
@@ -196,6 +200,7 @@ class App {
     this.state = 'play';
     this.input.clear();
     this.input.requestLock();
+    if (this.game.alarm) this.audio.siren(true);
     this.last = performance.now();
     this.screen(null);
     SDK.gameplayStart();
@@ -261,16 +266,16 @@ class App {
   }
   setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
-    const txt = kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK' : 'HOLD E / CLICK TO CRACK') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
+    const txt = kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK' : 'HOLD E / CLICK TO CRACK') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.textContent = txt;
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind);
-      this.els.bAct.lastChild.textContent = kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
+      this.els.bAct.lastChild.textContent = kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
-    if (kind === 'safe' && prog > 0) {
+    if ((kind === 'safe' || kind === 'panel') && prog > 0) {
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));
       ring.classList.remove('hidden');
     } else ring.classList.add('hidden');
@@ -290,6 +295,19 @@ class App {
     const l = $('loot');
     l.classList.remove('punch', 'bigpunch'); void l.offsetWidth; l.classList.add(big ? 'bigpunch' : 'punch');
   }
+  onAlarm(on, why) {
+    $('alarm').classList.toggle('hidden', !on);
+    $('siren').classList.toggle('on', on);
+    if (on) { this.lastAlarmS = -1; if (why) { const w = $('alarmwhy'); w.textContent = why; w.classList.remove('hidden'); w.style.animation = 'none'; void w.offsetWidth; w.style.animation = ''; clearTimeout(this.whyT); this.whyT = setTimeout(() => w.classList.add('hidden'), 2600); } }
+  }
+  onAlarmTime(t) {
+    const s = Math.ceil(t);
+    if (s === this.lastAlarmS) return;
+    this.lastAlarmS = s;
+    $('alarmt').textContent = fmtTime(s);
+    $('alarm').classList.toggle('hurry', s <= 10);
+    if (s <= 10 && s > 0) this.audio.play('tick', 1.5);
+  }
   onCoins(n) {
     const c = $('coins');
     c.lastChild.textContent = '×' + n;
@@ -304,9 +322,10 @@ class App {
   onEscapeStart() { $('touch').classList.add('hidden'); $('fp').classList.add('hidden'); this.input.exitLock(); }
   onBusted() {
     this.state = 'busted';
+    this.audio.siren(false);
     SDK.gameplayStop();
     $('bRevive').classList.toggle('hidden', !ADS_ENABLED || !SDK.available || this.game.revived);
-    $('bustTip').textContent = [
+    $('bustTip').textContent = this.game.policeBusted ? 'The police arrived! Knock out alerted guards before they radio in, or disarm the keypad by the front door.' : [
       'Tip: guards can\'t see behind them. Sneak up and knock them out!',
       'Tip: dashing is loud. Walk near guards and the sleeping owner.',
       'Tip: break line of sight and alerted guards will lose you.',
@@ -317,6 +336,8 @@ class App {
   }
   onWin(res) {
     this.state = 'result';
+    this.audio.siren(false);
+    $('alarm').classList.add('hidden'); $('siren').classList.remove('on');
     SDK.gameplayStop();
     SDK.happytime();
     const nStars = res.stars.filter(Boolean).length;

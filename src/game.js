@@ -4,7 +4,7 @@ import {
   CylinderGeometry, Object3D, Vector3, DoubleSide, BoxGeometry,
 } from 'three';
 import { parseLevel } from './level.js';
-import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat } from './world.js';
+import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel } from './world.js';
 import { makeCharacter, animateChar, squash, probe } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 
@@ -69,6 +69,17 @@ export class Game {
     this.safe.group.position.set(L.safe.x + 0.5, 0, L.safe.y + 0.5);
     this.root.add(this.safe.group);
 
+    this.police = buildPolice();
+    this.police.group.visible = false;
+    this.root.add(this.police.group);
+    if (def.panel) {
+      const pd = def.panel;
+      this.panel = buildPanel();
+      this.panel.group.position.set(pd.x + 0.5 + pd.dx * 0.53, 0.85, pd.y + 0.5 + pd.dy * 0.53);
+      this.panel.group.rotation.y = Math.atan2(pd.dx, pd.dy);
+      this.panel.at = { x: pd.x + 0.5 + pd.dx * 1.1, z: pd.y + 0.5 + pd.dy * 1.1 };
+      this.root.add(this.panel.group);
+    }
     this.van = buildVan();
     this.root.add(this.van.group);
 
@@ -170,6 +181,9 @@ export class Game {
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
     this.coinsLeft = 3; this.coins = []; this.lures = 0;
+    this.alarm = false; this.alarmT = 0; this.alarmTotal = this.def.alarmTime || 45; this.disarmProg = 0; this.alarms = 0; this.policeBusted = false;
+    if (this.police) this.police.group.visible = false;
+    this.app.onAlarm && this.app.onAlarm(false);
     for (const m of this.coinMeshes || []) m.visible = false;
 
     const p = this.player;
@@ -362,7 +376,8 @@ export class Game {
       this.syncGuard(g, dt);
     }
     for (const cam of this.cams) this.updateCam(cam, dt, playing);
-    this.tension = alertN > 0 ? 1 : 0;
+    this.tension = alertN > 0 || this.alarm ? 1 : 0;
+    this.updateAlarm(dt, playing);
 
     this.updateLoot(dt, playing);
     this.updateProps(dt);
@@ -440,6 +455,18 @@ export class Game {
     }
     const pressed = inp.consumeAct();
     p.crack = false;
+    // alarm keypad
+    let nearPanel = false;
+    if (this.alarm && this.panel) {
+      const a = this.panel.at, pg = this.panel.group.position;
+      nearPanel = Math.hypot(p.x - a.x, p.z - a.z) < 1.0 && Math.abs(angDiff(p.face, Math.atan2(pg.x - p.x, pg.z - p.z))) < 1.0;
+      if (nearPanel && inp.act) {
+        this.disarmProg += dt / 1.3; p.crack = true;
+        this.safeTick -= dt;
+        if (this.safeTick <= 0) { this.safeTick = 0.13; app.audio.play('tick', this.disarmProg); }
+        if (this.disarmProg >= 1) this.disarm();
+      } else this.disarmProg = Math.max(0, this.disarmProg - dt);
+    }
     if (nearSafe) {
       app.hint('safe');
       if (inp.act) {
@@ -457,7 +484,7 @@ export class Game {
       app.hint('ko');
       if (pressed && !nearSafe) this.knockout(ko);
     }
-    app.setPrompt(nearSafe ? 'safe' : ko ? 'ko' : '', this.safeProg);
+    app.setPrompt(nearPanel ? 'panel' : nearSafe ? 'safe' : ko ? 'ko' : '', nearPanel ? this.disarmProg : this.safeProg);
 
     // exit
     const ex = this.L.exit;
@@ -600,7 +627,7 @@ export class Game {
   }
 
   alert(g) {
-    g.state = 'alert'; g.susp = 1; g.lostT = 0;
+    g.state = 'alert'; g.susp = 1; g.lostT = 0; g.radioT = 0; g.radioSaid = false;
     if (!this.spotted) this.app.hintDone('cone');
     this.spotted = true;
     this.app.audio.play('alert');
@@ -703,6 +730,9 @@ export class Game {
         break;
       }
       case 'alert': {
+        g.radioT = (g.radioT || 0) + dt;
+        if (!this.alarm && g.radioT > 0.7 && !g.radioSaid) { g.radioSaid = true; app.floaters.spawn('Calling it in...', g.x, 2.0, g.z, 'warn', 1.4); }
+        if (!this.alarm && g.radioT > 2.6) this.triggerAlarm('A guard radioed the police!');
         const tx = seen ? p.x : g.lastX, tz = seen ? p.z : g.lastZ;
         this.navTo(g, tx, tz, CHASE, dt);
         if (!seen && g.lostT > 2.2) {
@@ -811,6 +841,7 @@ export class Game {
     cam.susp = clamp(cam.susp + (seen ? dt * 1.5 : -dt * 0.8), 0, 1);
     if (cam.susp >= 1) {
       cam.susp = 0; cam.cool = 4;
+      this.triggerAlarm('The camera triggered the alarm!');
       this.spotted = true;
       this.app.audio.play('alarm');
       this.app.flash('alarm');
@@ -1028,6 +1059,64 @@ export class Game {
     }
     if (t > 2.0 && !this.endSent) { this.endSent = true; app.onWin(this.results()); }
   }
+  // ---------- alarm / police ----------
+  triggerAlarm(why) {
+    if (this.alarm || this.state !== 'play') return;
+    const app = this.app, ex = this.L.exit;
+    this.alarm = true; this.alarmT = this.alarmTotal; this.alarms++; this.spotted = true;
+    this.police.group.visible = true;
+    this.police.group.position.set(ex.x + 40, 0, ex.z + 2.5);
+    this.police.group.rotation.y = Math.PI;
+    app.audio.play('alarm');
+    app.audio.siren(true);
+    app.flash('alarm');
+    app.shake.add(0.25);
+    app.onAlarm(true, why);
+    app.hint('alarm');
+  }
+  disarm() {
+    const app = this.app, pg = this.panel.group.position;
+    this.alarm = false; this.disarmProg = 0;
+    app.audio.siren(false);
+    app.audio.play('disarm');
+    app.onAlarm(false);
+    app.floaters.spawn('ALARM DISARMED', pg.x, 1.5, pg.z, 'big', 1.4);
+    app.particles.burst(pg.x, 1.1, pg.z, { count: 14, colors: [0x3ddc84, 0xffffff], speed: 2, up: 2, size: 0.04, life: 0.6 });
+    app.hintDone('alarm');
+  }
+  updateAlarm(dt, playing) {
+    if (this.panel) {
+      const on = this.alarm && Math.sin(this.t * 14) > 0;
+      this.panel.led.material.color.setHex(this.alarm ? (on ? 0xff2a3a : 0x5a0a10) : 0x3ddc84);
+    }
+    const pc = this.police;
+    if (!this.alarm) {
+      // police drive away after disarm
+      if (pc.group.visible && this.state === 'play') { pc.group.position.x += dt * 10; if (pc.group.position.x > this.L.exit.x + 45) pc.group.visible = false; }
+      return;
+    }
+    const k = Math.sin(this.t * 16) > 0;
+    pc.red.material.color.setHex(k ? 0xff2a3a : 0x55101a);
+    pc.blue.material.color.setHex(k ? 0x14205a : 0x2a6aff);
+    if (!playing) return;
+    this.alarmT -= dt;
+    const ex = this.L.exit, f = Math.max(0, this.alarmT / this.alarmTotal);
+    pc.group.position.x = ex.x + 2.5 + f * 37;
+    this.app.onAlarmTime(Math.max(0, this.alarmT));
+    if (this.alarmT <= 0) this.policeBust();
+  }
+  policeBust() {
+    const app = this.app, p = this.player;
+    this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = null; this.policeBusted = true;
+    this.hitstop = 0.15;
+    app.shake.add(0.7);
+    app.flash('red');
+    app.audio.play('bust');
+    app.audio.siren(false);
+    app.floaters.spawn('POLICE!', p.x + Math.sin(p.face) * 1.6, 1.3, p.z + Math.cos(p.face) * 1.6, 'alert big', 1.2);
+    app.setPrompt('');
+  }
+
   bust(g) {
     const app = this.app;
     this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = g;
@@ -1037,6 +1126,7 @@ export class Game {
     app.shake.add(0.7);
     app.flash('red');
     app.audio.play('bust');
+    app.audio.siren(false);
     app.floaters.spawn('BUSTED!', g.x, 1.5, g.z, 'alert big', 1.2);
     app.setPrompt('');
   }

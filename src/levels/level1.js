@@ -47,5 +47,7 @@ export default {
     { post: [26, 5], face: -2.36, sweep: 0.8, sweepSpeed: 0.9 },
   ],
   owner: { bed: [14, 2, 2, 3], patrol: [[11, 5], [18, 5], [13, 8], [21, 8]], speed: 1.5 },
+  panel: { x: 9, y: 17, dx: 0, dy: -1 },
+  alarmTime: 45,
   cameras: [{ pos: [8.75, 2.25], face: -0.8, sweep: 0.75, sweepSpeed: 0.8 }],
 };
