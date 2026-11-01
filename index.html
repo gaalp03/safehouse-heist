@@ -137,6 +137,14 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 #diff button{font:inherit;font-size:15px;padding:8px 16px;border:0;background:#e9dcc6;color:#5a4a6a;cursor:pointer}
 #diff button+button{border-left:3px solid var(--ink)}
 #diff button.on[data-d=easy]{background:#8ff0c4;color:var(--ink)}#diff button.on[data-d=normal]{background:#ffc94a;color:var(--ink)}#diff button.on[data-d=hard]{background:#ff6a7a;color:#fff}
+#outfits{justify-content:flex-start;padding-top:18px;background:linear-gradient(180deg,rgba(28,19,48,.75),rgba(28,19,48,.1) 70%)}
+.of-panel{max-width:min(94vw,680px);gap:10px;padding:14px 18px}
+#ofGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
+.of{font:inherit;color:#fff6e8;background:rgba(0,0,0,.28);border:3px solid transparent;border-radius:12px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
+.of.on{border-color:#ffc94a;background:linear-gradient(180deg,rgba(255,201,74,.22),rgba(0,0,0,.2))}.of.lock{opacity:.5}.of.shake{animation:shakeX .35s}
+.of .sw{display:flex;gap:3px}.of .sw i{width:18px;height:18px;border-radius:5px;border:2px solid rgba(0,0,0,.35)}
+.of b{font-size:14px}.of small{font-size:10px;opacity:.8}
+@media (max-width:640px){#ofGrid{grid-template-columns:repeat(2,1fr)}}
 .panel.tr{max-width:min(94vw,720px)}
 #trStats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%}
 #trStats div{background:rgba(0,0,0,.22);border-radius:10px;padding:6px 8px;display:flex;flex-direction:column;align-items:center}
@@ -210,7 +218,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
     <button class="card lock" id="lvl2"><div class="art" id="lvl2art">🔒</div><span class="n">LEVEL 2</span><span class="t">The Bank</span><span class="stars" id="lvl2stars"></span><span class="n" id="lvl2best">Escape Safe House to unlock</span></button>
   </div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>
-  <div class="row"><button class="btn s" id="bTrophy">🏆 TROPHIES</button><button class="btn" id="bPlay">PLAY</button></div>
+  <div class="row"><button class="btn s" id="bTrophy">🏆 TROPHIES</button><button class="btn s" id="bOutfit">🧤 OUTFITS</button><button class="btn" id="bPlay">PLAY</button></div>
   <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
 </div>
 
@@ -237,6 +245,11 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <button class="btn s" id="bBMenu">MENU</button>
 </div></div>
 
+<div id="outfits" class="screen hidden"><div class="panel of-panel">
+  <div class="big o" style="font-size:36px">OUTFITS</div>
+  <div id="ofGrid"></div>
+  <button class="btn" id="bOfBack">DONE</button>
+</div></div>
 <div id="trophies" class="screen solid hidden"><div class="panel tr">
   <div class="big o" style="font-size:40px">TROPHIES <small id="trCount" style="font-size:18px;color:var(--y)"></small></div>
   <div id="trStats"></div>

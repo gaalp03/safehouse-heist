@@ -32,6 +32,8 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 
 Level 2 — The Bank (unlocks after escaping Safe House): find the keycard in the manager's office, swipe it at the security door, crack the big vault (slow and loud: guards hear the drilling), then escape. Teller counters, offices, security room, 4 guards, 2 cameras. Bank clerks stand behind the teller counters: if one spots you they scream and sprint for a silent alarm button; knock them out before they reach it. Pulsing laser grids in the corridor and across the vault trip the alarm; time your run or hold E at the breaker in the security room to cut the power.
 
+Outfits (menu): 8 colour-only robber looks (hoodie, gloves, crowbar) unlocked by trophy count or specific achievements, with a live first-person preview.
+
 Trophies (menu): lifetime stats (heists, escapes, busts, total loot, KOs, contracts, best times per level) and 16 achievements (Ghost, Speed Demon, Pacifist, Clean Sweep, Phantom of the Vault, Wardrobe Ninja...), unlocks announced on the results screen.
 
 Daily Challenge: one seeded run per day (Normal rules) with a mutator of the day (Paranoid Guards, Insomniac Owner, Gold Rush, Butterfingers, Rapid Response, Hungry Hound) and fixed contracts; separate daily best and a day streak.

@@ -11,6 +11,7 @@ import { ViewModel } from './viewmodel.js';
 import { DIFFS, diffKey } from './difficulty.js';
 import { todaysDaily, prevDayKey } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
+import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
 
 const $ = (id) => document.getElementById(id);
 const HINTS = {
@@ -89,6 +90,7 @@ class App {
     await this.useLevel(0);
 
     this.bindUI();
+    this.applyOutfit();
     addEventListener('resize', () => this.resize());
     this.resize();
     this.renderer.compile(this.scene, this.camera);
@@ -124,6 +126,8 @@ class App {
     click('bRevive', () => this.reviveAd());
     click('bSoonBack', () => this.showMenu());
     click('bTrophy', () => this.showTrophies());
+    click('bOutfit', () => this.showOutfits());
+    click('bOfBack', () => this.showMenu());
     click('bTrBack', () => this.showMenu());
     click('bPause', () => this.pause());
     click('bMute', () => this.toggleMute());
@@ -191,6 +195,35 @@ class App {
       frac: g.lootGot / g.lootTotal, loot: g.lootGot, contractsDone: win ? res.contracts.filter((c) => c.st === 'ok').length : 0,
       hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown,
     };
+  }
+  applyOutfit() {
+    let o = OUTFITS.find((x) => x.id === this.save.outfit);
+    if (!o || !unlocked(o, this.save)) o = OUTFITS[0];
+    this.vm.setOutfit(colorsOf(o));
+    return o;
+  }
+  showOutfits() {
+    SDK.gameplayStop();
+    this.state = 'outfits';
+    const cur = this.applyOutfit();
+    const sw = (c) => '#' + c.toString(16).padStart(6, '0');
+    $('ofGrid').innerHTML = OUTFITS.map((o) => {
+      const ok = unlocked(o, this.save);
+      return `<button class="of ${ok ? '' : 'lock'} ${o.id === cur.id ? 'on' : ''}" data-id="${o.id}">
+        <span class="sw"><i style="background:${sw(o.sleeve)}"></i><i style="background:${sw(o.glove)}"></i><i style="background:${sw(o.bar)}"></i></span>
+        <b>${o.name}</b><small>${ok ? (o.id === cur.id ? 'EQUIPPED' : 'Tap to wear') : '🔒 ' + needText(o, ACH)}</small></button>`;
+    }).join('');
+    for (const el of document.querySelectorAll('#ofGrid .of')) {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const o = OUTFITS.find((x) => x.id === el.dataset.id);
+        if (!unlocked(o, this.save)) { this.audio.play('nope'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); return; }
+        this.audio.play('pick', 4);
+        this.save.outfit = o.id; SDK.store(this.save);
+        this.showOutfits();
+      });
+    }
+    this.screen('outfits');
   }
   showTrophies() {
     SDK.gameplayStop();
@@ -491,7 +524,11 @@ class App {
     $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day streak` : '');
     $('rMult').textContent = res.mult === 1 ? '' : `${res.diff} ×${res.mult}`;
     $('rBest').classList.toggle('new', newBest);
-    this.showAchToast(recordRun(this.save, this.runRecord(true, res)));
+    const freshA = recordRun(this.save, this.runRecord(true, res));
+    const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
+    this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
+    this.showAchToast(freshA);
+    if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
     this.screen('result');
     const stars = $('rStars').children;
@@ -545,7 +582,8 @@ class App {
     $('vignette').style.opacity = st === 'play' && this.game.tension ? 1 : 0;
     this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
-    this.vm.visible = (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding;
+    if (st === 'outfits') { this.vm.mat.color.setRGB(1.05, 1.0, 0.95); this.vm.update(rdt, { move: 0, bob: 0, lookX: 0, lookY: 0, punch: 0, crack: false, grab: 0, dash: false, busted: false }); }
+    this.vm.visible = st === 'outfits' || (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding;
     this.vm.render(this.renderer);
     this.adaptRes(rdt);
   }
