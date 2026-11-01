@@ -29,6 +29,8 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 | Knock out (from behind) / crack safe (hold) | E / Left click | ✋ |
 | Pause / Restart / Mute | Esc or P / R / M | ⏸ button |
 
+Daily Challenge: one seeded run per day (Normal rules) with a mutator of the day (Paranoid Guards, Insomniac Owner, Gold Rush, Butterfingers, Rapid Response, Hungry Hound) and fixed contracts; separate daily best and a day streak.
+
 Difficulty: Easy / Normal / Hard (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.
 
 Guard dog: roams the kitchen and east hallway, follows your scent trail, barks when it finds you (pulls nearby guards in) and sniffs out wardrobes so a guard can drag you out. Throw a coin and it runs off to sniff it. Contract: don't get barked at.

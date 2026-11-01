@@ -100,6 +100,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 .card{width:170px;padding:12px;border-radius:18px;border:4px solid var(--ink);background:linear-gradient(180deg,#fffaf0,#f3e6d0);color:var(--ink);cursor:pointer;box-shadow:0 6px 0 var(--ink);font:inherit;display:flex;flex-direction:column;gap:4px;align-items:center;transition:transform .08s}
 .card:hover{transform:translateY(-3px) rotate(-1deg)}.card .n{font-size:13px;opacity:.6}.card .t{font-size:20px}
 .card .art{width:100%;height:58px;border-radius:10px;background:linear-gradient(135deg,#ffb35c,#ff6b6b);display:grid;place-items:center;font-size:30px;color:#fff}
+.card.daily .art{background:linear-gradient(135deg,#7b5cff,#ff6aa8);display:flex;flex-direction:column;line-height:1;font-size:28px}.card.daily .art small{font-size:11px;letter-spacing:2px;opacity:.85}.card.daily .t{font-size:16px}
 .card.lock{background:#d9dcef}.card.lock .art{background:linear-gradient(135deg,#7d8bb8,#4b5585)}
 .stars span{color:#c2c6db;font-size:22px}.stars span.on{color:var(--y);text-shadow:0 2px 0 #b8901a}
 .panel{background:linear-gradient(180deg,#3d2c62,#251a3d);border:4px solid var(--ink);border-radius:22px;padding:20px 24px;box-shadow:0 8px 0 var(--ink),0 20px 40px rgba(0,0,0,.35),inset 0 2px 0 rgba(255,255,255,.12);display:flex;flex-direction:column;gap:12px;align-items:center;min-width:min(92vw,360px);max-width:94vw}
@@ -136,6 +137,13 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
 @media (max-height:500px){.screen{gap:8px;padding:10px}.panel{padding:12px 18px;gap:8px}#rStars span{font-size:42px}.logo{font-size:44px}.btn{font-size:20px;padding:10px 26px}.card .art{height:40px}}
 @media (max-width:640px){#mm{width:96px;top:104px}}
+@media (max-width:640px){
+ .levels{flex-direction:column;gap:8px;width:min(92vw,380px)}
+ .card{width:100%;display:grid;grid-template-columns:58px 1fr;column-gap:12px;row-gap:0;justify-items:start;text-align:left;padding:8px 12px}
+ .card .art{grid-row:1/span 4;width:58px;height:58px!important;align-self:center}
+ .card .t{font-size:17px}.card .n{font-size:11px}.stars span{font-size:16px}
+ .logo{font-size:52px}.screen{gap:10px}
+}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -179,6 +187,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <p class="sub o">Sneak in. Crack the safe. Grab the loot. Get to the van.</p>
   <div class="levels">
     <button class="card" id="lvl1"><div class="art">$</div><span class="n">LEVEL 1</span><span class="t">Safe House</span><span class="stars" id="lvl1stars"></span><span class="n" id="lvl1best">New!</span></button>
+    <button class="card daily" id="daily"><div class="art" id="dArt"></div><span class="n">DAILY CHALLENGE</span><span class="t" id="dMut">—</span><span class="n" id="dDesc"></span><span class="n" id="dBest"></span></button>
     <button class="card lock" id="lvl2"><div class="art">🔒</div><span class="n">LEVEL 2</span><span class="t">The Bank</span><span class="n">Coming soon</span></button>
   </div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>

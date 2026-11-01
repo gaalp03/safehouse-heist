@@ -17,10 +17,10 @@ export const CONTRACTS = [
   { id: 'nodash', text: 'Never dash', bonus: 500, check: (g, end) => (g.dashes > 0 ? 'fail' : end ? 'ok' : 'pending') },
 ];
 
-export function pickContracts(n = 3) {
+export function pickContracts(n = 3, rnd = Math.random) {
   const pool = CONTRACTS.slice(), out = [];
   while (out.length < n && pool.length) {
-    const c = pool.splice((Math.random() * pool.length) | 0, 1)[0];
+    const c = pool.splice((rnd() * pool.length) | 0, 1)[0];
     if (c.tag && out.some((o) => o.tag === c.tag)) continue;
     out.push({ ...c, st: 'pending' });
   }

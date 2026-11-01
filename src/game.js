@@ -9,6 +9,7 @@ import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from '
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
 import { DIFFS } from './difficulty.js';
+import { mulberry32 } from './util.js';
 
 const PR = 0.3, P_SPEED = 3.7, DASH_V = 11, DASH_T = 0.18, DASH_CD = 0.8, EYE = 1.02, CHASE = 3.2;
 const CONE_N = 20;
@@ -179,7 +180,8 @@ export class Game {
 
     // totals
     const v = def.values;
-    this.lootTotal = v.stash + v.bundle * v.bundles + L.loot.reduce((s, l) => s + v[l.type], 0);
+    this.baseLootTotal = v.stash + v.bundle * v.bundles + L.loot.reduce((s, l) => s + v[l.type], 0);
+    this.lootTotal = this.baseLootTotal;
     this.reset();
   }
 
@@ -197,13 +199,15 @@ export class Game {
     this.hasStash = false; this.safeOpen = false; this.safeProg = 0; this.safeTick = 0; this.doorT = 0;
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
-    this.D = DIFFS[this.app.diff] || DIFFS.normal;
+    this.daily = this.app.mode === 'daily' ? this.app.daily : null;
+    this.D = this.daily ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
+    this.lootTotal = this.baseLootTotal;
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
     this.hidFromAlert = false;
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
-    this.contracts = pickContracts(3);
+    this.contracts = pickContracts(3, this.daily ? mulberry32(this.daily.seed) : Math.random);
     this.alarm = false; this.alarmT = 0; this.alarmTotal = this.D.alarm; this.disarmProg = 0; this.alarms = 0; this.policeBusted = false;
     if (this.police) this.police.group.visible = false;
     this.app.onAlarm && this.app.onAlarm(false);
@@ -226,7 +230,7 @@ export class Game {
     for (const d of this.dogs) {
       const s = d.def.path[0];
       Object.assign(d, { x: s[0] + 0.5, z: s[1] + 0.5, wp: 1 % d.def.path.length, state: 'roam', t: 0, barkT: 0, sniffT: 0, ci: 0, lostT: 0,
-        nav: [], navGoal: -1, navT: 0, face: 0, moving: 0, tx: 0, tz: 0, waitT: 0, smellT: 0 });
+        nav: [], navGoal: -1, navT: 0, face: 0, moving: 0, tx: 0, tz: 0, waitT: 0, smellT: 0, mul: 1 });
     }
     for (const cam of this.cams) Object.assign(cam, { susp: 0, cool: 0, face: cam.def.face });
 
@@ -242,6 +246,7 @@ export class Game {
     for (const r of this.noiseRings) { r.m.visible = false; r.t = 1; }
     this.app.particles.clear();
     this.app.floaters.clear();
+    if (this.daily) this.daily.mutator.apply(this);
   }
 
   resetGuard(g) {
@@ -748,7 +753,7 @@ export class Game {
       case 'roam': {
         if (d.waitT > 0) { d.waitT -= dt; d.face += Math.sin(d.t * 3) * dt; break; }
         const w = P[d.wp];
-        if (this.navTo(d, w[0] + 0.5, w[1] + 0.5, d.def.speed, dt)) { d.wp = (d.wp + 1) % P.length; d.waitT = 1.2; }
+        if (this.navTo(d, w[0] + 0.5, w[1] + 0.5, d.def.speed * d.mul, dt)) { d.wp = (d.wp + 1) % P.length; d.waitT = 1.2; }
         // pick up a fresh scent
         d.smellT -= dt;
         if (playing && d.smellT <= 0) {
@@ -765,7 +770,7 @@ export class Game {
         d.sniffT += dt;
         const c = this.crumbs[d.ci];
         if (!c || d.sniffT > 16) { d.state = 'roam'; d.navGoal = -1; break; }
-        if (this.navTo(d, c.x, c.z, 2.5, dt) || Math.hypot(c.x - d.x, c.z - d.z) < 0.45) {
+        if (this.navTo(d, c.x, c.z, 2.5 * d.mul, dt) || Math.hypot(c.x - d.x, c.z - d.z) < 0.45) {
           if (d.ci < this.crumbs.length - 1) d.ci++;
           else { d.state = 'roam'; d.waitT = 2; d.navGoal = -1; }
         }
@@ -773,7 +778,7 @@ export class Game {
         break;
       }
       case 'coin':
-        if (this.navTo(d, d.tx, d.tz, 3.2, dt) || Math.hypot(d.tx - d.x, d.tz - d.z) < 0.6) {
+        if (this.navTo(d, d.tx, d.tz, 3.2 * d.mul, dt) || Math.hypot(d.tx - d.x, d.tz - d.z) < 0.6) {
           d.waitT -= dt;
           d.face += Math.sin(d.t * 6) * dt * 3;
           if (Math.random() < dt * 2) app.audio.play('sniff');
@@ -783,7 +788,7 @@ export class Game {
       case 'bark': {
         const sees = !hide && dist < 6 && this.los(d.x, d.z, p.x, p.z);
         if (sees) d.lostT = 0; else d.lostT += dt;
-        if (dist > 1.3 && !hide) this.navTo(d, p.x, p.z, 3.3, dt);
+        if (dist > 1.3 && !hide) this.navTo(d, p.x, p.z, 3.3 * d.mul, dt);
         d.face = turnTo(d.face, Math.atan2(p.x - d.x, p.z - d.z), 8 * dt);
         this.dogBark(d, dt, d.x, d.z);
         if (d.lostT > 2.5 || hide) { d.state = 'sniff'; d.ci = Math.max(0, this.crumbs.length - 6); d.sniffT = 0; }
@@ -1435,7 +1440,7 @@ export class Game {
     return {
       loot: this.lootGot, total: this.lootTotal, frac, time: this.time, ghost, kos: this.kos, stars,
       timeBonus, ghostBonus: ghost ? 1000 : 0, contracts: this.contracts, contractBonus,
-      diff: this.D.label, mult: this.D.mult,
+      diff: this.daily ? 'Daily ' + this.daily.label : this.D.label, mult: this.D.mult, daily: !!this.daily,
       score: Math.round((this.lootGot + timeBonus + (ghost ? 1000 : 0) + contractBonus) * this.D.mult),
     };
   }

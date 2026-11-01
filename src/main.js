@@ -9,6 +9,7 @@ import { LEVELS, loadLevel } from './levels/index.js';
 import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
 import { DIFFS, diffKey } from './difficulty.js';
+import { todaysDaily, prevDayKey } from './daily.js';
 
 const $ = (id) => document.getElementById(id);
 const HINTS = {
@@ -96,15 +97,16 @@ class App {
   // ---------------- UI ----------------
   bindUI() {
     const click = (id, fn) => $(id).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); fn(); });
-    click('bPlay', () => this.start());
+    click('bPlay', () => this.start('classic'));
     for (const el of document.querySelectorAll('#diff button')) {
       el.addEventListener('click', (e) => {
         e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
         this.diff = el.dataset.d; this.save.diff = this.diff; SDK.store(this.save); this.showMenu();
       });
     }
-    click('lvl1', () => this.start());
+    click('lvl1', () => this.start('classic'));
     click('lvl2', () => this.showSoon());
+    click('daily', () => this.start('daily'));
     click('bResume', () => this.resume());
     click('bRestart', () => this.start());
     click('bPMenu', () => this.showMenu());
@@ -121,7 +123,7 @@ class App {
     this.input.on('restart', () => { if (['play', 'pause', 'result', 'busted'].includes(this.state)) this.start(); });
     this.input.on('mute', () => this.toggleMute());
     this.input.on('key', (code) => {
-      if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.start(); }
+      if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.start('classic'); }
       else if ((code === 'Enter' || code === 'Space') && (this.state === 'result' || this.state === 'busted')) { this.audio.unlock(); this.retry(); }
     });
     this.input.on('mode', () => this.syncTouch());
@@ -161,6 +163,12 @@ class App {
     for (const el of document.querySelectorAll('#diff button')) el.classList.toggle('on', el.dataset.d === this.diff);
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
     $('lvl1best').textContent = b ? 'Best ' + fmtMoney(b.score) : 'New!';
+    this.daily = todaysDaily();
+    const db = (this.save.daily || {})[this.daily.key];
+    $('dMut').textContent = this.daily.mutator.name;
+    { const n = new Date(); $('dArt').innerHTML = `<small>${n.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</small>${n.getDate()}`; }
+    $('dDesc').textContent = this.daily.mutator.desc;
+    $('dBest').textContent = (db ? 'Today ' + fmtMoney(db.score) : this.daily.label) + ((this.save.streak && this.save.streak.n > 1 && (this.save.streak.last === this.daily.key || this.save.streak.last === prevDayKey())) ? ` · 🔥${this.save.streak.n}` : '');
     this.screen('menu');
   }
   async showSoon() {
@@ -177,7 +185,10 @@ class App {
     return s;
   }
 
-  start() {
+  start(mode) {
+    if (mode) this.mode = mode;
+    if (!this.mode) this.mode = 'classic';
+    if (this.mode === 'daily' && (!this.daily || this.daily.key !== todaysDaily().key)) this.daily = todaysDaily();
     this.audio.unlock();
     this.audio.siren(false);
     this.game.reset();
@@ -192,7 +203,12 @@ class App {
     this.onLoot(false, true);
     this.onCoins(this.game.coinsLeft);
     this.renderContracts(this.game.contracts);
-    $('ctoast').classList.add('hidden');
+    if (this.mode === 'daily') {
+      const t = $('ctoast');
+      t.innerHTML = `<small>DAILY CHALLENGE · ${this.daily.label}</small>${this.daily.mutator.name}<b>${this.daily.mutator.desc}</b>`;
+      t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
+      clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 3200);
+    } else $('ctoast').classList.add('hidden');
     this.setObjective('Crack the safe!');
     this.hint('move');
     SDK.gameplayStart();
@@ -372,10 +388,24 @@ class App {
     SDK.gameplayStop();
     SDK.happytime();
     const nStars = res.stars.filter(Boolean).length;
-    const bk = diffKey('safehouse', this.diff);
-    const prev = this.save.best[bk] || { score: 0, stars: 0 };
-    const newBest = res.score > prev.score;
-    this.save.best[bk] = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
+    let prev, newBest, bestScore;
+    if (res.daily) {
+      const k = this.daily.key, dd = (this.save.daily = this.save.daily || {});
+      prev = dd[k] || { score: 0, stars: 0 };
+      newBest = res.score > prev.score;
+      dd[k] = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
+      bestScore = dd[k].score;
+      const st = this.save.streak || { last: '', n: 0 };
+      if (st.last !== k) { st.n = st.last === prevDayKey() ? st.n + 1 : 1; st.last = k; }
+      this.save.streak = st;
+      for (const key of Object.keys(dd).sort().slice(0, -14)) delete dd[key];
+    } else {
+      const bk = diffKey('safehouse', this.diff);
+      prev = this.save.best[bk] || { score: 0, stars: 0 };
+      newBest = res.score > prev.score;
+      this.save.best[bk] = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
+      bestScore = this.save.best[bk].score;
+    }
     this.save.contracts = (this.save.contracts || 0) + res.contracts.filter((c) => c.st === 'ok').length;
     SDK.store(this.save);
     $('rStars').innerHTML = this.starsHTML(0);
@@ -387,7 +417,7 @@ class App {
     $('rScore').textContent = '$0';
     $('rCtr').innerHTML = res.contracts.map((c) => `<li class="${c.st === 'ok' ? 'ok' : 'no'}">${c.st === 'ok' ? '✔' : '✖'} ${c.text}<b>${c.st === 'ok' ? '+' + fmtMoney(c.bonus) : '—'}</b></li>`).join('');
     $('rCtrTotal').textContent = 'Contracts done (all time): ' + (this.save.contracts || 0);
-    $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(this.save.best[bk].score)) + ' · ' + res.diff;
+    $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day streak` : '');
     $('rMult').textContent = res.mult === 1 ? '' : `${res.diff} ×${res.mult}`;
     $('rBest').classList.toggle('new', newBest);
     this.screen('result');
