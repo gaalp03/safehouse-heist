@@ -607,7 +607,7 @@ export function buildWorld(L) {
             B.plain.box(fx + dx * 0.07, 1.68, fz + dy * 0.07, dx ? 0.03 : 1.2, 0.03, dy ? 0.03 : 1.2, 0xb59a5a);
             // window light: sun pool on the floor + light source + soft ray
             const px = fx + dx * 0.9, pz = fz + dy * 0.9;
-            B.patch.box(px + (dy ? 0.25 : 0), 0.015, pz + (dx ? 0.25 : 0), dx ? 1.0 : 0.8, 0, dy ? 1.0 : 0.8, 0xffd9a0, { faces: PY, fit: true });
+            B.patch.box(px + (dy ? 0.25 : 0), 0.015, pz + (dx ? 0.25 : 0), dx ? 1.0 : 0.8, 0, dy ? 1.0 : 0.8, NIGHT ? 0x6f86d8 : 0xffd9a0, { faces: PY, fit: true });
             lights.push({ x: fx + dx * 0.6, y: 1.1, z: fz + dy * 0.6, col: NIGHT ? [0.45, 0.55, 1.0] : [1, 0.8, 0.55], I: NIGHT ? 0.6 : 0.95, R: 3.6 });
             rays.push([fx + dx * 0.03, fz + dy * 0.03, dx, dy]);
           }
@@ -740,7 +740,7 @@ export function buildWorld(L) {
         [fx - tx * 0.3, 0.82, fz - tz * 0.3, 0.12], [fx + tx * 0.3, 0.82, fz + tz * 0.3, 0.12],
         [fx + dx * 0.55 + tx * 0.55, 0.02, fz + dy * 0.55 + tz * 0.55, 0], [fx + dx * 0.55 - tx * 0.05, 0.02, fz + dy * 0.55 - tz * 0.05, 0],
       ];
-      for (const p of pts) { pos.push(p[0], p[1], p[2]); col.push(1, 0.85, 0.6, p[3]); }
+      for (const p of pts) { pos.push(p[0], p[1], p[2]); if (NIGHT) col.push(0.5, 0.62, 1, p[3] * 0.9); else col.push(1, 0.85, 0.6, p[3]); }
       idx.push(base, base + 1, base + 2, base, base + 2, base + 3, base + 4, base + 5, base + 6, base + 4, base + 6, base + 7);
       idx.push(base, base + 1, base + 5, base, base + 5, base + 4);
     }

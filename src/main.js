@@ -1,5 +1,5 @@
 import { WebGLRenderer, Scene, PerspectiveCamera, HemisphereLight, DirectionalLight, Color, Vector3, Fog, ACESFilmicToneMapping } from 'three';
-import { makeSky, Dust } from './atmo.js';
+import { makeSky, makeNightSky, Dust } from './atmo.js';
 import { Game } from './game.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
@@ -78,6 +78,8 @@ class App {
     this.scene.fog = new Fog(0xf0c49a, 16, 70);
     this.sky = makeSky();
     this.scene.add(this.sky);
+    this.nightSky = makeNightSky();
+    this.scene.add(this.nightSky);
     r.autoClear = false;
     this.camera = new PerspectiveCamera(42, 1, 0.05, 120);
     this.camera.rotation.order = 'YXZ';
@@ -383,6 +385,8 @@ class App {
     this.scene.fog.color.setHex(n ? 0x1a2240 : 0xf0c49a);
     this.scene.fog.near = n ? 10 : 16; this.scene.fog.far = n ? 48 : 70;
     this.sky.material.color.setHex(n ? 0x26305a : 0xffffff);
+    this.nightSky.visible = n;
+    this.dust.points.material.color.setHex(n ? 0xb8c8ff : 0xffe2b0);
     this.hemi.intensity = n ? 1.1 : 1.8; this.hemi.color.setHex(n ? 0xb8c4ff : 0xffe6c8);
     this.sun.intensity = n ? 0.5 : 1.4; this.sun.color.setHex(n ? 0x9fb0ff : 0xffe0b8);
     this.vm.hemi.intensity = n ? 1.6 : 2.4;
@@ -764,6 +768,7 @@ class App {
     }
     this.updateCamera(rdt);
     this.sky.position.copy(this.camera.position);
+    this.nightSky.position.copy(this.camera.position);
     if (st !== 'pause') this.dust.update(rdt, this.camera.position.x, this.camera.position.z);
     this.dust.points.visible = st !== 'menu' && st !== 'soon';
     this.floaters.update(st === 'pause' ? 0 : rdt, this.camera, this.w, this.h);

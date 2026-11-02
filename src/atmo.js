@@ -1,6 +1,6 @@
 // Atmosphere: gradient sky dome + floating dust motes that drift around the camera.
 import {
-  Mesh, SphereGeometry, MeshBasicMaterial, BackSide, Color, Points, PointsMaterial, BufferGeometry, BufferAttribute, AdditiveBlending,
+  Group, PlaneGeometry, CircleGeometry, Mesh, SphereGeometry, MeshBasicMaterial, BackSide, Color, Points, PointsMaterial, BufferGeometry, BufferAttribute, AdditiveBlending,
 } from 'three';
 import { textures } from './textures.js';
 
@@ -19,6 +19,28 @@ export function makeSky() {
   m.renderOrder = -10;
   m.frustumCulled = false;
   return m;
+}
+
+// night sky: starfield + glowing moon, follows the camera like the sky dome
+export function makeNightSky() {
+  const g = new Group();
+  const N = 420, pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const u = Math.random() * 6.283, v = 0.08 + Math.random() * 0.9, r = 80;
+    pos.set([Math.cos(u) * Math.cos(v * 1.5) * r, Math.sin(v * 1.5) * r, Math.sin(u) * Math.cos(v * 1.5) * r], i * 3);
+  }
+  const sg = new BufferGeometry(); sg.setAttribute('position', new BufferAttribute(pos, 3));
+  const stars = new Points(sg, new PointsMaterial({ color: 0xdfe6ff, size: 0.55, sizeAttenuation: true, transparent: true, opacity: 0.9, fog: false, depthWrite: false, toneMapped: false }));
+  stars.renderOrder = -9;
+  const moonMat = new MeshBasicMaterial({ map: textures().glow, color: 0xdfe8ff, transparent: true, depthWrite: false, fog: false, blending: AdditiveBlending, toneMapped: false });
+  const moon = new Mesh(new PlaneGeometry(16, 16), moonMat);
+  const disc = new Mesh(new CircleGeometry(2.6, 24), new MeshBasicMaterial({ color: 0xf2f4ff, fog: false, toneMapped: false, depthWrite: false }));
+  moon.position.set(-38, 44, -52); disc.position.copy(moon.position);
+  moon.lookAt(0, 0, 0); disc.lookAt(0, 0, 0);
+  moon.renderOrder = -8; disc.renderOrder = -8;
+  g.add(stars, moon, disc);
+  g.visible = false;
+  return g;
 }
 
 export class Dust {
