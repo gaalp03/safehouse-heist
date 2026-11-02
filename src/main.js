@@ -777,8 +777,18 @@ class App {
     $('lootv').textContent = fmtMoney(g.lootGot);
     $('lootp').textContent = Math.round((g.lootGot / g.lootTotal) * 100) + '%';
     $('lootbar').style.width = Math.min(100, (g.lootGot / g.lootTotal) * 100) + '%';
-    $('lootbar').classList.toggle('star', g.lootGot / g.lootTotal >= 0.7);
-    if (silent) return;
+    const star = g.lootGot / g.lootTotal >= 0.7;
+    $('lootbar').classList.toggle('star', star);
+    if (silent) { this.lootStar = star; return; }
+    if (star && !this.lootStar && g.state === 'play') {
+      // second star earned mid-run: tell the player right away
+      this.lootStar = true;
+      const t = $('ctoast');
+      t.innerHTML = `<small>LOOT STAR EARNED</small>★ 70% grabbed<b>Every extra dollar still counts!</b>`;
+      t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
+      clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 2000);
+      this.audio.play('star', 1); this.shake.add(0.12);
+    }
     const l = $('loot');
     l.classList.remove('punch', 'bigpunch'); void l.offsetWidth; l.classList.add(big ? 'bigpunch' : 'punch');
   }
