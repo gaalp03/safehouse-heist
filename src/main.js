@@ -670,6 +670,11 @@ class App {
     this.audio.siren(false);
     this.state = 'pause';
     SDK.gameplayStop();
+    $('pObj').textContent = '🎯 ' + (this.game.objText || '');
+    const t = this.input.touch, K = t
+      ? [['◀▶', 'Left side: move'], ['👆', 'Right side: look'], ['✋', 'Grab · KO from behind · crack (hold)'], ['⚡', 'Dash (loud!)'], ['🦶', 'Sneak (quiet, slower)'], ['🪙', 'Throw a coin (lure)'], ['💨', 'Smoke bomb']]
+      : [['WASD', 'Move'], ['Mouse', 'Look'], ['E', 'Grab · KO from behind · crack (hold)'], ['Space', 'Dash (loud!)'], ['Z', 'Sneak (quiet, slower)'], ['Q', 'Throw a coin (lure)'], ['C', 'Smoke bomb'], ['R', 'Restart run']];
+    $('pKeys').innerHTML = K.map(([k, d]) => `<li><kbd>${k}</kbd>${d}</li>`).join('');
     this.screen('pause');
   }
   resume() {
