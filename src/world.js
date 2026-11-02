@@ -1235,16 +1235,25 @@ export function buildPolice() {
 }
 
 export function buildSecDoor(alongX) {
+  // reinforced steel security door: framed panels, rivets, hazard kick plate, porthole, stencilled SECURE, card slot LED
   const g = new GeoBuilder();
   const w = 1.0, h = 1.55, t = 0.16;
-  g.box(0, 0, 0, alongX ? w : t, h, alongX ? t : w, 0x8a94a4, { faces: 63, top: 0x6a7484 });
-  for (let k = 0; k < 6; k++) g.box(0, 0.08 + k * 0.08, 0, alongX ? w + 0.004 : t + 0.004, 0.04, alongX ? t + 0.004 : w + 0.004, k % 2 ? 0x22242f : 0xf2c94c, { faces: 1 | 2 | 16 | 32 });
-  g.box(0, 0.75, 0, alongX ? 0.3 : t + 0.02, 0.3, alongX ? t + 0.02 : 0.3, 0x3a4252, { faces: 63 });
-  g.box(0, 1.2, 0, alongX ? 0.5 : t + 0.01, 0.08, alongX ? t + 0.01 : 0.5, 0x5a6474, { faces: 63 });
+  const B = (x, y, ww, hh, d, col, o = {}) => g.box(alongX ? x : 0, y, alongX ? 0 : x, alongX ? ww : d, hh, alongX ? d : ww, col, o);
+  B(0, 0, w, h, t, 0x7a8496, { faces: 63, top: 0x5a6474 });                        // slab
+  for (const s of [-1, 1]) B(s * 0.46, 0, 0.08, h, t + 0.02, 0x5a6474, { faces: 63 });  // side stiles
+  B(0, h - 0.08, w, 0.08, t + 0.02, 0x5a6474, { faces: 63 });                     // top rail
+  for (const y of [0.55, 1.0]) B(0, y, 0.84, 0.05, t + 0.012, 0x6a7484, { faces: 63 }); // cross rails
+  for (let k = 0; k < 6; k++) B(-0.36 + k * 0.144, 0.04, 0.072, 0.34, t + 0.006, k % 2 ? 0x22242f : 0xf2c94c, { faces: 63 & ~PY & ~NY }); // hazard kick plate
+  for (const s of [-1, 1]) for (const y of [0.45, 0.6, 0.95, 1.1, 1.4]) B(s * 0.46, y, 0.035, 0.035, t + 0.04, 0xc9d2dc, { faces: 63 }); // rivets
+  B(0, 1.15, 0.26, 0.22, t + 0.03, 0x3a4252, { faces: 63 });                       // porthole frame
+  B(0, 1.17, 0.18, 0.16, t + 0.036, 0x9fd8ff, { faces: 63 });                      // porthole glass
+  B(0, 0.78, 0.5, 0.12, t + 0.01, 0xf2c94c, { faces: 63 });                        // SECURE stencil plate
+  for (let k = 0; k < 6; k++) B(-0.19 + k * 0.076, 0.8, 0.05, 0.08, t + 0.016, 0x22242f, { faces: 63 & ~PY & ~NY });
+  B(0.3, 0.62, 0.16, 0.06, t + 0.03, 0xc9d2dc, { faces: 63 });                     // push bar
   const grp = new Group();
-  grp.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
-  const led = new Mesh(new BoxGeometry(alongX ? 0.12 : t + 0.04, 0.12, alongX ? t + 0.04 : 0.12), new MeshBasicMaterial({ color: 0xff2a3a }));
-  led.position.y = 0.95;
+  grp.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true, emissive: 0x10141c })));
+  const led = new Mesh(new BoxGeometry(alongX ? 0.1 : t + 0.05, 0.1, alongX ? t + 0.05 : 0.1), new MeshBasicMaterial({ color: 0xff2a3a }));
+  led.position.set(alongX ? -0.3 : 0, 0.62, alongX ? 0 : -0.3);
   grp.add(led);
   return { group: grp, led };
 }
