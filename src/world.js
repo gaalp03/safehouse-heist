@@ -3,6 +3,7 @@
 import {
   Mesh, Group, MeshLambertMaterial, MeshBasicMaterial, OctahedronGeometry, Points, PointsMaterial,
   BufferGeometry, BufferAttribute, AdditiveBlending, DoubleSide, BoxGeometry, CylinderGeometry,
+  CanvasTexture, SRGBColorSpace, RepeatWrapping, ClampToEdgeWrapping,
 } from 'three';
 import { GeoBuilder, PX, NX, PY, NY, PZ, NZ } from './geo.js';
 import { mulberry32, shade, clamp } from './util.js';
@@ -459,6 +460,41 @@ function bake(bld, lightAt) {
 }
 
 // ---------------------------------------------------------------- main build
+// seamless night landscape strip for the train windows: sky, moonlit hills, tree line, poles, far house lights
+function landscapeTexture() {
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
+  const g = c.getContext('2d'), r = mulberry32(77), W = c.width, H = c.height;
+  const sky = g.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#0d1430'); sky.addColorStop(0.55, '#24325e'); sky.addColorStop(1, '#3a3f66');
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(230,236,255,0.8)';
+  for (let i = 0; i < 70; i++) g.fillRect(r() * W, r() * H * 0.45, 1.5, 1.5);
+  const wrap = (fn) => { fn(0); fn(-W); fn(W); };
+  // far hills
+  g.fillStyle = '#1b2446';
+  g.beginPath(); g.moveTo(0, H);
+  for (let x = 0; x <= W; x += 16) g.lineTo(x, 62 + Math.sin((x / W) * Math.PI * 6) * 10 + Math.sin((x / W) * Math.PI * 14) * 5);
+  g.lineTo(W, H); g.fill();
+  // house lights on the hills
+  for (let i = 0; i < 14; i++) { const x = r() * W, y = 70 + r() * 14; wrap((o) => { g.fillStyle = '#ffd38a'; g.fillRect(x + o, y, 3, 2); }); }
+  // tree line
+  g.fillStyle = '#0c1226';
+  for (let i = 0; i < 90; i++) {
+    const x = r() * W, h = 14 + r() * 22, w = 8 + r() * 10;
+    wrap((o) => { g.beginPath(); g.moveTo(x + o - w, H - 18); g.lineTo(x + o, H - 18 - h); g.lineTo(x + o + w, H - 18); g.fill(); });
+  }
+  g.fillRect(0, H - 20, W, 20);
+  // telegraph poles + wire
+  g.strokeStyle = '#05080f'; g.lineWidth = 3;
+  for (let x = 40; x < W; x += 128) { g.beginPath(); g.moveTo(x, H); g.lineTo(x, 26); g.stroke(); g.fillStyle = '#05080f'; g.fillRect(x - 9, 30, 18, 3); }
+  g.lineWidth = 1; g.beginPath();
+  for (let x = 40; x < W + 128; x += 128) { g.moveTo(x, 31); g.quadraticCurveTo(x + 64, 40, x + 128, 31); }
+  g.stroke();
+  const t = new CanvasTexture(c);
+  t.colorSpace = SRGBColorSpace; t.wrapS = RepeatWrapping; t.wrapT = ClampToEdgeWrapping;
+  return t;
+}
+
 export function buildWorld(L) {
   const T = textures();
   const B = {
@@ -466,7 +502,9 @@ export function buildWorld(L) {
     panel: new GeoBuilder(1), brick: new GeoBuilder(0.9), plaster: new GeoBuilder(2), grass: new GeoBuilder(3),
     asphalt: new GeoBuilder(3), concrete: new GeoBuilder(1), plain: new GeoBuilder(1), woodfine: new GeoBuilder(0.8),
     rug: new GeoBuilder(1), unlit: new GeoBuilder(1), shadow: new GeoBuilder(1), patch: new GeoBuilder(1),
+    trainN: new GeoBuilder(8), trainS: new GeoBuilder(8),
   };
+  const TRAIN = !!L.def.train;
   const { W, H, ch, floor } = L;
   const rng = mulberry32(1337);
   const rr = (a, b) => a + rng() * (b - a);
@@ -517,6 +555,15 @@ export function buildWorld(L) {
   // ---- surroundings ----
   const ext = 40;
   const ground = (bld, x0, z0, x1, z1, col) => bld.box((x0 + x1) / 2, -0.06, (z0 + z1) / 2, x1 - x0, 0.05, z1 - z0, col, { faces: PY });
+  if (TRAIN) {
+    // trackbed: dark fields, a gravel bed, sleepers and two shiny rails running off into the night
+    ground(B.grass, -ext, -ext, W + ext, 0.6, 0x6a7a6a);
+    ground(B.grass, -ext, H - 0.6, W + ext, H + ext, 0x6a7a6a);
+    ground(B.concrete, -ext, 0.6, W + ext, H - 0.6, 0x8a8478);
+    for (let x = -ext; x < W + ext; x += 0.7) B.woodfine.box(x, -0.02, H / 2, 0.22, 0.05, H - 2.4, 0x5a3f2c, { faces: PY | PX | NX });
+    for (const z of [H / 2 - 1.6, H / 2 + 1.6]) B.plain.box(W / 2, 0, z, W + ext * 2, 0.08, 0.1, 0xb8c0cc, { top: 0xe8eef6 });
+  }
+  if (!TRAIN) {
   ground(B.grass, -ext, -ext, 0, roadTop, 0xffffff);
   ground(B.grass, W, -ext, W + ext, roadTop, 0xffffff);
   ground(B.grass, 0, -ext, W, 0, 0xffffff);
@@ -558,6 +605,7 @@ export function buildWorld(L) {
   fenceRun(-0.05, -0.05, -0.05, roadTop - 0.05);
   fenceRun(W + 0.05, -0.05, W + 0.05, roadTop - 0.05);
   for (const bx of [-0.25, W + 0.25]) for (let z = roadTop; z < H; z += 0.5) B.plain.box(bx, 0, z + 0.25, 0.3, 0.7, 0.5, ((z * 2) | 0) % 2 ? 0xe8483f : 0xffffff);
+  }
 
   // ---- grid: floors, walls, ceilings, doors, windows ----
   const quad = (bld, x, y, dx, dy, y0, h, col, seg = 2, o = {}) => {
@@ -575,10 +623,14 @@ export function buildWorld(L) {
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         if (isWall(x + dx, y + dy)) continue;
         const out = isOut(x + dx, y + dy);
-        const win = (x + y) % 3 === 0 && (out || (isOut(x - dx, y - dy) && !isWall(x - dx, y - dy)));
+        const win = (TRAIN ? x % 2 === 0 && dy !== 0 : (x + y) % 3 === 0) && (out || (isOut(x - dx, y - dy) && !isWall(x - dx, y - dy)));
         const fx = x + 0.5 + dx * 0.5, fz = y + 0.5 + dy * 0.5, tw = (w) => [dx ? 0.03 : w, dy ? 0.03 : w];
         const bit = dx > 0 ? PX : dx < 0 ? NX : dy > 0 ? PZ : NZ;
-        if (out) {
+        if (out && TRAIN) {
+          // carriage exterior: navy steel with a gold stripe
+          quad(B.plain, x, y, dx, dy, 0, WALL_H, 0x2a3552, 2);
+          B.plain.box(fx + dx * 0.01, 0.62, fz + dy * 0.01, dx ? 0.02 : 1, 0.08, dy ? 0.02 : 1, 0xd9b45a, { faces: bit });
+        } else if (out) {
           quad(B.brick, x, y, dx, dy, 0, WALL_H, 0xffffff, 2);
           B.plain.box(fx + dx * 0.02, 0, fz + dy * 0.02, ...[dx ? 0.04 : 1, 0.2, dy ? 0.04 : 1].slice(0, 1), 0.2, dy ? 0.04 : 1, 0x8a7a6a, { faces: bit | PY });
         } else {
@@ -593,8 +645,11 @@ export function buildWorld(L) {
         }
         if (win) {
           const wf = out ? 0xf6f0e6 : 0xffffff;
+          if (TRAIN && !out) (dy > 0 ? B.trainN : B.trainS).box(fx + dx * 0.006, 0.82, fz + dy * 0.006, 0.62, 0.62, 0.01, 0xffffff, { faces: bit });
+          else {
           B.unlit.box(fx + dx * 0.006, 0.82, fz + dy * 0.006, dx ? 0.01 : 0.62, 0.62, dy ? 0.01 : 0.62, out ? (NIGHT ? 0x3a4a6a : 0x6f9ec2) : (NIGHT ? 0x4a5a8a : 0xffe2b0), { faces: bit });
           B.unlit.box(fx + dx * 0.008, 1.14, fz + dy * 0.008, dx ? 0.01 : 0.62, 0.3, dy ? 0.01 : 0.62, out ? (NIGHT ? 0x4a5a7a : 0x8fb8d6) : (NIGHT ? 0x6a7aa8 : 0xfff1d0), { faces: bit });
+          }
           B.plain.box(fx + dx * 0.02, 0.76, fz + dy * 0.02, dx ? 0.06 : 0.78, 0.06, dy ? 0.06 : 0.78, wf, { faces: 63 & ~NY });
           B.plain.box(fx + dx * 0.02, 1.44, fz + dy * 0.02, dx ? 0.05 : 0.74, 0.05, dy ? 0.05 : 0.74, wf);
           for (const s of [-1, 1]) B.plain.box(fx + dx * 0.02 + (dy ? s * 0.345 : 0), 0.8, fz + dy * 0.02 + (dx ? s * 0.345 : 0), dx ? 0.05 : 0.05, 0.66, dy ? 0.05 : 0.05, wf);
@@ -728,6 +783,18 @@ export function buildWorld(L) {
   mk(B.concrete, lit(T.concrete)); mk(B.plain, lit(T.plain)); mk(B.woodfine, lit(T.woodfine));
   mk(B.rug, new MeshBasicMaterial({ vertexColors: true, map: T.rug, polygonOffset: true, polygonOffsetFactor: -1 }));
   mk(B.unlit, new MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+  if (TRAIN) {
+    // windows show a scrolling night landscape (north and south sides scroll in opposite uv directions)
+    const tex = landscapeTexture(), mats = [];
+    for (const [bld, sgn] of [[B.trainN, 1], [B.trainS, -1]]) {
+      const t = tex.clone(); t.needsUpdate = true;
+      t.repeat.set(1, 8 / 0.62); t.offset.set(0, -0.82 / 0.62);
+      const m = new MeshBasicMaterial({ map: t, toneMapped: false });
+      m.userData.sgn = sgn; mats.push(m);
+      mk(bld, m);
+    }
+    group.userData.trainMats = mats;
+  }
   mk(B.shadow, new MeshBasicMaterial({ map: T.shadow, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), 1);
   mk(B.patch, new MeshBasicMaterial({ vertexColors: true, map: T.patch, transparent: true, depthWrite: false, blending: AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -3 }), 2);
 

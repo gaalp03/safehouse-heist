@@ -142,6 +142,7 @@ export class Audio {
         break;
       }
       case 'mumble': for (let i = 0; i < 4; i++) T(150 + Math.random() * 90, 0.07, { type: 'triangle', vol: 0.04, delay: i * 0.09, slide: 120 + Math.random() * 80 }); break;
+      case 'clack': N(0.05, { vol: 0.16, freq: 260, type: 'lowpass' }); N(0.05, { vol: 0.13, freq: 240, type: 'lowpass', delay: 0.13 }); T(70, 0.06, { type: 'sine', vol: 0.08 }); T(65, 0.06, { type: 'sine', vol: 0.07, delay: 0.13 }); break;
       case 'vent':
         T(140, 0.12, { type: 'square', vol: 0.12 }); N(0.12, { vol: 0.3, freq: 2200, q: 3 });
         for (let i = 0; i < 9; i++) N(0.11, { vol: 0.16, freq: 600 + (i % 3) * 250, q: 4, delay: 0.25 + i * 0.14 });
@@ -197,6 +198,22 @@ export class Audio {
     }
   }
 
+  // looping train rumble
+  rumble(on) {
+    if (!this.ctx || !this.noiseBuf) return;
+    if (on && !this.rb) {
+      const ctx = this.ctx, src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = this.noiseBuf; src.loop = true; src.playbackRate.value = 0.5;
+      f.type = 'lowpass'; f.frequency.value = 260;
+      g.gain.value = 0.0001; g.gain.setTargetAtTime(0.16, ctx.currentTime, 0.6);
+      src.connect(f).connect(g).connect(this.sfx); src.start();
+      this.rb = { src, g };
+    } else if (!on && this.rb) {
+      const r = this.rb, t = this.ctx.currentTime;
+      r.g.gain.setTargetAtTime(0.0001, t, 0.2); r.src.stop(t + 1);
+      this.rb = null;
+    }
+  }
   // looping rain bed (muffled, we're indoors)
   rain(on) {
     if (!this.ctx || !this.noiseBuf) return;

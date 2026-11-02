@@ -133,7 +133,7 @@ class App {
   bindUI() {
     const click = (id, fn) => $(id).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); fn(); });
     click('bPlay', () => this.playSel());
-    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
+    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
     for (const el of document.querySelectorAll('#diff button')) {
       el.addEventListener('click', (e) => {
         e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
@@ -155,6 +155,7 @@ class App {
       else if (this.levelIdx === 2 && this.museumUnlocked()) this.start('classic', 3);
       else if (this.levelIdx === 3 && this.casinoUnlocked()) this.start('classic', 4);
       else if (this.levelIdx === 4 && this.penthouseUnlocked()) this.start('classic', 5);
+      else if (this.levelIdx === 5 && this.trainUnlocked()) this.start('classic', 6);
       else this.showSoon();
     });
     click('bRMenu', () => this.showMenu());
@@ -226,6 +227,11 @@ class App {
     $('lvl5art').textContent = cu ? '🎰' : '🔒';
     $('lvl5stars').innerHTML = cu ? this.starsHTML(cb ? cb.stars : 0) : '';
     $('lvl5best').textContent = cu ? (cb ? 'Best ' + fmtMoney(cb.score) : 'New!') : 'Escape the Museum to unlock';
+    const tu = this.trainUnlocked(), tb = this.save.best[diffKey('train', this.diff)];
+    $('lvl7').classList.toggle('lock', !tu);
+    $('lvl7art').textContent = tu ? '🚂' : '🔒';
+    $('lvl7stars').innerHTML = tu ? this.starsHTML(tb ? tb.stars : 0) : '';
+    $('lvl7best').textContent = tu ? (tb ? 'Best ' + fmtMoney(tb.score) : 'New!') : 'Escape the Penthouse to unlock';
     const pu = this.penthouseUnlocked(), pb = this.save.best[diffKey('penthouse', this.diff)];
     $('lvl6').classList.toggle('lock', !pu);
     $('lvl6art').textContent = pu ? '🌃' : '🔒';
@@ -294,7 +300,7 @@ class App {
     const bt = (id) => (s.best[id] != null ? fmtTime(s.best[id]) : '—');
     const rows = [['Heists', s.runs], ['Escapes', s.escapes], ['Busted', s.busts], ['Total loot', fmtMoney(s.loot)], ['Guards KO', s.kos],
       ['Contracts', s.contracts], ['Best Safe House', bt('safehouse')], ['Best Bank', bt('bank')], ['Best Jewelry', bt('jewelry')],
-      ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')]];
+      ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')], ['Best Train', bt('train')]];
     $('trStats').innerHTML = rows.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('trAch').innerHTML = ACH.map((a) => `<div class="ach ${got[a.id] ? 'on' : ''}"><i>${got[a.id] ? a.icon : '🔒'}</i><b>${a.name}</b><small>${a.desc}</small></div>`).join('');
     $('trCount').textContent = `${Object.keys(got).filter((k) => ACH.some((a) => a.id === k)).length} / ${ACH.length}`;
@@ -305,7 +311,7 @@ class App {
     $('rAch').classList.toggle('hidden', !list.length);
     if (list.length) setTimeout(() => this.audio.play('contract'), 1600);
   }
-  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : k === 'lvl6' ? !this.penthouseUnlocked() : false; }
+  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : k === 'lvl6' ? !this.penthouseUnlocked() : k === 'lvl7' ? !this.trainUnlocked() : false; }
   selectPin(k) {
     this.sel = k; this.save.sel = k;
     if (this.pinLocked(k)) { const c = $(k); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
@@ -315,7 +321,7 @@ class App {
     let k = this.sel || this.save.sel || 'lvl1';
     if (!$(k)) k = 'lvl1';
     this.sel = k;
-    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'daily']) $(id).classList.toggle('on', id === k);
+    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'daily']) $(id).classList.toggle('on', id === k);
     const el = $(k), locked = this.pinLocked(k);
     $('selName').textContent = k === 'daily' ? 'Daily: ' + $('dMut').textContent : el.querySelector('.t').textContent;
     const st = el.querySelector('.stars');
@@ -324,14 +330,14 @@ class App {
     $('bPlay').textContent = locked ? '🔒 LOCKED' : 'PLAY';
     $('bPlay').classList.toggle('dis', locked);
     let tot = 0;
-    for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
-    $('starTotal').textContent = `★ ${tot}/18`;
+    for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
+    $('starTotal').textContent = `★ ${tot}/21`;
   }
   playSel() {
     const k = this.sel || 'lvl1';
     if (this.pinLocked(k)) { this.audio.play('nope'); this.selectPin(k); return; }
     if (k === 'daily') this.start('daily');
-    else this.start('classic', { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5 }[k]);
+    else this.start('classic', { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6 }[k]);
   }
   // animated heist route recap on a minimap canvas
   drawRecap(id, win) {
@@ -377,8 +383,12 @@ class App {
     SDK.gameplayStop();
     this.state = 'soon';
     $('soonName').textContent = 'More heists';
-    $('soonList').innerHTML = ['Night train job', 'Harbor container yard', 'Mayor\'s mansion gala'].map((t) => `<li>${t}</li>`).join('');
+    $('soonList').innerHTML = ['Harbor container yard', 'Mayor\'s mansion gala', 'Armored truck ambush'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
+  }
+  trainUnlocked() {
+    const b = this.save.best;
+    return !!(b.penthouse || b.penthouse_easy || b.penthouse_hard || b.penthouse_ironman || this.save.trainOpen);
   }
   penthouseUnlocked() {
     const b = this.save.best;
@@ -485,6 +495,7 @@ class App {
     if (g.vents.length) it.push('🕳️ Air vent');
     if (g.tvs.length) it.push('📺 TV lure');
     if ((d.cameras || []).length) it.push(`📹 ${d.cameras.length} camera${d.cameras.length > 1 ? 's' : ''}`);
+    if (d.train) it.push('🚂 Moving train');
     it.push(d.heli ? '🚁 Roof extraction' : L.van ? '🚐 Van out front' : '🪜 Roof hatch exit');
     const t = $('ctoast');
     t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small><span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span>`;
@@ -854,6 +865,7 @@ class App {
       const el = $('wet'); el.style.opacity = this.wetK.toFixed(2); el.classList.toggle('hidden', this.wetK < 0.02);
     }
     this.audio.rain(!!(this.level && this.level.rain) && (st === 'play' || st === 'pause' || st === 'busted'));
+    this.audio.rumble(!!(this.level && this.level.train) && (st === 'play' || st === 'pause' || st === 'busted'));
     if (this.boltK > 0) { this.boltK = Math.max(0, this.boltK - rdt * 2.2); }
     this.renderer.toneMappingExposure = 1.15 + this.boltK * this.boltK * 1.6;
     this.dust.points.visible = st !== 'menu' && st !== 'soon';

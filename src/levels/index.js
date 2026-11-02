@@ -6,6 +6,7 @@ export const LEVELS = [
   { id: 'museum', num: 4, name: 'The Museum', unlock: 'jewelry', load: () => import('./level4-museum.js') },
   { id: 'casino', num: 5, name: 'The Casino', unlock: 'museum', load: () => import('./level5-casino.js') },
   { id: 'penthouse', num: 6, name: 'The Penthouse', unlock: 'casino', load: () => import('./level6-penthouse.js') },
+  { id: 'train', num: 7, name: 'Night Train', unlock: 'penthouse', load: () => import('./level7-train.js') },
 ];
 
 const cache = {};

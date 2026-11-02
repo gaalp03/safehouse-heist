@@ -42,13 +42,15 @@ Level 3 — The Jewelry Store (unlocks after escaping the Bank): a night heist w
 
 Level 4 — The Museum (unlocks after the Jewelry Store): night heist through a grand hall of pedestals and statues, an antiquities gallery, a gem room and the locked curator's office. Sweeping ceiling spotlights glide along tracks; standing in a light pool builds detection and trips the alarm (smoke and hiding work; the breaker in the gem room kills them). Contract: never step into a spotlight; achievement: Night at the Museum.
 
-City map menu: levels are pins on a stylised night city map (locked pins greyed, dashed heist route, pulsing Daily pin, total stars ★ x/18); tap a pin to see its info, PLAY starts it.
+City map menu: levels are pins on a stylised night city map (locked pins greyed, dashed heist route, pulsing Daily pin, total stars ★ x/21); tap a pin to see its info, PLAY starts it.
 
 Yawning guards: when a guard pauses on patrol he sometimes yawns, shrinking his vision cone for ~2 s — a short window to slip past.
 
 Level 5 — The Casino (unlocks after the Museum): neon casino floor with banks of slot machines, poker tables and a bar, security office with the keycard, counting room vault, VIP lounge. Hold E at a slot machine for a flashing, jingling jackpot that lures guards (and spits out cash). Two roaming security guards pick random routes across the floor. Contract: distract guards with a slot machine; achievement: High Roller.
 
 Level 6 — The Penthouse (unlocks after the Casino): night-time luxury apartment. A laser-grid hallway with four staggered beams, a sweeping laser across the study in front of the wall safe, the owner asleep beside the keycard in a locked bedroom, a gallery and a kitchen with the breaker box. No van: climb the roof hatch and a getaway helicopter lifts you out over the city. Achievement: Sky High.
+
+Level 7 — The Night Train (unlocks after the Penthouse): four carriages rushing through the night (baggage car, coach, dining car, mail car). A night landscape scrolls past every window, the carriage sways, wheels clack over the rail joints and a low rumble runs under everything. Pick the gangway lock, lift the keycard in the coach, slip past the bartender (he runs for the alarm button), get through the mail-car laser and crack the mail safe, then climb onto the roof for a helicopter pickup. Achievement: Great Train Robbery.
 
 Route recap: the results and busted screens animate a minimap of your run — your path (green while unseen, red while a guard was onto you), loot grabs, knockouts, where the alarm went off and where you got caught, plus the % of the run you were chased.
 

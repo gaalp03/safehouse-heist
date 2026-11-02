@@ -81,7 +81,9 @@ export class Game {
     for (const g of this.guards || []) g.badge.remove();
     this.def = def;
     const L = (this.L = parseLevel(def));
-    this.root.add(buildWorld(L));
+    const world = buildWorld(L);
+    this.root.add(world);
+    this.trainMats = world.userData.trainMats || null; this.clackT = 0; this.sway = 0;
 
     this.safe = buildSafe();
     this.prev = null;
@@ -605,6 +607,7 @@ export class Game {
   // ---------- main update ----------
   update(rdt, demo) {
     let dt = rdt;
+    if (this.trainMats) this.updateTrain(rdt, demo);
     if (this.hitstop > 0) { this.hitstop -= rdt; dt *= 0.08; }
     else if (this.slowT > 0) { this.slowT -= rdt; dt *= this.slowK + (1 - this.slowK) * clamp(1 - this.slowT / 0.15, 0, 1); }
     this.fovPunch = damp(this.fovPunch || 0, 0, 6, rdt); this.kickP = damp(this.kickP || 0, 0, 9, rdt); this.kickR = damp(this.kickR || 0, 0, 7, rdt);
@@ -613,7 +616,7 @@ export class Game {
     if (playing) {
       this.time += dt; this.updatePlayer(dt);
       // shift change: reinforcements walk in from the entrance
-      const sched = this.app.mode === 'tutorial' || this.daily || this.D.label === 'Easy' ? [] : this.D.mult >= 1.5 ? [45, 90] : [60, 120];
+      const sched = this.app.mode === 'tutorial' || this.daily || this.D.label === 'Easy' || this.def.noShift ? [] : this.D.mult >= 1.5 ? [45, 90] : [60, 120];
       if (this.shiftWarn === this.shiftN && this.shiftN < sched.length && this.time >= sched[this.shiftN] - 10) {
         this.shiftWarn++; this.app.audio.play('radio');
         this.app.announce('📻 "Relief guard arriving in 10 seconds" — grab what you can!');
@@ -1509,6 +1512,14 @@ export class Game {
     g.navGoal = -1;
   }
 
+  // night train: scenery scrolls past the windows, the carriage sways and the wheels clack over rail joints
+  updateTrain(dt, demo) {
+    for (const m of this.trainMats) m.map.offset.x += m.userData.sgn * dt * 0.9;
+    this.sway = Math.sin(this.t * 1.3) * 0.006 + Math.sin(this.t * 3.1) * 0.002;
+    if (demo || this.state !== 'play') return;
+    this.clackT -= dt;
+    if (this.clackT <= 0) { this.clackT = 0.95 + Math.random() * 0.15; this.app.audio.play('clack'); this.app.shake.add(0.015); }
+  }
   // idle chatter: two calm guards passing each other trade a line (only when the robber is near enough to hear)
   updateChatter(dt) {
     const app = this.app, p = this.player;
@@ -2059,7 +2070,7 @@ export class Game {
     this.fovKick = damp(this.fovKick, p.dashT > 0 ? 12 : 0, p.dashT > 0 ? 25 : 6, dt);
     const sh = app.shake, drop = this.state === 'caught' ? 0.3 * Math.min(1, this.endT * 3) : 0;
     cam.position.set(p.x + rx * bobX, EYE - (p.crouchK || 0) * 0.42 + bobY * (1 - (p.crouchK || 0) * 0.5) - drop, p.z + rz * bobX);
-    cam.rotation.set(p.pitch + sh.y * 0.06 + (this.kickP || 0), p.yaw + sh.x * 0.06, p.roll + sh.x * 0.02 + (this.kickR || 0));
+    cam.rotation.set(p.pitch + sh.y * 0.06 + (this.kickP || 0), p.yaw + sh.x * 0.06, p.roll + sh.x * 0.02 + (this.kickR || 0) + this.sway);
   }
 
   updateNoiseRings(dt) {
