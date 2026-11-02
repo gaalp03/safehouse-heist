@@ -93,7 +93,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 #smokeov{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;background:radial-gradient(ellipse at center,rgba(220,214,232,.35),rgba(200,194,214,.8))}#smokeov.on{opacity:1}
 #bSneak{left:auto;right:calc(max(22px,env(safe-area-inset-right)) + 200px);bottom:calc(max(26px,env(safe-area-inset-bottom)) + 20px);width:56px;height:56px;font-size:20px;background:#c9d6e8}#bSneak.on{background:#8ff0c4;box-shadow:0 0 0 4px #4fe0a0,0 6px 0 var(--ink)}
 #sneakp{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);font-size:14px;color:#8ff0c4;padding:5px 12px}
-body.touch #sneakp{display:none!important}#bSneak span{font-size:9px}
+body.touch #sneakp{display:none!important}#disgp{position:absolute;left:50%;top:64px;transform:translateX(-50%);font-size:14px;color:#9fc4ff;padding:5px 12px;white-space:nowrap}#disgp.low{color:#ff9a6a;animation:objp .5s infinite alternate}body.touch #disgp{top:auto;bottom:calc(env(safe-area-inset-bottom) + 200px)}#bSneak span{font-size:9px}
 body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transparent 45%,rgba(20,10,30,.5) 85%,rgba(14,6,22,.75) 100%)}
 #bThrow{right:max(30px,env(safe-area-inset-right));bottom:calc(max(34px,env(safe-area-inset-bottom)) + 110px);width:62px;height:62px;background:#ffe08a}
 .coin{display:inline-block;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,#ffc83a 55%,#c98a1a);border:2px solid #8a5a10}
@@ -241,6 +241,7 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
   <div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootp">0%</span><span id="weight" class="hidden"></span></div><div class="bar"><div id="lootbar"></div></div></div>
   <div id="obj" class="pill o">Crack the safe!</div>
   <div id="sneakp" class="pill o hidden">🦶 SNEAKING</div>
+  <div id="disgp" class="pill o hidden">🕴 DISGUISED</div>
   <div id="tut" class="hidden"><small></small><span></span><b><i></i></b><em></em></div>
   <div id="alarm" class="pill o hidden"><b>POLICE</b><span id="alarmt">0:45</span></div>
   <div id="alarmwhy" class="o hidden"></div>

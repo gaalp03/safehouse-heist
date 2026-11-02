@@ -8,6 +8,7 @@ export const CONTRACTS = [
   { id: 'cash', text: 'Pocket all loose cash', bonus: 500, check: (g) => P(g.got.cashLoose >= g.totals.cash) },
   { id: 'hide', text: 'Hide from an alerted guard', bonus: 500, needs: (g) => g.hides.length > 0, check: (g) => P(g.hidFromAlert) },
   { id: 'nodog', text: "Don't get barked at", bonus: 600, needs: (g) => g.dogs.length > 0, check: (g, end) => (g.barkedAt ? 'fail' : end ? 'ok' : 'pending') },
+  { id: 'disguise', text: "Wear a guard's uniform", bonus: 500, needs: (g) => g.guards.some((x) => x.kind === 'guard'), check: (g) => P(g.disguises > 0) },
   { id: 'tv', text: 'Lure a guard with the TV', bonus: 400, needs: (g) => g.tvs.length > 0, check: (g) => P(g.tvLures > 0) },
   { id: 'vent', text: 'Crawl through an air vent', bonus: 400, needs: (g) => g.vents.length > 0, check: (g) => P(g.ventsUsed > 0) },
   { id: 'nolaser', text: 'Never trip a laser', bonus: 600, needs: (g) => g.lasers.length > 0, check: (g, end) => (g.lasersTripped > 0 ? 'fail' : end ? 'ok' : 'pending') },

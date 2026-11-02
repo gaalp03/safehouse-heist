@@ -74,6 +74,10 @@ Thunderstorm (Jewelry Store, Penthouse): rain falls outside the windows and on t
 
 TV lure (Safe House, Penthouse): press E at a TV to switch it on. The flickering screen and babble pull nearby guards over ("Who turned the TV on?"), and the first to arrive switches it off for good. A free distraction that does not cost a coin. Contract: lure a guard with the TV.
 
+Disguise: hold E over a knocked-out guard to put on his uniform (25 s, your sleeves turn guard-blue). From more than ~2 m away guards barely react to you and cameras ignore you entirely; up close they see your face, dashing gives you away, the dog still smells you, and any alert blows your cover ("You're not Dave!"). The stripped guard wakes up asking where his uniform went. Contract: wear a guard's uniform; achievement: Inside Man (escape in uniform).
+
+Guard chatter: two calm guards passing each other trade a line ("Quiet night, huh?" / "Too quiet."), with storm, new-guy and missing-colleague variants.
+
 Heavy loot: gold bars (−6%) and paintings (−10%) slow you down while carried (max −35%, shown as a 🏋 badge); walk back near the van / exit to stash them and get your speed back. Contract: stash heavy loot before cracking the safe.
 
 Pickpocketing: guards carry a visible wallet (and on keycard levels one carries a spare keycard). Behind an unaware guard, tap E to knock him out or HOLD E to lift the wallet / keycard (he gets slightly suspicious while you lift). Contract: pickpocket 2 guards; achievement: Sticky Fingers.

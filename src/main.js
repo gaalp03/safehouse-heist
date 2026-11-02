@@ -19,6 +19,7 @@ const $ = (id) => document.getElementById(id);
 const HINTS = {
   move: ['WASD to move · Mouse to look', 'Left side: move · Right side: look'],
   thunder: ['⚡ Thunder covers your noise for a moment. Dash now!', '⚡ Thunder covers your noise for a moment. Dash now!'],
+  uniform: ['Hold E on a knocked-out guard to wear his uniform: guards & cameras ignore you from afar', 'Hold ✋ on a knocked-out guard to wear his uniform: guards & cameras ignore you from afar'],
   vent: ['Air vent! E to crawl through to another room, unseen', 'Air vent! Tap the hand to crawl through, unseen'],
   dash: ['SPACE / SHIFT to dash. Careful, it\'s noisy!', 'Tap DASH to dash. Careful, it\'s noisy!'],
   cone: ['Stay out of the vision cones!', 'Stay out of the vision cones!'],
@@ -254,7 +255,7 @@ class App {
     return {
       win, level: this.level.id, diff: this.mode === 'daily' ? 'daily' : this.diff, ghost: win && res.ghost, time: g.time, kos: g.kos,
       frac: g.lootGot / g.lootTotal, loot: g.lootGot, contractsDone: win ? res.contracts.filter((c) => c.st === 'ok').length : 0,
-      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown, radio: g.radioFaked, picks: g.picks, vents: g.ventsUsed, lasers: g.lasersTripped, power: g.powerOff,
+      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown, radio: g.radioFaked, picks: g.picks, vents: g.ventsUsed, disguised: g.disguiseT > 0, lasers: g.lasersTripped, power: g.powerOff,
     };
   }
   applyOutfit() {
@@ -601,16 +602,16 @@ class App {
   setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
     const sn = (this.level && this.level.safeName ? this.level.safeName : 'safe').toUpperCase();
-    const txt = kind === 'slot' ? (t ? 'HOLD ✋ TO PULL THE LEVER' : 'HOLD E: PULL THE LEVER') : kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'tv' ? (t ? 'TAP ✋ TO TURN THE TV ON' : 'E: TURN THE TV ON (LURE)') : kind === 'vent' ? (t ? 'TAP ✋ TO CRAWL IN' : 'E: CRAWL INTO THE VENT') : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'pocket' ? (t ? 'TAP ✋ KO · HOLD ✋ PICKPOCKET' : 'TAP E: KO · HOLD E: PICKPOCKET') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
+    const txt = kind === 'slot' ? (t ? 'HOLD ✋ TO PULL THE LEVER' : 'HOLD E: PULL THE LEVER') : kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'uniform' ? (t ? 'HOLD ✋ TO TAKE THE UNIFORM' : 'HOLD E: TAKE HIS UNIFORM') : kind === 'tv' ? (t ? 'TAP ✋ TO TURN THE TV ON' : 'E: TURN THE TV ON (LURE)') : kind === 'vent' ? (t ? 'TAP ✋ TO CRAWL IN' : 'E: CRAWL INTO THE VENT') : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'pocket' ? (t ? 'TAP ✋ KO · HOLD ✋ PICKPOCKET' : 'TAP E: KO · HOLD E: PICKPOCKET') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.textContent = txt;
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind);
-      this.els.bAct.lastChild.textContent = kind === 'pocket' ? 'KO / LIFT' : kind === 'slot' ? 'PULL' : kind === 'radio' ? 'ANSWER' : kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'tv' ? 'TV ON' : kind === 'vent' ? 'CRAWL' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
+      this.els.bAct.lastChild.textContent = kind === 'pocket' ? 'KO / LIFT' : kind === 'slot' ? 'PULL' : kind === 'radio' ? 'ANSWER' : kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'uniform' ? 'DISGUISE' : kind === 'tv' ? 'TV ON' : kind === 'vent' ? 'CRAWL' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
-    if ((kind === 'safe' || kind === 'panel' || kind === 'breaker' || kind === 'case' || kind === 'radio' || kind === 'slot' || kind === 'pocket') && prog > 0) {
+    if ((kind === 'safe' || kind === 'uniform' || kind === 'panel' || kind === 'breaker' || kind === 'case' || kind === 'radio' || kind === 'slot' || kind === 'pocket') && prog > 0) {
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));
       ring.classList.remove('hidden');
     } else ring.classList.add('hidden');
@@ -679,6 +680,12 @@ class App {
   onHide(on) {
     $('slats').classList.toggle('hidden', !on);
     $('xh').classList.toggle('hidden', on);
+  }
+  onDisguise(t) {
+    const el = $('disgp'), on = t > 0;
+    el.classList.toggle('hidden', !on);
+    if (on) { const s = Math.ceil(t); if (el.dataset.s !== String(s)) { el.dataset.s = s; el.textContent = '🕴 DISGUISED ' + s + 's'; el.classList.toggle('low', s <= 5); } }
+    if (this.disgOn !== on) { this.disgOn = on; on ? this.vm.setOutfit(colorsOf({ sleeve: 0x2b3f7a, glove: 0x1a1c26, bar: 0x8a94a4, band: 0xf2c94c })) : this.applyOutfit(); }
   }
   onCrouch(on) {
     $('sneakp').classList.toggle('hidden', !on);

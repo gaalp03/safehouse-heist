@@ -53,6 +53,19 @@ function makeStars() {
   return grp;
 }
 
+const CALM = new Set(['patrol', 'wait', 'post']);
+const CHAT = [
+  ['Quiet night, huh?', 'Too quiet.'],
+  ['Did you hear something?', 'Just the pipes again.'],
+  ['Coffee machine\'s broken again.', 'This job, I swear...'],
+  ['Who has the keycard?', 'Not me. Ask the boss.'],
+  ['My feet are killing me.', 'Two more hours, buddy.'],
+  ['You watch the game last night?', 'Don\'t remind me.'],
+  ['They say this place is unrobbable.', 'Yeah, yeah.'],
+  ['Saw a weird van outside earlier.', 'Probably the pizza guy.'],
+  ['Remember the drill if the alarm goes?', 'Run toward it, right?'],
+  ['Is it just me or is it cold in here?', 'It\'s you.'],
+];
 export class Game {
   constructor(app) {
     this.app = app;
@@ -378,7 +391,7 @@ export class Game {
 
     const p = this.player;
     Object.assign(p, {
-      x: L.start.x + 0.5, z: L.start.y + 0.5, vx: 0, vz: 0, face: Math.PI, dashT: 0, dashCd: 0, ddx: 0, ddz: 0,
+      x: L.start.x + 0.5, z: L.start.y + 0.5, okX: undefined, okZ: undefined, vx: 0, vz: 0, face: Math.PI, dashT: 0, dashCd: 0, ddx: 0, ddz: 0,
       inv: 0, stepAcc: 0, bagS: 0.5, bagV: 0, punchT: 0, hidden: false, y: 0, moving: 0,
       hiding: null, hideT: 0, beatT: 0, crouch: false, crouchK: 0, yaw: 0, pitch: -0.05, roll: 0, bob: 0, strafe: 0, lookX: 0, lookY: 0, grabT: 0, crack: false,
     });
@@ -394,11 +407,13 @@ export class Game {
       g.c.root.visible = false; g.cone.visible = false; g.shadow.visible = false; g.stars.visible = false; g.badge.className = 'badge';
     }
     this.shiftN = 0; this.shiftWarn = 0;
+    this.chatT = 6 + Math.random() * 6; this.chatQ = null; this.chatI = Math.floor(Math.random() * 20);
     this.boltT = 8 + Math.random() * 8; this.thunderIn = 0; this.thunderT = 0;
     if (this.heli) this.heli.group.visible = false;
     for (const v of this.vents || []) v.flap.rotation.x = 0;
     for (const tv of this.tvs || []) { tv.on = tv.used = false; tv.scr.visible = tv.glow.visible = false; }
-    this.tvLures = 0;
+    this.tvLures = 0; this.disguiseT = 0; this.disguises = 0; this.uniformProg = 0;
+    for (const g of this.guards) g.stripped = false;
     this.ventsUsed = 0; this.player.venting = null;
     for (const g of this.guards) this.resetGuard(g);
     // pickpocket targets: every guard carries a wallet; one patrol guard carries a spare keycard
@@ -604,6 +619,7 @@ export class Game {
         this.app.announce('📻 "Relief guard arriving in 10 seconds" — grab what you can!');
       }
       if (this.def.rain) this.updateStorm(rdt);
+      if (this.disguiseT > 0) { this.disguiseT -= dt; this.app.onDisguise(Math.max(0, this.disguiseT)); if (this.disguiseT <= 0) { this.app.audio.play('lost'); this.app.floaters.spawn('Disguise worn off', this.player.x, 1.6, this.player.z, 'warn', 1.2); } }
       if (this.tvs.length) this.updateTVs(dt);
       if (this.shiftN < sched.length && this.time >= sched[this.shiftN] && this.reserve[this.shiftN]) this.callReinforcement(this.reserve[this.shiftN++]);
       // route recap: sample position + whether anyone is onto us
@@ -624,6 +640,7 @@ export class Game {
       if (g.state === 'alert' || g.state === 'flee') alertN++;
       this.syncGuard(g, dt);
     }
+    if (playing) this.updateChatter(dt);
     for (const cam of this.cams) this.updateCam(cam, dt, playing);
     for (const d of this.dogs) this.updateDog(d, dt, playing);
     let susN = 0;
@@ -700,14 +717,17 @@ export class Game {
     }
     for (const d of this.dogs) {
       const dx = p.x - d.x, dz = p.z - d.z, dd = Math.hypot(dx, dz);
-      if (dd < 0.5 && dd > 0.001) { p.x += (dx / dd) * (0.5 - dd); p.z += (dz / dd) * (0.5 - dd); this.collide(p, PR); }
+      if (dd < 0.5 && dd > 0.001) this.moveEnt(p, (dx / dd) * (0.5 - dd), (dz / dd) * (0.5 - dd), PR);
     }
     // soft-collide with standing guards
     for (const g of this.guards) {
       if (g.state === 'sleep') continue;
       const dx = p.x - g.x, dz = p.z - g.z, d = Math.hypot(dx, dz);
-      if (d < 0.55 && d > 0.001) { p.x += (dx / d) * (0.55 - d); p.z += (dz / d) * (0.55 - d); this.collide(p, PR); }
+      if (d < 0.55 && d > 0.001) this.moveEnt(p, (dx / d) * (0.55 - d), (dz / d) * (0.55 - d), PR);
     }
+    // safety net: never let the robber end up inside a wall / prop block
+    if (this.walkable(Math.floor(p.x), Math.floor(p.z))) { p.okX = p.x; p.okZ = p.z; }
+    else if (p.okX !== undefined) { p.x = p.okX; p.z = p.okZ; p.vx = p.vz = 0; }
     const sp = Math.hypot(vx, vz);
     p.moving = Math.min(1, sp / P_SPEED);
     const ph = Math.floor(p.bob / Math.PI);
@@ -851,6 +871,19 @@ export class Game {
       this.updateObjective();
       return;
     }
+    // take a knocked-out guard's uniform (hold E): a short-lived disguise
+    let strip = null;
+    if (!nearSafe && !ko && this.disguiseT <= 0) for (const g of this.guards) {
+      if (g.kind === 'guard' && g.state === 'ko' && !g.stripped && g.radioCall !== 1 && Math.hypot(p.x - g.x, p.z - g.z) < 1.5) strip = g;
+    }
+    if (strip) {
+      if (inp.act) { this.uniformProg += dt / 1.1; p.crack = true; if (this.uniformProg >= 1) { this.uniformProg = 0; this.takeUniform(strip); } }
+      else this.uniformProg = Math.max(0, this.uniformProg - dt * 2);
+      app.hint('uniform');
+      app.setPrompt('uniform', this.uniformProg);
+      this.updateObjective();
+      return;
+    } else this.uniformProg = 0;
     if (nearDoor && !nearSafe && !ko && nearDoor.type === 'lock') {
       app.hint('pick');
       if (pressed) this.startPick(nearDoor); else app.setPrompt('pick');
@@ -997,6 +1030,18 @@ export class Game {
     inp.move(_mv);
     app.setPrompt('leave');
     if (p.hideT > 0.35 && (inp.consumeAct() || Math.hypot(_mv.x, _mv.y) > 0.5)) this.leaveHide(false);
+  }
+
+  // ---------- disguise ----------
+  takeUniform(g) {
+    const app = this.app;
+    g.stripped = true; this.disguises++;
+    this.disguiseT = 25;
+    g.koT = Math.max(g.koT, 6);
+    app.audio.play('creak'); app.audio.play('pick', 6);
+    app.floaters.spawn('Uniform on!', g.x, 1.4, g.z, 'big', 1.2);
+    app.onDisguise(this.disguiseT);
+    app.hintDone('uniform');
   }
 
   // ---------- TVs ----------
@@ -1449,6 +1494,7 @@ export class Game {
       return;
     }
     g.state = 'alert'; g.susp = 1; g.lostT = 0; g.radioT = 0; g.radioSaid = false;
+    if (this.disguiseT > 0) { this.disguiseT = 0; this.app.onDisguise(0); this.app.floaters.spawn("You're not Dave!", g.x, 2.3, g.z, 'alert', 1.3); }
     if (!this.spotted) this.app.hintDone('cone');
     this.spotted = true;
     this.app.audio.play('alert');
@@ -1463,6 +1509,33 @@ export class Game {
     g.navGoal = -1;
   }
 
+  // idle chatter: two calm guards passing each other trade a line (only when the robber is near enough to hear)
+  updateChatter(dt) {
+    const app = this.app, p = this.player;
+    if (this.chatQ) {
+      const q = this.chatQ; q.t -= dt;
+      if (q.t <= 0) { this.chatQ = null; if (CALM.has(q.g.state)) { app.floaters.spawn(q.text, q.g.x, 2.0, q.g.z, 'zz', 1.6); app.audio.play('mumble'); } }
+      return;
+    }
+    this.chatT -= dt;
+    if (this.chatT > 0 || this.alarm) return;
+    const gs = this.guards.filter((g) => g.kind === 'guard' && CALM.has(g.state) && g.susp < 0.1 && Math.hypot(g.x - p.x, g.z - p.z) < 11);
+    for (let i = 0; i < gs.length; i++) for (let j = i + 1; j < gs.length; j++) {
+      const a = gs[i], b = gs[j];
+      if (Math.hypot(a.x - b.x, a.z - b.z) > 2.6 || !this.los(a.x, a.z, b.x, b.z)) continue;
+      const lines = CHAT.slice();
+      if (this.def.rain) lines.push(['Nasty storm out there.', 'Better than standing in it.']);
+      if (a.def.reinforce || b.def.reinforce) lines.push(['You the new guy?', 'First night. Anything I should know?']);
+      if (this.kos > 0) lines.push(['Anyone seen Dave? He\'s not answering.', 'Probably asleep on the job again.']);
+      const [l1, l2] = lines[this.chatI++ % lines.length];
+      app.floaters.spawn(l1, a.x, 2.0, a.z, 'zz', 1.6); app.audio.play('mumble');
+      a.face = Math.atan2(b.x - a.x, b.z - a.z);
+      this.chatQ = { g: b, text: l2, t: 1.5 };
+      this.chatT = 16 + Math.random() * 10;
+      return;
+    }
+    this.chatT = 1.5;
+  }
   // thunderstorm: lightning flash, then a rolling thunder that covers your noise for ~2.5s
   updateStorm(dt) {
     const app = this.app;
@@ -1536,7 +1609,7 @@ export class Game {
         g.t -= dt;
         if (g.t <= 0) {
           this.baseState(g); g.susp = 0.2;
-          app.floaters.spawn('?!', g.x, 1.9, g.z, 'q', 0.8);
+          app.floaters.spawn(g.stripped ? 'Hey! Where\'s my uniform?!' : '?!', g.x, 1.9, g.z, 'q', g.stripped ? 1.4 : 0.8);
         }
         return;
     }
@@ -1547,7 +1620,9 @@ export class Game {
     const seen = perceive && p.inv <= 0 ? this.canSee(g) : 0;
     if (seen) {
       const close = 1 - clamp(seen / this.effRange(g), 0, 1);
-      const rate = (0.65 + 2.3 * close * close) * (p.dashT > 0 ? 1.6 : p.crouch ? 0.55 : 1) * this.D.susp;
+      let rate = (0.65 + 2.3 * close * close) * (p.dashT > 0 ? 1.6 : p.crouch ? 0.55 : 1) * this.D.susp;
+      // in uniform: from a distance you're just another guard (up close they see your face)
+      if (this.disguiseT > 0 && g.kind !== 'owner' && seen > 2.3 && p.dashT <= 0) rate *= 0.12;
       g.susp = Math.min(1, g.susp + rate * dt);
       g.lastX = p.x; g.lastZ = p.z; g.lostT = 0;
       if (g.state !== 'alert') {
@@ -1764,7 +1839,7 @@ export class Game {
     let seen = false;
     if (perceive && p.inv <= 0 && cam.cool <= 0) {
       const dx = p.x - x, dz = p.z - z, dist = Math.hypot(dx, dz);
-      seen = dist < 6.5 && Math.abs(angDiff(cam.face, Math.atan2(dx, dz))) < 0.45 && this.los(x, z, p.x, p.z) && !this.smokeBlocks(x, z, p.x, p.z);
+      seen = this.disguiseT <= 0 && dist < 6.5 && Math.abs(angDiff(cam.face, Math.atan2(dx, dz))) < 0.45 && this.los(x, z, p.x, p.z) && !this.smokeBlocks(x, z, p.x, p.z);
     }
     cam.susp = clamp(cam.susp + (seen ? dt * 1.5 : -dt * 0.8), 0, 1);
     if (cam.susp >= 1) {

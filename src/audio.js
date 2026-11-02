@@ -141,6 +141,7 @@ export class Audio {
         N(0.12, { vol: 0.03 * v, freq: 1600, q: 2 });
         break;
       }
+      case 'mumble': for (let i = 0; i < 4; i++) T(150 + Math.random() * 90, 0.07, { type: 'triangle', vol: 0.04, delay: i * 0.09, slide: 120 + Math.random() * 80 }); break;
       case 'vent':
         T(140, 0.12, { type: 'square', vol: 0.12 }); N(0.12, { vol: 0.3, freq: 2200, q: 3 });
         for (let i = 0; i < 9; i++) N(0.11, { vol: 0.16, freq: 600 + (i % 3) * 250, q: 4, delay: 0.25 + i * 0.14 });
