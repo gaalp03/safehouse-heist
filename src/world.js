@@ -1266,8 +1266,12 @@ export function buildBreaker() {
   const g = new GeoBuilder();
   g.box(0, 0, 0, 0.42, 0.56, 0.1, 0x6a7484, { faces: 63, top: 0x7a8494 });
   g.box(0, 0.06, 0.051, 0.36, 0.44, 0.01, 0x4a5262, { faces: 16 });
-  g.box(-0.08, 0.36, 0.06, 0.12, 0.12, 0.01, 0xf2c94c, { faces: 16 });
-  g.box(-0.08, 0.38, 0.065, 0.03, 0.08, 0.01, 0x22242f, { faces: 16 });
+  // hazard-striped header + lightning sticker
+  g.box(0, 0.47, 0.056, 0.42, 0.07, 0.008, 0xf2c94c, { faces: 16 });
+  for (let k = 0; k < 5; k++) g.box(-0.17 + k * 0.085, 0.47, 0.061, 0.035, 0.07, 0.004, 0x1c1e28, { faces: 16, ry: 0 });
+  g.box(-0.08, 0.32, 0.06, 0.13, 0.13, 0.01, 0xf2c94c, { faces: 16 });
+  g.box(-0.08, 0.34, 0.065, 0.03, 0.08, 0.01, 0x22242f, { faces: 16 });
+  g.box(-0.07, 0.3, 0.065, 0.06, 0.02, 0.01, 0x22242f, { faces: 16 });
   for (let k = 0; k < 3; k++) g.box(-0.1 + k * 0.1, 0.12, 0.065, 0.06, 0.12, 0.03, 0x22242f, { faces: 63 });
   const grp = new Group();
   grp.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
@@ -1343,13 +1347,20 @@ export function buildKeycard() {
 
 export function buildPanel() {
   const g = new GeoBuilder();
-  g.box(0, 0, 0, 0.32, 0.42, 0.06, 0xe8e2d6, { faces: 63 });
-  g.box(0, 0.24, 0.031, 0.22, 0.1, 0.01, 0x1f3a2f, { faces: 16 });
-  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) g.box(-0.07 + c * 0.07, 0.04 + r * 0.06, 0.035, 0.05, 0.04, 0.012, 0x9aa4b0, { faces: 63 });
+  // alarm keypad: red ALARM header, LCD with a red digit, rubber keys, star/hash keys in colour
+  g.box(0, 0, 0, 0.32, 0.44, 0.06, 0xe8e2d6, { faces: 63, top: 0xf4f1ea });
+  g.box(0, 0.36, 0.031, 0.32, 0.08, 0.01, 0xd8303e, { faces: PZ });
+  for (let k = 0; k < 4; k++) g.box(-0.09 + k * 0.06, 0.39, 0.037, 0.035, 0.022, 0.004, 0xffffff, { faces: PZ });
+  g.box(0, 0.25, 0.031, 0.24, 0.09, 0.012, 0x14241c, { faces: PZ });
+  g.box(-0.04, 0.265, 0.038, 0.12, 0.04, 0.004, 0x5aff8a, { faces: PZ });
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) {
+    const col = r === 0 ? (c === 0 ? 0xffc94a : c === 2 ? 0x3ddc84 : 0x9aa4b0) : 0x9aa4b0;
+    g.box(-0.07 + c * 0.07, 0.02 + r * 0.05, 0.035, 0.055, 0.04, 0.014, col, { faces: 63, top: 0xd8deea });
+  }
   const grp = new Group();
   grp.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
   const led = new Mesh(new BoxGeometry(0.05, 0.05, 0.02), new MeshBasicMaterial({ color: 0x3ddc84 }));
-  led.position.set(0.11, 0.36, 0.035);
+  led.position.set(0.11, 0.25, 0.04);
   grp.add(led);
   return { group: grp, led };
 }
