@@ -15,6 +15,7 @@ export const CONTRACTS = [
   { id: 'cleanpick', text: 'Pick a lock without a slip', bonus: 500, needs: (g) => g.doors.some((d) => d.type === 'lock'), check: (g) => P(g.cleanPick) },
   { id: 'cases', text: 'Smash every display case', bonus: 900, needs: (g) => g.cases.length > 0, check: (g) => P(g.casesSmashed >= g.cases.length) },
   { id: 'radio', text: 'Fake a radio check-in', bonus: 500, check: (g) => P(g.radioFaked > 0) },
+  { id: 'nospot', text: 'Never step into a spotlight', bonus: 700, needs: (g) => g.spots.length > 0, check: (g, end) => (g.spotHit ? 'fail' : end ? 'ok' : 'pending') },
   { id: 'lure', text: 'Lure a guard with a coin', bonus: 400, check: (g) => P(g.lures > 0) },
   { id: 'ko2', text: 'Knock out 2 guards', bonus: 500, tag: 'ko', check: (g) => P(g.kos >= 2) },
   { id: 'noko', text: 'No knockouts', bonus: 700, tag: 'ko', check: (g, end) => (g.kos > 0 ? 'fail' : end ? 'ok' : 'pending') },

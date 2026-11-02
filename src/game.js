@@ -1,7 +1,7 @@
 // Gameplay: player, guards (vision cones, suspicion, chase, noise), loot, safe, escape, scoring.
 import {
   Group, Mesh, MeshBasicMaterial, InstancedMesh, BufferGeometry, BufferAttribute, CircleGeometry, RingGeometry,
-  CylinderGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial,
+  CylinderGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial, ConeGeometry, AdditiveBlending,
 } from 'three';
 import { textures } from './textures.js';
 import { parseLevel } from './level.js';
@@ -247,6 +247,21 @@ export class Game {
       return { f, cx, cz, glass, gems, smashed: false, prog: 0 };
     });
     this.caseLoot = def.caseLoot || 0;
+    // sweeping ceiling spotlights
+    this.spots = (def.spots || []).map((sd) => {
+      const pool = new Mesh(new CircleGeometry(sd.r, 28).rotateX(-Math.PI / 2), new MeshBasicMaterial({
+        map: textures().glow, color: 0xfff0b0, transparent: true, opacity: 0.85, depthWrite: false, blending: AdditiveBlending, toneMapped: false }));
+      pool.renderOrder = 4;
+      const cone = new Mesh(new ConeGeometry(sd.r * 0.95, WALL_H, 20, 1, true), new MeshBasicMaterial({
+        color: 0xfff0b0, transparent: true, opacity: 0.09, depthWrite: false, blending: AdditiveBlending, side: DoubleSide, toneMapped: false }));
+      cone.rotation.x = Math.PI; cone.renderOrder = 5;
+      const fix = new Mesh(new BoxGeometry(0.3, 0.16, 0.3), new MeshBasicMaterial({ color: 0x2a2b36 }));
+      const lens = new Mesh(new BoxGeometry(0.2, 0.02, 0.2), new MeshBasicMaterial({ color: 0xfff6d0 }));
+      lens.position.y = -0.09; fix.add(lens);
+      this.root.add(pool, cone, fix);
+      const [a, b] = sd.path;
+      return { def: sd, pool, cone, fix, ax: a[0] + 0.5, az: a[1] + 0.5, bx: b[0] + 0.5, bz: b[1] + 0.5, len: Math.hypot(b[0] - a[0], b[1] - a[1]), susp: 0, cool: 0, x: 0, z: 0, tickT: 0 };
+    });
     this.policeLane = L.van ? { x: L.exit.x, z: L.exit.z + 2.5 } : { x: L.start.x + 0.5, z: L.start.y + 1.5 };
     this.baseLootTotal = v.stash + v.bundle * v.bundles + L.loot.reduce((s, l) => s + v[l.type], 0) + this.cases.length * this.caseLoot * v.jewel;
     this.lootTotal = this.baseLootTotal;
@@ -269,6 +284,8 @@ export class Game {
     this.powerOff = false; this.breakProg = 0; this.lasersTripped = 0;
     if (this.breaker) { this.breaker.lever.rotation.x = 0; this.breaker.led.material.color.setHex(0xff2a3a); }
     for (const l of this.lasers || []) l.group.visible = true;
+    this.spotHit = false;
+    for (const sp of this.spots || []) { sp.susp = 0; sp.cool = 0; sp.pool.visible = sp.cone.visible = true; }
     for (const d of this.doors || []) {
       const i = d.y * this.L.W + d.x;
       d.open = false; d.t = 0; this.L.walk[i] = 0; this.L.opaque[i] = 1;
@@ -508,6 +525,7 @@ export class Game {
     this.tension = this.alarm ? 3 : alertN > 0 ? 2 : susN > 0 ? 1 : 0;
     this.updateAlarm(dt, playing);
     this.updateLasers(dt, playing);
+    this.updateSpots(dt, playing);
 
     this.updateLoot(dt, playing);
     this.updateProps(dt);
@@ -1745,10 +1763,40 @@ export class Game {
     this.breaker.lever.rotation.x = -2.2;
     this.breaker.led.material.color.setHex(0x3ddc84);
     for (const l of this.lasers) l.group.visible = false;
+    for (const sp of this.spots) { sp.pool.visible = sp.cone.visible = false; }
     app.audio.play('powerdown');
     app.shake.add(0.2);
     app.particles.burst(bp.x, bp.y + 0.3, bp.z, { count: 24, colors: [0xfff1a8, 0x7fd8ff, 0xffffff], speed: 3, up: 3, size: 0.04, life: 0.6 });
     app.floaters.spawn('LASERS OFF', bp.x, 1.6, bp.z, 'big', 1.3);
+  }
+  updateSpots(dt, playing) {
+    const p = this.player, app = this.app;
+    for (const sp of this.spots) {
+      const d = sp.def, L = sp.len || 1, s = (this.t * d.speed + (d.phase || 0)) % (2 * L), k = (s < L ? s : 2 * L - s) / L;
+      sp.x = sp.ax + (sp.bx - sp.ax) * k; sp.z = sp.az + (sp.bz - sp.az) * k;
+      sp.pool.position.set(sp.x, 0.03, sp.z);
+      sp.cone.position.set(sp.x, WALL_H / 2, sp.z);
+      sp.fix.position.set(sp.x, WALL_H - 0.08, sp.z);
+      if (this.powerOff) continue;
+      sp.cool -= dt;
+      const inside = playing && !p.hiding && p.inv <= 0 && sp.cool <= 0 && Math.hypot(p.x - sp.x, p.z - sp.z) < d.r * 0.9 && !this.inSmoke(p.x, p.z);
+      sp.susp = clamp(sp.susp + (inside ? dt * 1.7 : -dt * 0.7), 0, 1);
+      if (inside) {
+        this.spotHit = true;
+        sp.tickT -= dt;
+        if (sp.tickT <= 0) { sp.tickT = 0.22; app.audio.play('tick', 1 + sp.susp); }
+        app.hint('spot');
+      }
+      if (sp.susp >= 1) {
+        sp.susp = 0; sp.cool = 5; this.spotted = true;
+        app.flash('alarm'); app.shake.add(0.2);
+        this.triggerAlarm('Caught in the spotlight!');
+      }
+      const hot = sp.cool > 0 && Math.sin(this.t * 14) > 0;
+      const c = hot ? 0xff3040 : sp.susp > 0.05 ? (sp.susp > 0.6 ? 0xff5a3a : 0xffa040) : 0xfff0b0;
+      sp.pool.material.color.setHex(c); sp.cone.material.color.setHex(c);
+      sp.pool.scale.setScalar(1 + sp.susp * 0.15);
+    }
   }
   updateLasers(dt, playing) {
     if (this.powerOff) return;

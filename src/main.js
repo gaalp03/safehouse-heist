@@ -26,6 +26,7 @@ const HINTS = {
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
   dog: ['A guard dog! It follows your scent and barks. Coins distract it.', 'A guard dog! It follows your scent and barks. Coins distract it.'],
   clerk: ['The clerk is running for the alarm button! Knock them out first!', 'The clerk is running for the alarm button! Knock them out first!'],
+  spot: ['Spotlight! Stay out of the moving light pools, or cut the power at the breaker', 'Spotlight! Stay out of the moving light pools, or cut the power at the breaker'],
   radio: ['A knocked-out guard\'s radio is calling! Hold E next to him to answer, or backup comes', 'A knocked-out guard\'s radio is calling! Hold ✋ next to him to answer, or backup comes'],
   case: ['Hold E to smash a display case. Loud! Guards who see a broken case raise the alarm', 'Hold ✋ to smash a display case. Loud! Guards who see a broken case raise the alarm'],
   pick: ['Locked! Press E when the pin is in the green zone. Slips are noisy!', 'Locked! Tap the hand when the pin is in the green zone. Slips are noisy!'],
@@ -127,8 +128,10 @@ class App {
     click('bNext', () => {
       if (this.levelIdx === 0 && this.mode !== 'daily' && this.bankUnlocked()) this.start('classic', 1);
       else if (this.levelIdx === 1 && this.jewelryUnlocked()) this.start('classic', 2);
+      else if (this.levelIdx === 2 && this.museumUnlocked()) this.start('classic', 3);
       else this.showSoon();
     });
+    click('lvl4', () => { if (this.museumUnlocked()) this.start('classic', 3); else { this.audio.play('nope'); const c = $('lvl4'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } });
     click('lvl3', () => { if (this.jewelryUnlocked()) this.start('classic', 2); else { this.audio.play('nope'); const c = $('lvl3'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } });
     click('bRMenu', () => this.showMenu());
     click('bBRetry', () => this.retry());
@@ -194,6 +197,11 @@ class App {
     $('lvl3').classList.toggle('lock', !ju);
     $('lvl3art').textContent = ju ? '💎' : '🔒';
     $('lvl3stars').innerHTML = ju ? this.starsHTML(jb ? jb.stars : 0) : '';
+    const mu = this.museumUnlocked(), mb = this.save.best[diffKey('museum', this.diff)];
+    $('lvl4').classList.toggle('lock', !mu);
+    $('lvl4art').textContent = mu ? '🏛️' : '🔒';
+    $('lvl4stars').innerHTML = mu ? this.starsHTML(mb ? mb.stars : 0) : '';
+    $('lvl4best').textContent = mu ? (mb ? 'Best ' + fmtMoney(mb.score) : 'New!') : 'Escape the Jewelry Store to unlock';
     $('lvl3best').textContent = ju ? (jb ? 'Best ' + fmtMoney(jb.score) : 'New!') : 'Escape the Bank to unlock';
     for (const el of document.querySelectorAll('#diff button')) el.classList.toggle('on', el.dataset.d === this.diff);
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
@@ -266,6 +274,10 @@ class App {
     $('soonName').textContent = 'More heists';
     $('soonList').innerHTML = ['Downtown jewelry store', 'Penthouse with laser grids', 'Night train job'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
+  }
+  museumUnlocked() {
+    const b = this.save.best;
+    return !!(b.jewelry || b.jewelry_easy || b.jewelry_hard || this.save.museumOpen);
   }
   jewelryUnlocked() {
     const b = this.save.best;
@@ -734,6 +746,7 @@ class App {
       }
       x.fillStyle = col; x.beginPath(); x.arc(gd.x * S, gd.z * S, 2.6, 0, 6.3); x.fill();
     }
+    if (!g.powerOff) for (const sp of g.spots) { x.fillStyle = sp.cool > 0 ? 'rgba(255,48,64,.6)' : 'rgba(255,240,176,.55)'; x.beginPath(); x.arc(sp.x * S, sp.z * S, sp.def.r * S, 0, 6.3); x.fill(); }
     if (!g.powerOff) for (const l of g.lasers) { x.fillStyle = l.on ? '#ff3040' : 'rgba(255,48,64,.3)'; if (l.alongX) x.fillRect(l.lo * S, l.line * S - 1, (l.hi - l.lo) * S, 2); else x.fillRect(l.line * S - 1, l.lo * S, 2, (l.hi - l.lo) * S); }
     for (const d of g.doors) { x.fillStyle = d.open ? '#3ddc84' : '#ff3b4e'; x.fillRect(d.x * S, d.y * S, S, S); }
     for (const k of g.keyMeshes) if (k.m.visible) { x.fillStyle = '#2f7ae8'; x.fillRect(k.x * S + 0.5, k.y * S + 0.5, S - 1, S - 1); }
