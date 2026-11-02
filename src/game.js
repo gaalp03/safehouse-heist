@@ -314,6 +314,7 @@ export class Game {
     this.smokesLeft = this.D.smoke; this.clouds = []; this.smokeHid = false; for (const s of this.smokeFx || []) s.pts.visible = false;
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
     this.hidFromAlert = false; this.clerkStopped = false; this.hidesUsed = 0; this.smokesUsed = 0; this.coinsThrown = 0; this.radioFaked = 0;
+    this.trail = []; this.trailT = 0; this.marks = [];
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
@@ -518,7 +519,17 @@ export class Game {
     if (this.hitstop > 0) { this.hitstop -= rdt; dt *= 0.08; }
     this.t += dt;
     const playing = !demo && this.state === 'play';
-    if (playing) { this.time += dt; this.updatePlayer(dt); }
+    if (playing) {
+      this.time += dt; this.updatePlayer(dt);
+      // route recap: sample position + whether anyone is onto us
+      this.trailT -= dt;
+      if (this.trailT <= 0) {
+        this.trailT = 0.35;
+        const hot = this.alarm || this.guards.some((g) => g.state === 'alert' || g.state === 'flee' || g.susp > 0.35);
+        this.trail.push([this.player.x, this.player.z, hot ? 1 : 0]);
+        if (this.trail.length > 900) this.trail.splice(0, 2);
+      }
+    }
     else if (demo) this.player.c.root.visible = false;
 
     let alertN = 0;
@@ -795,7 +806,9 @@ export class Game {
     return this.los(g.x, g.z, p.x, p.z);
   }
 
+  mark(t, x, z) { this.marks.push({ t, x, z }); }
   knockout(g) {
+    this.mark('ko', g.x, g.z);
     const app = this.app, p = this.player;
     if (g.reviveT) { g.reviveT.claimed = false; g.reviveT = null; }
     g.safeRun = false; g.claimed = false;
@@ -1480,6 +1493,7 @@ export class Game {
   }
 
   openSafe() {
+    this.mark('safe', this.L.safe.x + 0.5, this.L.safe.y + 0.5);
     const app = this.app, sx = this.L.safe.x + 0.5, sz = this.L.safe.y + 0.5, v = this.def.values;
     this.safeOpen = true; this.hasStash = true; this.doorT = 0;
     this.lootGot += v.stash;
@@ -1504,6 +1518,7 @@ export class Game {
   }
 
   collect(it) {
+    if (it.type !== 'cash' || !it.bundle) this.mark(it.type === 'cash' ? 'cash' : 'loot', it.x, it.z);
     const app = this.app;
     this.lootGot += it.value;
     this.got[it.type]++;
@@ -1715,6 +1730,7 @@ export class Game {
   // ---------- alarm / police ----------
   triggerAlarm(why) {
     if (this.alarm || this.state !== 'play') return;
+    this.mark('alarm', this.player.x, this.player.z);
     const app = this.app, ex = this.L.exit;
     this.alarm = true; this.alarmT = this.alarmTotal; this.alarms++; this.spotted = true;
     this.police.group.visible = true;
@@ -1759,6 +1775,7 @@ export class Game {
     if (this.alarmT <= 0) this.policeBust();
   }
   policeBust() {
+    this.mark('caught', this.player.x, this.player.z);
     const app = this.app, p = this.player;
     if (this.picking) this.stopPick();
     this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = null; this.policeBusted = true;
@@ -1772,6 +1789,7 @@ export class Game {
   }
 
   bust(g) {
+    this.mark('caught', this.player.x, this.player.z);
     const app = this.app;
     if (this.picking) this.stopPick();
     this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = g;

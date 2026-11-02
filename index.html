@@ -189,6 +189,15 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 @media (max-width:640px){#city{aspect-ratio:5/4;width:min(94vw,440px)}#menu .logo{font-size:40px}#menu>.sub{display:none}.menurow{flex-wrap:nowrap;gap:6px}.menurow .btn.s{font-size:13px;padding:8px 10px}.menurow #bPlay{font-size:20px;padding:10px 22px}.pin .art{width:38px;height:38px;font-size:17px}.pin b{font-size:11px}#selInfo b{font-size:18px}}
 @media (max-height:820px){#menu .logo{font-size:44px}#menu>.sub{display:none}#menu{gap:8px}#city{width:min(700px,94vw,calc((100vh - 290px) * 2))}}
 @media (max-height:520px){#city{width:min(560px,70vw)}.logo{display:none}}
+.panel.rp{flex-direction:row;align-items:center;gap:18px;max-width:min(96vw,860px)}
+.rcol{display:flex;flex-direction:column;align-items:center;gap:inherit}
+.rmapcol{display:flex;flex-direction:column;align-items:center;gap:4px}.rmapcol small{font-size:12px;letter-spacing:2px;color:var(--y)}
+#rMap,#bMap{width:260px;max-width:80vw;border-radius:10px;border:3px solid rgba(255,214,160,.25);image-rendering:pixelated}
+#bMap{width:240px}
+.mlg{font-size:11px;opacity:.85;display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}.mlg i{display:inline-block;width:12px;height:4px;border-radius:2px}
+#result .rcol{gap:12px}
+@media (max-height:700px){#result .rcol{gap:5px}#rMap{width:220px}#bMap{width:200px}#rCtrTotal,#rMult{display:none}#result .stats{font-size:14px}#result .goals,#result .ctrs{font-size:12px;gap:1px}#result .big{font-size:36px}#rStars span{font-size:38px}}
+@media (max-width:720px){.panel.rp{flex-direction:column;gap:8px}.rmapcol{order:2}#rMap{width:220px}}
 .keys{font-size:13px;opacity:.75;max-width:520px}body.touch .kb{display:none}body:not(.touch) .tc{display:none}
 #loading{background:radial-gradient(ellipse at center,#3d2c62,#1c1330);z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
@@ -283,7 +292,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>
   <button class="btn" id="bResume">RESUME</button><div class="row"><button class="btn s" id="bRestart">RESTART</button><button class="btn s" id="bPMenu">MENU</button></div></div></div>
 
-<div id="result" class="screen solid hidden"><div class="panel">
+<div id="result" class="screen solid hidden"><div class="panel rp"><div class="rmapcol"><small class="o">YOUR ROUTE</small><canvas id="rMap"></canvas><div id="rMapLg" class="mlg"></div></div><div class="rcol">
   <div class="big win o">ESCAPED!</div>
   <div id="rStars"></div>
   <ul class="goals" id="rGoals"></ul>
@@ -292,12 +301,13 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div id="rMult" class="sub" style="font-size:13px;color:#ff9fd0"></div>
   <div id="rScore">$0</div><div id="rBest"></div>
   <div class="row"><button class="btn s" id="bRMenu">MENU</button><button class="btn" id="bRetry">RETRY</button><button class="btn g" id="bNext">NEXT</button></div>
-</div></div>
+</div></div></div>
 
 <div id="busted" class="screen solid hidden"><div class="panel">
   <div class="big bust o">BUSTED!</div>
   <p class="sub" id="bustTip"></p>
   <div id="bAch" style="color:var(--y);font-size:15px"></div>
+  <canvas id="bMap"></canvas><div id="bMapLg" class="mlg"></div>
   <button class="btn" id="bBRetry">RETRY</button>
   <button class="btn p hidden" id="bRevive">▶ SECOND CHANCE</button>
   <button class="btn s" id="bBMenu">MENU</button>

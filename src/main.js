@@ -300,6 +300,46 @@ class App {
     if (k === 'daily') this.start('daily');
     else this.start('classic', { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4 }[k]);
   }
+  // animated heist route recap on a minimap canvas
+  drawRecap(id, win) {
+    const cv = $(id), g = this.game, L = g.L, base = this.mmBase;
+    if (!cv || !base) return;
+    const S = this.mmS, k = Math.min(260 / base.width, 170 / base.height);
+    cv.width = Math.round(base.width * k * 2); cv.height = Math.round(base.height * k * 2);
+    const x = cv.getContext('2d'), sc = (cv.width / base.width) * S, trail = g.trail.slice(), marks = g.marks.slice();
+    trail.push([g.player.x, g.player.z, trail.length ? trail[trail.length - 1][2] : 0]);
+    const t0 = performance.now(), dur = 1600, my = (this.recapId = (this.recapId || 0) + 1);
+    const icon = (m, a) => {
+      const px = m.x * sc, pz = m.z * sc, r = 5.5;
+      x.globalAlpha = a;
+      if (m.t === 'ko') { x.strokeStyle = '#c77dff'; x.lineWidth = 3; x.beginPath(); x.moveTo(px - r, pz - r); x.lineTo(px + r, pz + r); x.moveTo(px + r, pz - r); x.lineTo(px - r, pz + r); x.stroke(); }
+      else if (m.t === 'alarm' || m.t === 'caught') { x.fillStyle = '#ff3b4e'; x.beginPath(); x.arc(px, pz, r + 2, 0, 6.3); x.fill(); x.fillStyle = '#fff'; x.font = 'bold 11px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(m.t === 'caught' ? '✖' : '!', px, pz + 1); }
+      else if (m.t === 'safe') { x.fillStyle = '#ffd23f'; x.fillRect(px - r, pz - r, r * 2, r * 2); x.strokeStyle = '#1c1330'; x.lineWidth = 2; x.strokeRect(px - r, pz - r, r * 2, r * 2); }
+      else { x.fillStyle = m.t === 'cash' ? '#4fe0a0' : '#ffc94a'; x.beginPath(); x.arc(px, pz, m.t === 'cash' ? 3 : 4.5, 0, 6.3); x.fill(); }
+      x.globalAlpha = 1;
+    };
+    const frame = () => {
+      if (my !== this.recapId) return;
+      const p = Math.min(1, (performance.now() - t0) / dur), n = Math.max(1, Math.floor(trail.length * p));
+      x.drawImage(base, 0, 0, cv.width, cv.height);
+      x.fillStyle = 'rgba(28,19,48,.35)'; x.fillRect(0, 0, cv.width, cv.height);
+      x.lineCap = 'round'; x.lineJoin = 'round'; x.lineWidth = 3.5;
+      for (let i = 1; i < n; i++) {
+        const a = trail[i - 1], b = trail[i];
+        x.strokeStyle = b[2] ? '#ff5a6a' : '#4fe0a0';
+        x.beginPath(); x.moveTo(a[0] * sc, a[1] * sc); x.lineTo(b[0] * sc, b[1] * sc); x.stroke();
+      }
+      const shown = Math.floor(marks.length * p);
+      for (let i = 0; i < marks.length; i++) if (i < shown || p >= 1) icon(marks[i], 1);
+      const h = trail[n - 1];
+      if (h) { x.fillStyle = '#fff6e8'; x.strokeStyle = '#1c1330'; x.lineWidth = 2; x.beginPath(); x.arc(h[0] * sc, h[1] * sc, 5, 0, 6.3); x.fill(); x.stroke(); }
+      if (p < 1) requestAnimationFrame(frame);
+    };
+    frame();
+    const seenPct = trail.length ? Math.round((trail.filter((t) => t[2]).length / trail.length) * 100) : 0;
+    const lg = $(id + 'Lg');
+    if (lg) lg.innerHTML = `<i style="background:#4fe0a0"></i>unseen <i style="background:#ff5a6a"></i>chased ${seenPct}% <i style="background:#ffc94a;border-radius:50%"></i>loot <b style="color:#c77dff">✕</b> KO`;
+  }
   showSoon() {
     SDK.gameplayStop();
     this.state = 'soon';
@@ -577,6 +617,7 @@ class App {
     SDK.store(this.save);
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).join('<br>');
     this.screen('busted');
+    this.drawRecap('bMap', false);
   }
   onWin(res) {
     this.state = 'result';
@@ -627,6 +668,7 @@ class App {
     if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
     this.screen('result');
+    this.drawRecap('rMap', true);
     const stars = $('rStars').children;
     res.stars.forEach((s, i) => {
       if (!s) return;
