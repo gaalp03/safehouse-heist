@@ -1,7 +1,7 @@
 // Static level builder: procedural textured low-poly interior with BAKED warm lighting + AO in vertex colors.
 // Each material is one merged mesh (~15 draw calls for the whole house). Unlit (MeshBasic) = cheap on mobile.
 import {
-  Mesh, Group, MeshLambertMaterial, MeshBasicMaterial, OctahedronGeometry, Points, PointsMaterial,
+  Mesh, Group, MeshLambertMaterial, PlaneGeometry, MeshBasicMaterial, OctahedronGeometry, Points, PointsMaterial,
   BufferGeometry, BufferAttribute, AdditiveBlending, DoubleSide, BoxGeometry, CylinderGeometry,
   CanvasTexture, SRGBColorSpace, RepeatWrapping, ClampToEdgeWrapping,
 } from 'three';
@@ -1067,27 +1067,55 @@ export function buildSafe() {
 }
 
 export function buildVan() {
+  // cartoon getaway van disguised as a plumber's van; nose points +x
   const g = new GeoBuilder();
-  const body = 0x5b46d6, stripe = 0xf2b134, glass = 0x24304f;
-  g.box(0, 0.25, 0, 2.7, 1.05, 1.3, body, { top: 0x6d58e8 });
-  g.box(1.15, 0.25, 0, 0.6, 0.75, 1.32, body);
-  g.box(0, 0.55, 0, 2.72, 0.14, 1.32, stripe, { faces: PX | NX | PZ | NZ });
-  g.box(0.95, 0.78, 0, 0.4, 0.4, 1.34, glass, { faces: PZ | NZ });
-  g.box(1.36, 0.78, 0, 0.04, 0.4, 1.1, glass, { faces: PX });
-  g.box(-0.3, 0.75, -0.66, 1.4, 0.42, 0.03, glass, { faces: NZ });
-  g.box(0, 1.3, 0, 1.6, 0.06, 1.0, 0x2a2b36);
-  g.box(1.5, 0.22, 0, 0.12, 0.12, 1.34, 0x2a2b36);
-  g.box(1.52, 0.35, 0.42, 0.06, 0.16, 0.24, 0xfff3b0, { faces: PX });
-  g.box(1.52, 0.35, -0.42, 0.06, 0.16, 0.24, 0xfff3b0, { faces: PX });
-  g.box(-1.37, 0.4, 0.45, 0.04, 0.18, 0.2, 0xff4d5e, { faces: NX });
-  g.box(-1.37, 0.4, -0.45, 0.04, 0.18, 0.2, 0xff4d5e, { faces: NX });
-  for (const wx of [-0.85, 0.85]) for (const wz of [-0.6, 0.6]) {
-    g.box(wx, 0, wz, 0.5, 0.5, 0.22, 0x1c1e28, { faces: 63 });
-    g.box(wx, 0.15, wz + Math.sign(wz) * 0.1, 0.22, 0.22, 0.04, 0xb8c0d0, { faces: wz > 0 ? PZ : NZ });
+  const body = 0x5b46d6, top = 0xf4f1ea, stripe = 0xf2b134, glass = 0x26304f, chrome = 0xd5dce4, tire = 0x1c1e28;
+  g.box(-0.15, 0.28, 0, 2.3, 0.6, 1.3, body);                                 // lower body
+  g.box(-0.15, 0.88, 0, 2.3, 0.5, 1.28, top, { top: 0xffffff });             // upper body (white)
+  g.box(1.12, 0.28, 0, 0.5, 0.52, 1.28, body);                               // hood
+  g.box(1.0, 0.8, 0, 0.34, 0.42, 1.24, top, { top: 0xffffff, ry: 0 });       // cab roof slope
+  g.box(1.17, 0.83, 0, 0.02, 0.36, 1.08, glass, { faces: PX });              // windshield
+  g.box(1.18, 0.86, 0.3, 0.025, 0.28, 0.04, 0x8aa0c0, { faces: PX });        // windshield glint
+  for (const s of [-1, 1]) {
+    g.box(0.88, 0.88, s * 0.645, 0.4, 0.32, 0.01, glass, { faces: s > 0 ? PZ : NZ });   // cab side window
+    g.box(-0.3, 0.92, s * 0.645, 1.4, 0.28, 0.01, glass, { faces: s > 0 ? PZ : NZ });   // cargo window strip
+    g.box(-0.15, 0.56, s * 0.652, 2.3, 0.1, 0.01, stripe, { faces: s > 0 ? PZ : NZ });  // stripe
+    g.box(0.6, 0.38, s * 0.652, 0.06, 0.04, 0.012, chrome, { faces: s > 0 ? PZ : NZ }); // door handle
+    g.box(1.12, 0.92, s * 0.72, 0.08, 0.12, 0.1, 0x22242f);                            // mirror
   }
-  const m = new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true }));
+  g.box(-0.3, 0.68, 0.656, 1.1, 0.2, 0.006, 0xffffff, { faces: PZ });         // logo plate
+  g.box(-0.3, 0.68, -0.656, 1.1, 0.2, 0.006, 0xffffff, { faces: NZ });
+  g.box(1.38, 0.32, 0, 0.03, 0.22, 0.8, 0x22242f, { faces: PX });            // grille
+  for (let k = 0; k < 4; k++) g.box(1.39, 0.35 + k * 0.05, 0, 0.02, 0.02, 0.74, chrome, { faces: PX });
+  for (const s of [-1, 1]) {
+    g.box(1.385, 0.36, s * 0.5, 0.04, 0.14, 0.2, 0xfff3b0, { faces: PX });   // headlights
+    g.box(-1.31, 0.42, s * 0.5, 0.04, 0.2, 0.16, 0xff4d5e, { faces: NX });   // tail lights
+  }
+  g.box(1.42, 0.16, 0, 0.1, 0.12, 1.34, chrome);                              // front bumper
+  g.box(-1.33, 0.16, 0, 0.1, 0.12, 1.34, chrome);                             // rear bumper
+  g.box(-1.31, 0.4, 0, 0.02, 0.88, 0.02, 0x22242f, { faces: NX });            // rear door seam
+  g.box(-0.2, 1.38, 0, 1.6, 0.04, 1.0, 0x2a2b36);                             // roof rack
+  for (const s of [-1, 1]) g.box(-0.2, 1.42, s * 0.48, 1.6, 0.05, 0.04, chrome);
+  g.box(-0.4, 1.42, 0, 1.4, 0.07, 0.07, 0xd8833a, { faces: 63 });             // pipe on the rack
+  g.box(0.1, 1.42, 0.25, 0.9, 0.06, 0.06, 0x9aa3ae, { faces: 63 });           // ladder rail
+  for (const wx of [-0.75, 0.95]) for (const wz of [-0.6, 0.6]) {
+    g.box(wx, 0, wz, 0.54, 0.54, 0.24, tire, { faces: 63 });
+    g.box(wx, 0.14, wz + Math.sign(wz) * 0.125, 0.26, 0.26, 0.012, chrome, { faces: wz > 0 ? PZ : NZ });
+    g.box(wx, 0.24, wz + Math.sign(wz) * 0.132, 0.08, 0.08, 0.008, 0x5a6270, { faces: wz > 0 ? PZ : NZ });
+    g.box(wx, 0.5, wz, 0.64, 0.08, 0.28, shade(body, 0.7), { faces: 63 & ~NY });  // wheel arch
+  }
+  const m = new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true, emissive: 0x1a1428 }));
   const grp = new Group();
   grp.add(m);
+  // painted logo: a wrench + "PIPE DREAMS"
+  const c = document.createElement('canvas'); c.width = 256; c.height = 48;
+  const x = c.getContext('2d'); x.fillStyle = '#ffffff'; x.fillRect(0, 0, 256, 48);
+  x.fillStyle = '#5b46d6'; x.font = 'bold 26px Arial Black, Arial, sans-serif'; x.textBaseline = 'middle'; x.fillText('PIPE DREAMS', 46, 22);
+  x.font = 'bold 11px Arial, sans-serif'; x.fillStyle = '#1c1330'; x.fillText('24h PLUMBING · NO QUESTIONS', 48, 40);
+  x.fillStyle = '#f2b134'; x.fillRect(8, 18, 30, 8); x.beginPath(); x.arc(36, 22, 9, 0, 6.3); x.fill(); x.fillStyle = '#ffffff'; x.fillRect(36, 18, 10, 8);
+  const tex = new CanvasTexture(c); tex.colorSpace = SRGBColorSpace;
+  const lm = new MeshBasicMaterial({ map: tex });
+  for (const s of [-1, 1]) { const pl = new Mesh(new PlaneGeometry(1.08, 0.19), lm); pl.position.set(-0.3, 0.78, s * 0.661); if (s < 0) pl.rotation.y = Math.PI; grp.add(pl); }
   return { group: grp, body: m };
 }
 
