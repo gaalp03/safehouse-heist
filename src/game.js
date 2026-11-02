@@ -271,10 +271,13 @@ export class Game {
     this.root.add(this.exitRing, this.exitBeam);
 
     // throwable coins (distraction)
-    const cg = new BoxGeometry(0.11, 0.025, 0.11);
+    // round gold coin: rim cylinder + a slightly raised face
+    const cg = new CylinderGeometry(0.065, 0.065, 0.022, 14); cg.rotateX(Math.PI / 2);
+    const fg = new CylinderGeometry(0.045, 0.045, 0.026, 12); fg.rotateX(Math.PI / 2);
     this.coinMeshes = [];
-    for (let i = 0; i < 4; i++) {
-      const m = new Mesh(cg, new MeshBasicMaterial({ color: 0xffc83a }));
+    for (let i = 0; i < 6; i++) {
+      const m = new Mesh(cg, new MeshBasicMaterial({ color: 0xe8a520 }));
+      m.add(new Mesh(fg, new MeshBasicMaterial({ color: 0xffd75a })));
       m.visible = false; this.root.add(m); this.coinMeshes.push(m);
     }
     // hiding spots (wardrobes): exit tile + facing direction
@@ -1281,7 +1284,7 @@ export class Game {
           }
         }
       } else {
-        c.mesh.rotation.set(0, c.t * 2, 0);
+        c.mesh.rotation.set(Math.PI / 2, 0, c.t * 2);
         c.mesh.position.y = 0.03;
         // walk over a landed coin to pick it back up
         if (playing && c.t > 0.6 && Math.hypot(p.x - c.x, p.z - c.z) < 0.6) {
