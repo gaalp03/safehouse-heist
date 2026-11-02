@@ -6,6 +6,7 @@ export default {
   parTime: 110,
   tutorial: true,
   night: true,
+  rain: true,
   roadTop: 17,
   lampScale: 0.6,
   safeName: 'safe',

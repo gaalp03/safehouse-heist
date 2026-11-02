@@ -1,5 +1,6 @@
 import { WebGLRenderer, Scene, PerspectiveCamera, HemisphereLight, DirectionalLight, Color, Vector3, Fog, ACESFilmicToneMapping } from 'three';
 import { makeSky, makeNightSky, Dust } from './atmo.js';
+import { Rain } from './weather.js';
 import { Game } from './game.js';
 import { Audio } from './audio.js';
 import { Input } from './input.js';
@@ -17,6 +18,7 @@ import { TUT_STEPS } from './tutorial.js';
 const $ = (id) => document.getElementById(id);
 const HINTS = {
   move: ['WASD to move · Mouse to look', 'Left side: move · Right side: look'],
+  thunder: ['⚡ Thunder covers your noise for a moment. Dash now!', '⚡ Thunder covers your noise for a moment. Dash now!'],
   vent: ['Air vent! E to crawl through to another room, unseen', 'Air vent! Tap the hand to crawl through, unseen'],
   dash: ['SPACE / SHIFT to dash. Careful, it\'s noisy!', 'Tap DASH to dash. Careful, it\'s noisy!'],
   cone: ['Stay out of the vision cones!', 'Stay out of the vision cones!'],
@@ -99,6 +101,7 @@ class App {
     this.shake = new Shake();
     this.floaters = new Floaters(this.els.fxl);
     this.dust = new Dust(this.scene);
+    this.rain = new Rain(this.scene); this.boltK = 0;
     this.applySettings();
     this.game = new Game(this);
     this.levelIdx = 0;
@@ -404,6 +407,7 @@ class App {
     this.scene.fog.near = n ? 10 : 16; this.scene.fog.far = n ? 48 : 70;
     this.sky.material.color.setHex(n ? 0x26305a : 0xffffff);
     this.nightSky.visible = n;
+    this.rain.setLevel(this.level.rain ? this.game.L : null);
     this.dust.points.material.color.setHex(n ? 0xb8c8ff : 0xffe2b0);
     this.hemi.intensity = n ? 1.1 : 1.8; this.hemi.color.setHex(n ? 0xb8c4ff : 0xffe6c8);
     this.sun.intensity = n ? 0.5 : 1.4; this.sun.color.setHex(n ? 0x9fb0ff : 0xffe0b8);
@@ -698,6 +702,9 @@ class App {
     c.classList.remove('punch'); void c.offsetWidth; c.classList.add('punch');
     this.els.bThrow.lastChild.textContent = '×' + n;
   }
+  lightning() {
+    this.boltK = 1; this.flash('bolt');
+  }
   flash(kind) {
     const f = $('flash');
     f.className = ''; void f.offsetWidth; f.className = kind;
@@ -823,6 +830,10 @@ class App {
     this.sky.position.copy(this.camera.position);
     this.nightSky.position.copy(this.camera.position);
     if (st !== 'pause') this.dust.update(rdt, this.camera.position.x, this.camera.position.z);
+    if (st !== 'pause') this.rain.update(rdt, this.camera.position.x, this.camera.position.z);
+    this.audio.rain(!!(this.level && this.level.rain) && (st === 'play' || st === 'pause' || st === 'busted'));
+    if (this.boltK > 0) { this.boltK = Math.max(0, this.boltK - rdt * 2.2); }
+    this.renderer.toneMappingExposure = 1.15 + this.boltK * this.boltK * 1.6;
     this.dust.points.visible = st !== 'menu' && st !== 'soon';
     this.floaters.update(st === 'pause' ? 0 : rdt, this.camera, this.w, this.h);
     this.updateHints(rdt);

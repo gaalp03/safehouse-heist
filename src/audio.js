@@ -129,6 +129,10 @@ export class Audio {
       case 'alarm':
         for (let i = 0; i < 6; i++) T(i % 2 ? 700 : 950, 0.15, { vol: 0.09, delay: i * 0.15 }); break;
       case 'wake': T(300, 0.25, { type: 'sawtooth', slide: 520, vol: 0.1 }); T(520, 0.2, { type: 'sawtooth', slide: 700, vol: 0.08, delay: 0.22 }); break;
+      case 'thunder':
+        N(0.25, { vol: 0.5, freq: 900, type: 'lowpass', q: 0.5 });
+        N(2.8, { vol: 0.55, freq: 220, slide: 60, type: 'lowpass', q: 0.7, attack: 0.08 });
+        N(1.6, { vol: 0.3, freq: 120, type: 'lowpass', delay: 0.5, attack: 0.3 }); break;
       case 'vent':
         T(140, 0.12, { type: 'square', vol: 0.12 }); N(0.12, { vol: 0.3, freq: 2200, q: 3 });
         for (let i = 0; i < 9; i++) N(0.11, { vol: 0.16, freq: 600 + (i % 3) * 250, q: 4, delay: 0.25 + i * 0.14 });
@@ -181,6 +185,24 @@ export class Audio {
         T(523, 0.6, { type: 'triangle', vol: 0.1, delay: 1.1 }); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
+    }
+  }
+
+  // looping rain bed (muffled, we're indoors)
+  rain(on) {
+    if (!this.ctx || !this.noiseBuf) return;
+    if (on && !this.rn) {
+      const ctx = this.ctx, src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), f2 = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = this.noiseBuf; src.loop = true;
+      f.type = 'lowpass'; f.frequency.value = 1400; f2.type = 'highpass'; f2.frequency.value = 220;
+      g.gain.value = 0.0001; g.gain.setTargetAtTime(0.09, ctx.currentTime, 0.6);
+      src.connect(f).connect(f2).connect(g).connect(this.sfx);
+      src.start();
+      this.rn = { src, g };
+    } else if (!on && this.rn) {
+      const r = this.rn, t = this.ctx.currentTime;
+      r.g.gain.setTargetAtTime(0.0001, t, 0.2); r.src.stop(t + 1);
+      this.rn = null;
     }
   }
 

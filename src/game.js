@@ -382,6 +382,7 @@ export class Game {
       g.c.root.visible = false; g.cone.visible = false; g.shadow.visible = false; g.stars.visible = false; g.badge.className = 'badge';
     }
     this.shiftN = 0; this.shiftWarn = 0;
+    this.boltT = 8 + Math.random() * 8; this.thunderIn = 0; this.thunderT = 0;
     if (this.heli) this.heli.group.visible = false;
     for (const v of this.vents || []) v.flap.rotation.x = 0;
     this.ventsUsed = 0; this.player.venting = null;
@@ -588,6 +589,7 @@ export class Game {
         this.shiftWarn++; this.app.audio.play('radio');
         this.app.announce('📻 "Relief guard arriving in 10 seconds" — grab what you can!');
       }
+      if (this.def.rain) this.updateStorm(rdt);
       if (this.shiftN < sched.length && this.time >= sched[this.shiftN] && this.reserve[this.shiftN]) this.callReinforcement(this.reserve[this.shiftN++]);
       // route recap: sample position + whether anyone is onto us
       this.trailT -= dt;
@@ -1172,6 +1174,8 @@ export class Game {
   }
 
   makeNoise(x, z, r, except, lure) {
+    // thunder masks the robber's own racket (not lures / guard noises)
+    if (this.thunderT > 0 && except == null && !lure) r *= 0.3;
     const ring = this.noiseRings.find((n) => n.t >= 1);
     if (ring) { ring.t = 0; ring.r = r; ring.x = x; ring.z = z; ring.m.visible = true; }
     for (const g of this.guards) {
@@ -1404,6 +1408,17 @@ export class Game {
     g.navGoal = -1;
   }
 
+  // thunderstorm: lightning flash, then a rolling thunder that covers your noise for ~2.5s
+  updateStorm(dt) {
+    const app = this.app;
+    this.thunderT = Math.max(0, this.thunderT - dt);
+    if (this.thunderIn > 0) {
+      this.thunderIn -= dt;
+      if (this.thunderIn <= 0) { this.thunderT = 2.6; app.audio.play('thunder'); app.shake.add(0.12); app.hint('thunder'); }
+    }
+    this.boltT -= dt;
+    if (this.boltT <= 0) { this.boltT = 12 + Math.random() * 12; this.thunderIn = 0.35 + Math.random() * 0.6; app.lightning(); }
+  }
   callReinforcement(g) {
     const app = this.app, e = this.entrance;
     g.def.path = [[e.x, e.y], this.roamCell(g.def.roam, e.x, e.y)];
