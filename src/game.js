@@ -360,7 +360,8 @@ export class Game {
       Object.assign(d, { x: s[0] + 0.5, z: s[1] + 0.5, wp: 1 % d.def.path.length, state: 'roam', t: 0, barkT: 0, sniffT: 0, ci: 0, lostT: 0,
         nav: [], navGoal: -1, navT: 0, face: 0, moving: 0, tx: 0, tz: 0, waitT: 0, smellT: 0, mul: 1 });
     }
-    for (const cam of this.cams) Object.assign(cam, { susp: 0, cool: 0, face: cam.def.face });
+    for (const cam of this.cams) { Object.assign(cam, { susp: 0, cool: 0, face: cam.def.face, off: 0 }); cam.cone.visible = true; cam.mesh.rotation.x = 0; }
+    this.camsHit = 0;
 
     this.loot = L.loot.map((l, i) => ({
       type: l.type, x: l.x + 0.5, y: 0.45, z: l.y + 0.5, vx: 0, vy: 0, vz: 0, st: 'idle', t: 0,
@@ -1017,6 +1018,19 @@ export class Game {
           if (c.bounces > 2 || Math.abs(c.vy) < 0.5) { c.st = 'rest'; c.vy = 0; }
         }
         c.mesh.rotation.set(c.t * 18, c.t * 7, 0);
+        // coin vs security camera: knocks it out for a while
+        for (const cam of this.cams) {
+          if (cam.off > 0) continue;
+          const cp = cam.mesh.position;
+          if (Math.hypot(c.x - cp.x, c.y - cp.y, c.z - cp.z) < 0.5) {
+            cam.off = 12; cam.susp = 0; this.camsHit++;
+            c.vx *= -0.3; c.vz *= -0.3; c.vy = 1;
+            app.audio.play('zap'); app.shake.add(0.1);
+            app.particles.burst(cp.x, cp.y, cp.z, { count: 16, colors: [0xfff1a8, 0x7fd8ff, 0xffffff], speed: 2.5, up: 2, size: 0.04, life: 0.6 });
+            app.floaters.spawn('CAMERA DOWN', cp.x, cp.y + 0.5, cp.z, 'big', 1.2);
+            app.hintDone('camhit');
+          }
+        }
       } else {
         c.mesh.rotation.set(0, c.t * 2, 0);
         c.mesh.position.y = 0.03;
@@ -1495,6 +1509,16 @@ export class Game {
 
   updateCam(cam, dt, perceive) {
     const d = cam.def, p = this.player;
+    if (cam.off > 0) {
+      cam.off -= dt;
+      cam.cone.visible = false;
+      cam.mesh.rotation.x = 0.6;
+      cam.lens.material.color.setHex(Math.random() < 0.04 ? 0xfff1a8 : 0x1a1a22);
+      if (Math.random() < dt * 3) this.app.particles.burst(cam.mesh.position.x, cam.mesh.position.y, cam.mesh.position.z, { count: 2, colors: [0xfff1a8, 0x7fd8ff], speed: 1.2, up: 0.5, size: 0.03, life: 0.3 });
+      if (cam.off <= 0) { cam.cone.visible = true; cam.mesh.rotation.x = 0; this.app.audio.play('click'); }
+      return;
+    }
+    if (perceive && Math.hypot(p.x - d.pos[0], p.z - d.pos[1]) < 7 && this.coinsLeft > 0) this.app.hint('camhit');
     cam.face = d.face + Math.sin(this.t * d.sweepSpeed) * d.sweep;
     const x = d.pos[0], z = d.pos[1];
     cam.mesh.rotation.y = cam.face;

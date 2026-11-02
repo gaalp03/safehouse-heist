@@ -26,6 +26,7 @@ const HINTS = {
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
   dog: ['A guard dog! It follows your scent and barks. Coins distract it.', 'A guard dog! It follows your scent and barks. Coins distract it.'],
   clerk: ['The clerk is running for the alarm button! Knock them out first!', 'The clerk is running for the alarm button! Knock them out first!'],
+  camhit: ['Security camera! Hit it with a thrown coin (Q) to knock it out for 12s', 'Security camera! Hit it with a thrown coin to knock it out for 12s'],
   pocket: ['Behind a guard: tap E to knock out, HOLD E to pickpocket his wallet (or spare keycard)', 'Behind a guard: tap ✋ to knock out, HOLD ✋ to pickpocket his wallet'],
   slot: ['Slot machine! Hold E to hit a noisy jackpot that lures guards away', 'Slot machine! Hold ✋ to hit a noisy jackpot that lures guards away'],
   spot: ['Spotlight! Stay out of the moving light pools, or cut the power at the breaker', 'Spotlight! Stay out of the moving light pools, or cut the power at the breaker'],
