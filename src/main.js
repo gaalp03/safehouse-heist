@@ -707,6 +707,16 @@ class App {
     await SDK.ad('midgame');
   }
   async reviveAd() {
+    if (this.freeRevOk && !this.game.revived) {
+      if (this.preBust) { const keep = JSON.parse(this.preBust); for (const k of Object.keys(this.save)) delete this.save[k]; Object.assign(this.save, keep); }
+      this.save.freeRev = dayKeyNow(); this.freeRevOk = false; SDK.store(this.save);
+      this.game.revive();
+      this.state = 'play'; this.last = performance.now(); this.screen(null);
+      this.input.requestLock();
+      this.announce('💪 Second chance! You shook him off. Next free one tomorrow');
+      SDK.gameplayStart();
+      return;
+    }
     if (!ADS_ENABLED || !SDK.available || this.game.revived) return;
     this.state = 'ad';
     const ok = await SDK.ad('rewarded');
@@ -955,8 +965,13 @@ class App {
     this.state = 'busted';
     this.audio.siren(false);
     SDK.gameplayStop();
-    $('bRevive').classList.toggle('hidden', !ADS_ENABLED || !SDK.available || this.game.revived);
+    // one free second chance per day (guard busts only; the police arriving can't be undone)
+    this.freeRevOk = this.mode !== 'daily' && !this.game.revived && !this.game.policeBusted && this.save.freeRev !== dayKeyNow();
+    const adRev = ADS_ENABLED && SDK.available && !this.game.revived && !this.game.policeBusted;
+    $('bRevive').classList.toggle('hidden', !(this.freeRevOk || adRev));
+    $('bRevive').innerHTML = this.freeRevOk ? '▶ SECOND CHANCE <small>free · 1 per day</small>' : '▶ SECOND CHANCE';
     $('bustTip').textContent = this.bustTip();
+    this.preBust = JSON.stringify(this.save);   // undone if the player takes a second chance
     const fresh = recordRun(this.save, this.runRecord(false));
     this.awardXP(false, 0, this.game.lootGot, 'bXP');
     if ((this.save.hot || 0) >= 2) this.lostStreak = this.save.hot;
@@ -967,7 +982,7 @@ class App {
     $('bEasy').classList.toggle('hidden', !(this.mode === 'classic' && this.bustStreak >= 3 && (this.diff === 'normal' || this.diff === 'hard')));
     SDK.store(this.save);
     const jt = this.mode === 'tutorial' ? '' : this.jobsToast(recordJobs(this.save, this.runRecord(false)));
-    if (this.lostStreak) { $('bCash').textContent += ` · 🔥 ${this.lostStreak}-escape streak lost`; this.lostStreak = 0; }
+    if (this.lostStreak) { const c = $('bCash'); c.textContent = (c.textContent ? c.textContent + ' · ' : '') + `🔥 ${this.lostStreak}-escape streak lost`; this.lostStreak = 0; }
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).concat(jt ? [jt] : []).join('<br>');
     this.chipify('bAch');
     this.screen('busted');
