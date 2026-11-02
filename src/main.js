@@ -111,16 +111,14 @@ class App {
   // ---------------- UI ----------------
   bindUI() {
     const click = (id, fn) => $(id).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); fn(); });
-    click('bPlay', () => this.start('classic', this.levelIdx || 0));
+    click('bPlay', () => this.playSel());
+    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
     for (const el of document.querySelectorAll('#diff button')) {
       el.addEventListener('click', (e) => {
         e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
         this.diff = el.dataset.d; this.save.diff = this.diff; SDK.store(this.save); this.showMenu();
       });
     }
-    click('lvl1', () => this.start('classic', 0));
-    click('lvl2', () => { if (this.bankUnlocked()) this.start('classic', 1); else { this.audio.play('nope'); const c = $('lvl2'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } });
-    click('daily', () => this.start('daily'));
     click('bResume', () => this.resume());
     click('bRestart', () => this.start());
     click('bPMenu', () => this.showMenu());
@@ -131,8 +129,6 @@ class App {
       else if (this.levelIdx === 2 && this.museumUnlocked()) this.start('classic', 3);
       else this.showSoon();
     });
-    click('lvl4', () => { if (this.museumUnlocked()) this.start('classic', 3); else { this.audio.play('nope'); const c = $('lvl4'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } });
-    click('lvl3', () => { if (this.jewelryUnlocked()) this.start('classic', 2); else { this.audio.play('nope'); const c = $('lvl3'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } });
     click('bRMenu', () => this.showMenu());
     click('bBRetry', () => this.retry());
     click('bBMenu', () => this.showMenu());
@@ -151,7 +147,7 @@ class App {
     this.input.on('mute', () => this.toggleMute());
     this.input.on('key', (code) => {
       if (code === 'KeyT' && this.state === 'play' && this.game.tut) this.skipTutorial();
-      if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.start('classic'); }
+      if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.playSel(); }
       else if ((code === 'Enter' || code === 'Space') && (this.state === 'result' || this.state === 'busted')) { this.audio.unlock(); this.retry(); }
     });
     this.input.on('mode', () => this.syncTouch());
@@ -203,13 +199,14 @@ class App {
     $('lvl4stars').innerHTML = mu ? this.starsHTML(mb ? mb.stars : 0) : '';
     $('lvl4best').textContent = mu ? (mb ? 'Best ' + fmtMoney(mb.score) : 'New!') : 'Escape the Jewelry Store to unlock';
     $('lvl3best').textContent = ju ? (jb ? 'Best ' + fmtMoney(jb.score) : 'New!') : 'Escape the Bank to unlock';
+    this.renderSel();
     for (const el of document.querySelectorAll('#diff button')) el.classList.toggle('on', el.dataset.d === this.diff);
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
     $('lvl1best').textContent = b ? 'Best ' + fmtMoney(b.score) : 'New!';
     this.daily = todaysDaily();
     const db = (this.save.daily || {})[this.daily.key];
     $('dMut').textContent = this.daily.mutator.name;
-    { const n = new Date(); $('dArt').innerHTML = `<small>${n.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}</small>${n.getDate()}`; }
+    { const n = new Date(); $('dArt').innerHTML = `<span style="font-size:20px">${n.getDate()}</span>`; }
     $('dDesc').textContent = this.daily.mutator.desc;
     $('dBest').textContent = (db ? 'Today ' + fmtMoney(db.score) : this.daily.label) + ((this.save.streak && this.save.streak.n > 1 && (this.save.streak.last === this.daily.key || this.save.streak.last === prevDayKey())) ? ` · 🔥${this.save.streak.n}` : '');
     this.screen('menu');
@@ -267,6 +264,34 @@ class App {
     $('rAch').innerHTML = list.length ? '🏆 Unlocked: ' + list.map((a) => `<b>${a.icon} ${a.name}</b>`).join(' · ') : '';
     $('rAch').classList.toggle('hidden', !list.length);
     if (list.length) setTimeout(() => this.audio.play('contract'), 1600);
+  }
+  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : false; }
+  selectPin(k) {
+    this.sel = k; this.save.sel = k;
+    if (this.pinLocked(k)) { const c = $(k); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
+    this.renderSel();
+  }
+  renderSel() {
+    let k = this.sel || this.save.sel || 'lvl1';
+    if (!$(k)) k = 'lvl1';
+    this.sel = k;
+    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'daily']) $(id).classList.toggle('on', id === k);
+    const el = $(k), locked = this.pinLocked(k);
+    $('selName').textContent = k === 'daily' ? 'Daily: ' + $('dMut').textContent : el.querySelector('.t').textContent;
+    const st = el.querySelector('.stars');
+    $('selStars').innerHTML = st ? st.innerHTML : '';
+    $('selSub').textContent = k === 'daily' ? $('dDesc').textContent + ' · ' + $('dBest').textContent : el.querySelector('.best').textContent;
+    $('bPlay').textContent = locked ? '🔒 LOCKED' : 'PLAY';
+    $('bPlay').classList.toggle('dis', locked);
+    let tot = 0;
+    for (const id of ['safehouse', 'bank', 'jewelry', 'museum']) tot += Math.max(...['', '_easy', '_hard'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
+    $('starTotal').textContent = `★ ${tot}/12`;
+  }
+  playSel() {
+    const k = this.sel || 'lvl1';
+    if (this.pinLocked(k)) { this.audio.play('nope'); this.selectPin(k); return; }
+    if (k === 'daily') this.start('daily');
+    else this.start('classic', { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3 }[k]);
   }
   showSoon() {
     SDK.gameplayStop();

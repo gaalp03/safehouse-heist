@@ -1185,10 +1185,11 @@ export class Game {
     g.navGoal = -1;
   }
 
+  effRange(g) { return g.yawnT > 0 ? g.range * 0.35 : g.range; }
   canSee(g) {
     const p = this.player, dx = p.x - g.x, dz = p.z - g.z, d = Math.hypot(dx, dz);
     if (p.hiding) return 0;
-    if (d > g.range) return 0;
+    if (d > this.effRange(g)) return 0;
     if (d > 0.35 && Math.abs(angDiff(g.face, Math.atan2(dx, dz))) > g.fov / 2) return 0;
     if (!this.los(g.x, g.z, p.x, p.z)) return 0;
     if (this.smokeBlocks(g.x, g.z, p.x, p.z)) { if (g.susp > 0.2 || g.state === 'alert') this.smokeHid = true; return 0; }
@@ -1227,12 +1228,13 @@ export class Game {
         }
         return;
     }
+    if (g.yawnT > 0) { g.yawnT -= dt; if (g.state !== 'wait') g.yawnT = 0; }
     if (g.state !== g.lastState) { g.lastState = g.state; g.stateT = 0; }
     g.stateT += dt;
     // ---- perception ----
     const seen = perceive && p.inv <= 0 ? this.canSee(g) : 0;
     if (seen) {
-      const close = 1 - clamp(seen / g.range, 0, 1);
+      const close = 1 - clamp(seen / this.effRange(g), 0, 1);
       const rate = (0.65 + 2.3 * close * close) * (p.dashT > 0 ? 1.6 : 1) * this.D.susp;
       g.susp = Math.min(1, g.susp + rate * dt);
       g.lastX = p.x; g.lastZ = p.z; g.lostT = 0;
@@ -1258,6 +1260,7 @@ export class Game {
         const w = d.path[g.wp];
         if (this.navTo(g, w[0] + 0.5, w[1] + 0.5, g.speed, dt)) {
           g.state = 'wait'; g.t = d.wait ?? 1; g.baseFace = g.face;
+          if (g.kind === 'guard' && g.susp < 0.1 && Math.random() < 0.35) { g.yawnT = 2.2; g.t = Math.max(g.t, 2.2); app.floaters.spawn('*yaaawn*', g.x, 1.9, g.z, 'zz', 1.4); }
         }
         break;
       }
@@ -1383,7 +1386,7 @@ export class Game {
     g.cone.visible = showCone;
     if (showCone) {
       const col = g.state === 'alert' || g.state === 'flee' ? COL.alert : g.susp > 0.25 ? COL.sus : COL.cone;
-      this.updateCone(g.cone, g.x, g.z, g.face, g.fov, g.range, col);
+      this.updateCone(g.cone, g.x, g.z, g.face, g.fov, this.effRange(g), col);
     }
     // status badge (DOM)
     let b = '';
