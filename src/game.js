@@ -1238,6 +1238,20 @@ export class Game {
   }
   arrive(g) {
     const app = this.app;
+    // after investigating/searching, guards sometimes check a nearby wardrobe
+    if (g.kind === 'guard' && this.hides.length && !g.reviveT && !g.safeRun && Math.random() < (this.player.hiding ? 0.55 : 0.35)) {
+      let best = null, bd = 4.5;
+      for (const h of this.hides) {
+        const d = Math.hypot(h.ex - g.x, h.ez - g.z);
+        if (d < bd && (!h.checkedT || this.t - h.checkedT > 15)) { bd = d; best = h; }
+      }
+      if (best) {
+        best.checkedT = this.t;
+        g.state = 'checkHide'; g.chk = best; g.navGoal = -1;
+        app.floaters.spawn('Hmm... the wardrobe?', g.x, 2.0, g.z, 'q', 1.2);
+        return;
+      }
+    }
     if (g.reviveT) {
       const o = g.reviveT;
       g.reviveT = null; o.claimed = false;
@@ -1429,6 +1443,21 @@ export class Game {
           this.arrive(g);
         }
         break;
+      case 'checkHide': {
+        const h = g.chk;
+        if (this.navTo(g, h.ex, h.ez, g.speed * 1.15, dt) || g.stateT > 8) {
+          g.face = Math.atan2(h.cx - g.x, h.cz - g.z);
+          if (this.player.hiding === h && this.state === 'play') {
+            app.floaters.spawn('Found you!', g.x, 2.0, g.z, 'alert', 1.2);
+            this.leaveHide(true); this.bust(g);
+          } else {
+            app.audio.play('creak');
+            app.floaters.spawn('Nobody here...', g.x, 2.0, g.z, 'q', 1.1);
+            g.state = 'look'; g.t = 1.6; g.baseFace = g.face;
+          }
+        }
+        break;
+      }
       case 'flee':
         if (this.navTo(g, g.button.x, g.button.z, 3.4, dt)) {
           g.state = 'cower'; g.t = 0;
@@ -1506,7 +1535,7 @@ export class Game {
     // status badge (DOM)
     let b = '';
     if (g.state === 'alert' || g.state === 'flee') b = 'alert';
-    else if (g.state === 'investigate' || g.state === 'search' || g.state === 'look' || g.susp > 0.04) b = 'sus';
+    else if (g.state === 'investigate' || g.state === 'search' || g.state === 'look' || g.state === 'checkHide' || g.susp > 0.04) b = 'sus';
     if (b !== g.prevBadge) {
       g.prevBadge = b;
       g.badge.className = 'badge ' + b;
