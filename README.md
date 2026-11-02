@@ -36,7 +36,7 @@ Level 2 — The Bank (unlocks after escaping Safe House): find the keycard in th
 
 Locker (menu): a daily login bonus (+$500 per consecutive day, up to $3,500) and every escape add cash to your stash (a bust keeps 25% of the loot you grabbed). Spend it on gear upgrades: Coin Pouch (+1 coin), Smoke Belt (+1 smoke), Soft Shoes (faster sneaking), Lockpick Kit (wider pick zone, faster safe cracking), Tailor (longer disguise). Gear is off on Daily and Ironman so those stay fair. The menu nudges you when you can afford something.
 
-Outfits (Locker): 9 colour-only robber looks (hoodie, gloves, crowbar) unlocked by trophy count or specific achievements, with a live first-person preview.
+Outfits (Locker): 13 colour-only robber looks (hoodie, gloves, crowbar) unlocked by trophy count or specific achievements, with a live first-person preview.
 
 Trophies (menu): lifetime stats (heists, escapes, busts, total loot, KOs, contracts, best times per level) and 33 achievements (Ghost, Photo Finish, Laser Dancer, Duct Rat, Nerves of Steel, Combo Breaker, Loyal Crew, Speed Demon, Pacifist, Clean Sweep, Phantom of the Vault, Wardrobe Ninja...), unlocks announced on the results screen.
 

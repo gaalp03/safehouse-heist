@@ -67,4 +67,5 @@ export default {
   ],
   vents: [{ a: [31, 16, 1, 0], b: [31, 3, 1, 0] }],
   tips: ['your waiter disguise wears off: use it to cross the ballroom first.', 'the keycard is in the library (top left).', 'guests run for the panic buttons on the walls. Stay out of their sight.', 'the cloakroom vent comes out in the gallery.'],
+  brief: "The mayor's charity gala. You're on the catering staff, officially.",
 };

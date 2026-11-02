@@ -69,4 +69,5 @@ export default {
   ],
   vents: [{ a: [2, 16, -1, 0], b: [2, 3, -1, 0] }],
   tips: ['lift the spare keycard from a guard instead of the office.', 'clerks run for the silent alarm. Knock them out first.', 'cut the lasers at the breaker box in the middle office.'],
+  brief: 'Payday at First Bank. The vault is fat, the guards are bored, the clerks are jumpy.',
 };

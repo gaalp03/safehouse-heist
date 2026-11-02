@@ -76,4 +76,5 @@ export default {
   ],
   vents: [{ a: [29, 12, 1, 0], b: [29, 3, 1, 0] }],
   tips: ['the hallway lasers blink in a rhythm. Watch one cycle first.', 'the breaker in the kitchen kills every laser.', 'the kitchen vent comes out in the gallery, right by the roof hatch.'],
+  brief: "A tech billionaire sleeps above the city behind a grid of lasers. The chopper's waiting.",
 };

@@ -627,9 +627,9 @@ class App {
     if ((d.clerks || []).length) it.push(`🙋 ${d.clerks.length} panic-button witness${d.clerks.length > 1 ? 'es' : ''}`);
     it.push(d.heli ? '🚁 Roof extraction' : L.van ? '🚐 Van out front' : '🪜 Roof hatch exit');
     const t = $('ctoast');
-    t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small><span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span><span class="stargoal">★ Escape · ★ Grab 70% loot · ★ Never get spotted</span>`;
+    t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small>${d.brief ? `<span class="brief">${d.brief}</span>` : ''}<span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span><span class="stargoal">★ Escape · ★ Grab 70% loot · ★ Never get spotted</span>`;
     t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
-    clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 4200);
+    clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 5200);
   }
   async retry() {
     await this.maybeMidgame();

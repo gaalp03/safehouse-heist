@@ -64,4 +64,5 @@ export default {
   ],
   vents: [{ a: [2, 18, -1, 0], b: [2, 3, -1, 0] }],
   tips: ['pull a slot machine to lure the roaming guards.', 'the keycard is in the security office (top left).', 'a vent links the VIP lounge and the security office.'],
+  brief: 'The house always wins. Tonight, the house loses its counting room.',
 };

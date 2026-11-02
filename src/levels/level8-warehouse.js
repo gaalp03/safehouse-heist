@@ -63,4 +63,5 @@ export default {
   ],
   vents: [{ a: [2, 3, -1, 0], b: [31, 9, 1, 0] }],
   tips: ['the TV in the break room pulls guards away from the hall.', 'the keycard is on the break-room table by the couch.', 'crate stacks block sight: weave between them.', 'thunder covers a dash or a smashed lock.'],
+  brief: "Smugglers' warehouse at the docks. Crates everywhere, and a very good dog.",
 };

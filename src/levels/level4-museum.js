@@ -68,4 +68,5 @@ export default {
   ],
   vents: [{ a: [29, 17, 1, 0], b: [29, 3, 1, 0] }],
   tips: ['searchlights sweep the halls: walk behind them.', 'the dog can be lured away with a coin.', 'the air vent in the lobby leads straight to the gem room.'],
+  brief: 'A priceless gem collection just went on display. Searchlights sweep the halls all night.',
 };

@@ -58,4 +58,5 @@ export default {
   ],
   vents: [{ a: [5, 6, 0, 1], b: [31, 6, 0, 1] }],
   tips: ['the baggage-car vent comes out in the dining car.', 'the barman runs for the alarm button. Stop him or stay unseen.', 'the breaker in the baggage car kills the mail-car laser.'],
+  brief: 'The overnight express carries a mail safe stuffed with bonds. Mind the gaps.',
 };

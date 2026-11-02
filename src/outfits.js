@@ -8,6 +8,9 @@ export const OUTFITS = [
   { id: 'bubblegum', name: 'Bubblegum', sleeve: 0xff8fc0, glove: 0xf4f1ea, bar: 0xff4fa0, band: 0xffffff, ach: 'pacifist' },
   { id: 'tux', name: 'Black Tie', sleeve: 0x22242f, glove: 0xf4f1ea, bar: 0xb33951, band: 0xffffff, ach: 'bank' },
   { id: 'neon', name: 'Neon Laser', sleeve: 0x1a1430, glove: 0x0c0a16, bar: 0xff2a5a, band: 0x3affd0, ach: 'laser' },
+  { id: 'gala', name: 'Gala Night', sleeve: 0xf4f1ea, glove: 0x17161d, bar: 0xd9b45a, band: 0xb33951, ach: 'mansion' },
+  { id: 'chain', name: 'Gold Chain', sleeve: 0x2a2c3d, glove: 0xe8b33a, bar: 0xffd75a, band: 0xe8b33a, ach: 'loyal' },
+  { id: 'dock', name: 'Dockhand', sleeve: 0xc9562a, glove: 0x3a3f4a, bar: 0x5a6a7a, band: 0xf2c94c, ach: 'warehouse' },
   { id: 'royal', name: 'Royal', sleeve: 0x6a4ad8, glove: 0xd9b45a, bar: 0xe8b33a, band: 0xd9b45a, need: 6 },
   { id: 'golden', name: 'Golden Boy', sleeve: 0xe8b33a, glove: 0xf2d48a, bar: 0xffd75a, band: 0xffffff, need: 10 },
 ];
