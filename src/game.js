@@ -415,7 +415,7 @@ export class Game {
     if (this.heli) this.heli.group.visible = false;
     for (const v of this.vents || []) v.flap.rotation.x = 0;
     for (const tv of this.tvs || []) { tv.on = tv.used = false; tv.scr.visible = tv.glow.visible = false; }
-    this.tvLures = 0; this.closeCalls = 0; this.koStreak = 0; this.maxKoStreak = 0; this.lastKo = -99;
+    this.tvLures = 0; this.photoFinish = false; this.closeCalls = 0; this.koStreak = 0; this.maxKoStreak = 0; this.lastKo = -99;
     for (const g of this.guards) g.peak = 0; this.disguiseT = 0; this.disguises = 0; this.uniformProg = 0;
     for (const g of this.guards) g.stripped = false;
     this.ventsUsed = 0; this.player.venting = null;
@@ -2110,6 +2110,13 @@ export class Game {
     app.setPrompt('');
     app.audio.play('win');
     app.shake.add(0.2);
+    if (this.alarm && this.alarmT < 10) {
+      // photo finish: the police were seconds away
+      this.photoFinish = true;
+      this.juice(0.9, 0.25, -10, 0, 0); app.shake.add(0.4);
+      app.floaters.spawn('JUST IN TIME!', p.x, 1.7, p.z - 1.2, 'big', 1.6);
+      app.audio.play('jackpot');
+    }
     app.onEscapeStart();
   }
   // helicopter extraction: hover over the hatch, then lift off and bank away over the city
