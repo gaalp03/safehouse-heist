@@ -268,6 +268,23 @@ function furniture(L, f, B, rng, lights) {
       break;
     }
     case 'table': {
+      if (L.def.gala || L.def.train) {
+        // white tablecloth to the floor, candelabra, champagne + place settings
+        const cloth = 0xf6f2ea;
+        b(P, 0, 0, 0, W - 0.16, 0.72, D - 0.16, cloth, { top: 0xffffff });
+        b(P, 0, 0.6, 0, W - 0.12, 0.13, D - 0.12, shade(cloth, 0.96), { faces: 63 & ~PY });
+        b(P, 0, 0.72, 0, 0.3, 0.004, D - 0.36, L.def.train ? 0x7a2a3a : 0xc9a040, { faces: PY });
+        b(P, 0, 0.724, 0, 0.12, 0.04, 0.12, 0xe0b04a); b(P, 0, 0.76, 0, 0.04, 0.22, 0.04, 0xe0b04a);
+        for (const s of [-1, 1]) { b(P, s * 0.12, 0.92, 0, 0.2, 0.025, 0.03, 0xe0b04a); b(P, s * 0.2, 0.94, 0, 0.04, 0.14, 0.04, 0xfff6e0); b(U, s * 0.2, 1.08, 0, 0.03, 0.05, 0.03, 0xffb84a); }
+        b(P, 0, 0.98, 0, 0.04, 0.14, 0.04, 0xfff6e0); b(U, 0, 1.12, 0, 0.03, 0.05, 0.03, 0xffb84a);
+        b(P, 0.32, 0.724, 0.28, 0.08, 0.2, 0.08, 0x2a5a3a); b(P, 0.32, 0.92, 0.28, 0.03, 0.07, 0.03, 0xe0b04a); // champagne
+        for (const [px, pz] of [[-0.4, -0.38], [0.4, 0.38], [-0.4, 0.38], [0.4, -0.38]]) {
+          b(P, px, 0.724, pz, 0.24, 0.012, 0.24, 0xffffff); b(P, px, 0.736, pz, 0.14, 0.01, 0.14, 0xe8e2d6);
+          b(U, px + 0.17, 0.724, pz, 0.04, 0.1, 0.04, 0xd8f0ff);
+        }
+        light(0, 1.2, 0, [1, 0.75, 0.45], 0.7, 2.2);
+        break;
+      }
       const oak = 0xd39b62;
       b(WD, 0, 0.66, 0, W - 0.2, 0.07, D - 0.2, oak, { top: shade(oak, 1.08) });
       for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(WD, sx * (W / 2 - 0.25), 0, sz * (D / 2 - 0.25), 0.08, 0.66, 0.08, shade(oak, 0.8));
@@ -278,6 +295,17 @@ function furniture(L, f, B, rng, lights) {
       break;
     }
     case 'chair': {
+      if (L.def.train) {
+        // padded railway seat: chrome legs, plush cushion, tall back with white headrest cover
+        const plush = 0x2a4a8a, trim = 0x1a2a52;
+        b(P, 0, 0, 0, 0.36, 0.06, 0.36, 0x2a2b36); b(P, 0, 0.06, 0, 0.06, 0.3, 0.06, 0xc9d2dc);
+        b(P, 0, 0.36, 0.02, 0.5, 0.14, 0.46, plush, { top: shade(plush, 1.2) });
+        b(P, 0, 0.36, -0.22, 0.5, 0.82, 0.12, plush, { top: trim });
+        for (let k = 0; k < 3; k++) b(P, 0, 0.56 + k * 0.18, -0.155, 0.44, 0.012, 0.01, trim, { faces: PZ });
+        b(P, 0, 1.02, -0.15, 0.36, 0.14, 0.015, 0xf4f1ea, { faces: PZ | PY });
+        for (const s of [-1, 1]) b(P, s * 0.27, 0.36, -0.02, 0.06, 0.34, 0.42, trim, { top: shade(trim, 1.4) });
+        break;
+      }
       const oak = 0xb98154;
       for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(WD, sx * 0.17, 0, sz * 0.17, 0.05, 0.42, 0.05, shade(oak, 0.8));
       b(WD, 0, 0.42, 0, 0.44, 0.05, 0.44, oak);
@@ -711,8 +739,8 @@ export function buildWorld(L) {
     ground(B.grass, -ext, -ext, W + ext, 0.6, 0x6a7a6a);
     ground(B.grass, -ext, H - 0.6, W + ext, H + ext, 0x6a7a6a);
     ground(B.concrete, -ext, 0.6, W + ext, H - 0.6, 0x8a8478);
-    for (let x = -ext; x < W + ext; x += 0.7) B.woodfine.box(x, -0.02, H / 2, 0.22, 0.05, H - 2.4, 0x5a3f2c, { faces: PY | PX | NX });
-    for (const z of [H / 2 - 1.6, H / 2 + 1.6]) B.plain.box(W / 2, 0, z, W + ext * 2, 0.08, 0.1, 0xb8c0cc, { top: 0xe8eef6 });
+    for (let x = -ext; x < W + ext; x += 0.7) if (x < -0.3 || x > W + 0.3) B.woodfine.box(x, -0.02, H / 2, 0.22, 0.05, H - 2.4, 0x5a3f2c, { faces: PY | PX | NX });
+    for (const z of [H / 2 - 1.6, H / 2 + 1.6]) for (const [x0, x1] of [[-ext, -0.2], [W + 0.2, W + ext]]) B.plain.box((x0 + x1) / 2, 0, z, x1 - x0, 0.08, 0.1, 0xb8c0cc, { top: 0xe8eef6 });
   }
   if (!TRAIN) {
   ground(B.grass, -ext, -ext, 0, roadTop, 0xffffff);

@@ -7,6 +7,7 @@ export default {
   parTime: 150,
   tutorial: true,
   night: true,
+  gala: true,
   lampScale: 1.3,
   carpet: 0x7a2a3a,
   safeName: 'wall safe',
