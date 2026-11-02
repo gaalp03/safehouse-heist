@@ -421,7 +421,7 @@ function furniture(L, f, B, rng, lights) {
       if ((f.x0 + f.y0) % 2) {
         b(WD, 0, 0.34, 0, 0.07, 0.62, 0.07, 0x7a5a36);
         b(WD, 0.02, 0.6, 0, 0.06, 0.36, 0.06, 0x6a4a2a, { ry: 0.3 });
-        for (let k = 0; k < 7; k++) { const a = k * 0.9; b(P, Math.cos(a) * 0.2, 1.02 - (k % 2) * 0.06, Math.sin(a) * 0.2, 0.42, 0.04, 0.12, LEAF[k % 4], { ry: -a }); }
+        for (let k = 0; k < 7; k++) { const a = k * 0.9, c = LEAF[k % 4]; b(P, Math.cos(a) * 0.18, 1.0 - (k % 2) * 0.05, Math.sin(a) * 0.18, 0.3, 0.07, 0.14, c, { ry: -a, top: shade(c, 1.15) }); b(P, Math.cos(a) * 0.36, 0.93 - (k % 2) * 0.05, Math.sin(a) * 0.36, 0.18, 0.06, 0.11, shade(c, 0.9), { ry: -a }); }
         b(P, 0, 1.04, 0, 0.16, 0.1, 0.16, LEAF[2]);
       } else {
         const L3 = [[0, 0.42, 0, 0.42], [0.08, 0.66, 0.05, 0.34], [-0.07, 0.62, -0.06, 0.32], [0, 0.86, 0, 0.26]];
@@ -547,6 +547,21 @@ function bake(bld, lightAt) {
 }
 
 // ---------------------------------------------------------------- main build
+// four tiny cartoon wall pictures (landscape, portrait, sailboat, cat)
+let _picT = null;
+function picTextures() {
+  if (_picT) return _picT;
+  const mk = (fn) => { const c = document.createElement('canvas'); c.width = 64; c.height = 52; const g = c.getContext('2d'); fn(g); const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return t; };
+  const circ = (g, x, y, r, c) => { g.fillStyle = c; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fill(); };
+  _picT = [
+    mk((g) => { g.fillStyle = '#8ec8f0'; g.fillRect(0, 0, 64, 52); circ(g, 48, 12, 7, '#ffd23f'); g.fillStyle = '#6a7aa0'; g.beginPath(); g.moveTo(4, 38); g.lineTo(24, 12); g.lineTo(44, 38); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(19, 19); g.lineTo(24, 12); g.lineTo(29, 19); g.fill(); g.fillStyle = '#4fae5a'; g.fillRect(0, 36, 64, 16); circ(g, 52, 36, 10, '#3f9a4a'); }),
+    mk((g) => { g.fillStyle = '#5a2a3a'; g.fillRect(0, 0, 64, 52); g.fillStyle = '#2a3a6a'; g.fillRect(16, 34, 32, 18); circ(g, 32, 22, 11, '#f0c8a0'); g.fillStyle = '#3a2418'; g.fillRect(20, 9, 24, 8); g.fillStyle = '#1c1330'; g.fillRect(27, 21, 3, 3); g.fillRect(35, 21, 3, 3); g.fillStyle = '#3a2418'; g.fillRect(26, 28, 13, 3); }),
+    mk((g) => { g.fillStyle = '#ffc89a'; g.fillRect(0, 0, 64, 28); g.fillStyle = '#3f8fd0'; g.fillRect(0, 28, 64, 24); g.fillStyle = '#7a4a2a'; g.fillRect(18, 32, 28, 6); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(32, 8); g.lineTo(32, 31); g.lineTo(48, 31); g.fill(); g.fillStyle = '#e8483f'; g.beginPath(); g.moveTo(30, 12); g.lineTo(30, 31); g.lineTo(20, 31); g.fill(); g.fillStyle = 'rgba(255,255,255,.5)'; g.fillRect(4, 42, 14, 2); g.fillRect(40, 46, 16, 2); }),
+    mk((g) => { g.fillStyle = '#9ad8c0'; g.fillRect(0, 0, 64, 52); circ(g, 32, 34, 14, '#f2a03a'); circ(g, 32, 20, 11, '#f2a03a'); g.fillStyle = '#f2a03a'; g.beginPath(); g.moveTo(22, 14); g.lineTo(24, 3); g.lineTo(30, 11); g.fill(); g.beginPath(); g.moveTo(42, 14); g.lineTo(40, 3); g.lineTo(34, 11); g.fill(); g.fillStyle = '#1c1330'; g.fillRect(27, 18, 3, 4); g.fillRect(35, 18, 3, 4); g.fillStyle = '#ff7a8a'; g.fillRect(31, 24, 3, 2); g.fillStyle = '#d8822a'; g.fillRect(24, 32, 16, 3); }),
+  ];
+  return _picT;
+}
+
 // slot machine art: a reel strip (3 symbols) and a bulb-framed LUCKY 7 marquee
 let _slotT = null;
 function slotTextures() {
@@ -616,7 +631,7 @@ export function buildWorld(L) {
     panel: new GeoBuilder(1), brick: new GeoBuilder(0.9), plaster: new GeoBuilder(2), grass: new GeoBuilder(3),
     asphalt: new GeoBuilder(3), concrete: new GeoBuilder(1), plain: new GeoBuilder(1), woodfine: new GeoBuilder(0.8),
     rug: new GeoBuilder(1), unlit: new GeoBuilder(1), shadow: new GeoBuilder(1), patch: new GeoBuilder(1),
-    trainN: new GeoBuilder(8), trainS: new GeoBuilder(8), slotReel: new GeoBuilder(1), slotSign: new GeoBuilder(1),
+    trainN: new GeoBuilder(8), trainS: new GeoBuilder(8), slotReel: new GeoBuilder(1), slotSign: new GeoBuilder(1), pics: [0, 1, 2, 3].map(() => new GeoBuilder(1)),
   };
   const TRAIN = !!L.def.train;
   const { W, H, ch, floor } = L;
@@ -783,12 +798,11 @@ export function buildWorld(L) {
             rays.push([fx + dx * 0.03, fz + dy * 0.03, dx, dy]);
           }
         } else if (!out && (x * 5 + y * 3) % 7 === 0) {
-          const art = [0xe8654f, 0x3f8f9a, 0xf2b134, 0x6a5fa8, 0x4f9a5a][(x + y * 2) % 5];
-          B.woodfine.box(fx + dx * 0.025, 0.95, fz + dy * 0.025, dx ? 0.05 : 0.56, 0.46, dy ? 0.05 : 0.56, 0x5a3a26, { faces: 63 });
+          // framed picture: wooden frame, cream mat, one of four little cartoon pictures
+          const pk = (x * 7 + y * 3) % 4, fc = [0x5a3a26, 0xc89a3a, 0x2a2b36, 0x8a5a3a][(x + y) % 4];
+          B.woodfine.box(fx + dx * 0.025, 0.95, fz + dy * 0.025, dx ? 0.05 : 0.56, 0.46, dy ? 0.05 : 0.56, fc, { faces: 63 });
           B.plain.box(fx + dx * 0.035, 1.0, fz + dy * 0.035, dx ? 0.05 : 0.46, 0.36, dy ? 0.05 : 0.46, 0xf6f0e6, { faces: bit });
-          B.plain.box(fx + dx * 0.04, 1.03, fz + dy * 0.04, dx ? 0.05 : 0.38, 0.3, dy ? 0.05 : 0.38, art, { faces: bit });
-          B.plain.box(fx + dx * 0.045, 1.06, fz + dy * 0.045 , dx ? 0.05 : 0.16, 0.14, dy ? 0.05 : 0.16, shade(art, 0.65), { faces: bit });
-          B.plain.box(fx + dx * 0.045 + (dy ? 0.1 : 0), 1.16, fz + dy * 0.045 + (dx ? 0.1 : 0), dx ? 0.05 : 0.08, 0.08, dy ? 0.05 : 0.08, 0xfff1c0, { faces: bit });
+          B.pics[pk].box(fx + dx * 0.042, 1.03, fz + dy * 0.042, dx ? 0.05 : 0.38, 0.3, dy ? 0.05 : 0.38, 0xffffff, { faces: bit, fit: true });
         }
       }
       continue;
@@ -897,6 +911,7 @@ export function buildWorld(L) {
   mk(B.concrete, lit(T.concrete)); mk(B.plain, lit(T.plain)); mk(B.woodfine, lit(T.woodfine));
   mk(B.rug, new MeshBasicMaterial({ vertexColors: true, map: T.rug, polygonOffset: true, polygonOffsetFactor: -1 }));
   mk(B.unlit, new MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+  { const pt = picTextures(); B.pics.forEach((bld, k) => mk(bld, new MeshBasicMaterial({ vertexColors: true, map: pt[k] }))); }
   if (!B.slotReel.empty) { const st = slotTextures(); mk(B.slotReel, new MeshBasicMaterial({ vertexColors: true, map: st.reel, toneMapped: false })); mk(B.slotSign, new MeshBasicMaterial({ vertexColors: true, map: st.sign, toneMapped: false })); }
   if (TRAIN) {
     // windows show a scrolling night landscape (north and south sides scroll in opposite uv directions)
@@ -1187,10 +1202,23 @@ export function lootGeometries() {
   jewel.box(0, -0.24, 0, 0.26, 0.05, 0.26, 0xf2c94c, { faces: 63 });
   jewel.box(0, -0.19, 0, 0.12, 0.05, 0.12, 0xf2c94c, { faces: 63 });
   const art = new GeoBuilder();
-  art.box(0, -0.34, 0, 0.74, 0.7, 0.08, 0xc08a3a, { faces: 63 });
-  art.box(0, -0.29, 0, 0.62, 0.6, 0.09, 0x2f4858, { faces: PZ | NZ });
-  art.box(0, -0.29, 0, 0.62, 0.22, 0.095, 0x3f8f9a, { faces: PZ | NZ });
-  art.box(0.14, -0.02, 0, 0.16, 0.16, 0.1, 0xf2b134, { faces: PZ | NZ });
-  art.box(-0.12, -0.14, 0, 0.3, 0.12, 0.1, 0xe8654f, { faces: PZ | NZ });
+  // gilded frame with corner rosettes around a little landscape: sky, sun, snowy peak, green hills, lake
+  const F = (x, y, w, h) => art.box(x, y, 0, w, h, 0.1, 0xd9a03a, { faces: 63, top: 0xf2c46a });
+  F(0, -0.36, 0.78, 0.08); F(0, 0.34, 0.78, 0.08); F(-0.35, -0.3, 0.08, 0.66); F(0.35, -0.3, 0.08, 0.66);
+  for (const [x, y] of [[-0.35, -0.36], [0.35, -0.36], [-0.35, 0.34], [0.35, 0.34]]) art.box(x, y - 0.01, 0, 0.11, 0.11, 0.12, 0xb87a24, { faces: 63 });
+  const P2 = PZ | NZ;
+  art.box(0, -0.28, 0, 0.62, 0.62, 0.06, 0x8ec8f0, { faces: P2 });          // sky
+  art.box(0, 0.12, 0, 0.62, 0.22, 0.062, 0xb9e0fa, { faces: P2 });          // pale upper sky
+  art.box(0.17, 0.12, 0, 0.12, 0.12, 0.066, 0xffd23f, { faces: P2 });       // sun
+  art.box(-0.06, -0.06, 0, 0.3, 0.18, 0.064, 0x7a8aa8, { faces: P2 });      // mountain
+  art.box(-0.06, 0.08, 0, 0.14, 0.08, 0.066, 0x9aaac4, { faces: P2 });
+  art.box(-0.06, 0.12, 0, 0.08, 0.05, 0.068, 0xffffff, { faces: P2 });      // snow cap
+  art.box(-0.14, -0.2, 0, 0.36, 0.12, 0.068, 0x4fae5a, { faces: P2 });      // hills
+  art.box(0.14, -0.18, 0, 0.32, 0.1, 0.066, 0x5cbf5a, { faces: P2 });
+  art.box(0, -0.28, 0, 0.62, 0.1, 0.07, 0x3f8f6a, { faces: P2 });           // meadow
+  art.box(0.12, -0.27, 0, 0.2, 0.04, 0.072, 0x5aa8e0, { faces: P2 });       // lake
+  art.box(-0.2, -0.24, 0, 0.04, 0.1, 0.074, 0x7a5236, { faces: P2 });       // tree
+  art.box(-0.2, -0.16, 0, 0.1, 0.1, 0.076, 0x2f8a3f, { faces: P2 });
+  art.box(0, -0.42, 0, 0.18, 0.04, 0.11, 0xf2c46a, { faces: 63 });           // name plate
   return { cash: cash.build(), gold: gold.build(), jewel: jewel.build(), art: art.build() };
 }

@@ -1,9 +1,10 @@
 // Gameplay: player, guards (vision cones, suspicion, chase, noise), loot, safe, escape, scoring.
 import {
-  Group, Mesh, MeshBasicMaterial, InstancedMesh, BufferGeometry, BufferAttribute, CircleGeometry, RingGeometry,
+  Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, InstancedMesh, BufferGeometry, BufferAttribute, CircleGeometry, RingGeometry,
   CylinderGeometry, PlaneGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial, ConeGeometry, AdditiveBlending,
 } from 'three';
 import { textures } from './textures.js';
+import { GeoBuilder } from './geo.js';
 import { parseLevel } from './level.js';
 import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, buildHeli, buildVent, propBack, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
@@ -237,10 +238,25 @@ export class Game {
     // security cameras
     this.cams = (def.cameras || []).map((cd) => {
       const cone = makeCone(); this.root.add(cone);
-      const m = new Mesh(new BoxGeometry(0.22, 0.18, 0.36), new MeshBasicMaterial({ color: 0x2d3150 }));
-      const lens = new Mesh(new BoxGeometry(0.12, 0.1, 0.06), new MeshBasicMaterial({ color: 0xff3b4e }));
-      lens.position.z = 0.2; m.add(lens);
-      m.position.set(cd.pos[0], 1.3, cd.pos[1]);
+      // ceiling-mounted CCTV: plate + drop pole stay fixed, the head swivels/tilts
+      const mount = new Group();
+      const gb = new GeoBuilder();
+      gb.box(0, 0.36, 0, 0.26, 0.04, 0.26, 0xdfe3e8, { faces: 63 });            // ceiling plate
+      gb.box(0, -0.06, 0, 0.05, 0.42, 0.05, 0x9aa3ae, { faces: 63 });            // drop pole
+      mount.add(new Mesh(gb.build(), new MeshLambertMaterial({ vertexColors: true })));
+      mount.position.set(cd.pos[0], WALL_H - 0.4, cd.pos[1]);
+      this.root.add(mount);
+      const hb = new GeoBuilder();
+      hb.box(0, -0.06, -0.04, 0.2, 0.15, 0.36, 0xf2f4f6, { faces: 63, top: 0xffffff }); // housing
+      hb.box(0, 0.09, 0.0, 0.24, 0.025, 0.44, 0x2a2b36, { faces: 63 });         // sunshade
+      hb.box(0, -0.075, 0.15, 0.15, 0.13, 0.03, 0x2a2b36, { faces: 63 });      // lens bezel
+      hb.box(0, -0.06, -0.06, 0.04, 0.12, 0.04, 0x9aa3ae, { faces: 63 });      // swivel joint
+      const m = new Mesh(hb.build(), new MeshLambertMaterial({ vertexColors: true }));
+      const lens = new Mesh(new BoxGeometry(0.09, 0.08, 0.03), new MeshBasicMaterial({ color: 0xff3b4e }));
+      lens.position.set(0, -0.075, 0.17); m.add(lens);
+      const glass = new Mesh(new BoxGeometry(0.05, 0.045, 0.012), new MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 }));
+      glass.position.set(-0.015, -0.06, 0.188); m.add(glass);
+      m.position.set(cd.pos[0], WALL_H - 0.56, cd.pos[1]);
       this.root.add(m);
       return { def: cd, cone, mesh: m, lens };
     });
