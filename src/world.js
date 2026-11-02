@@ -63,6 +63,7 @@ function furniture(L, f, B, rng, lights) {
       fb = Math.abs(dx) > Math.abs(dz) ? [-Math.sign(dx), 0] : [0, -Math.sign(dz)];
     }
   } else if (f.type === 'desk' || f.type === 'table') fb = [0, -1];
+  else if (f.type === 'slots') fb = f.y0 < L.H / 2 ? [0, -1] : [0, 1];
   const { b, W, D, wpos } = propFrame(L, f, B, fb);
   const light = (lx, y, lz, col, I, R) => { const [x, z] = wpos(lx, lz); lights.push({ x, y, z, col, I, R }); };
   // soft contact shadow
@@ -252,6 +253,36 @@ function furniture(L, f, B, rng, lights) {
       b(P, 0, 1.75, D / 2 - 0.08, W - 0.1, 0.025, 0.025, 0xc3ccd6);
       b(P, -W / 2 + 0.35, 0.6, D / 2 - 0.08, 0.6, 1.15, 0.03, 0x8fc8d8);
       for (let k = 0; k < 3; k++) b(P, -W / 2 + 0.15 + k * 0.2, 0.6, D / 2 - 0.06, 0.04, 1.15, 0.035, 0xf6f0e6);
+      break;
+    }
+    case 'slots': {
+      const scr = [0xff4f7a, 0x4cdcff, 0xffd75a, 0x7cff9a];
+      for (let k = 0; k < W; k++) {
+        const x = -W / 2 + k + 0.5, cab = [0x8a1f2a, 0x1f3a8a, 0x5a1f8a, 0x1f6a4a][(k + f.x0) % 4];
+        b(P, x, 0, 0, 0.78, 0.5, 0.7, shade(cab, 0.7));
+        b(P, x, 0.5, -0.05, 0.74, 0.95, 0.6, cab, { top: shade(cab, 1.2) });
+        b(P, x, 0.5, 0.26, 0.76, 0.1, 0.12, 0xd9b45a);
+        b(P, x, 0.85, 0.26, 0.6, 0.42, 0.01, 0x14141c, { faces: PZ });
+        for (let r = 0; r < 3; r++) b(U, x - 0.18 + r * 0.18, 0.9, 0.268, 0.14, 0.3, 0.005, 0xf6f0e6, { faces: PZ });
+        for (let r = 0; r < 3; r++) b(U, x - 0.18 + r * 0.18, 1.0, 0.272, 0.08, 0.08, 0.004, scr[(r + k) % 4], { faces: PZ });
+        b(U, x, 1.32, 0.1, 0.7, 0.16, 0.32, scr[(k + f.y0) % 4], { faces: 63 });
+        b(P, x + 0.42, 0.75, 0.1, 0.04, 0.35, 0.04, 0xc3ccd6);
+        b(P, x + 0.42, 1.1, 0.1, 0.1, 0.1, 0.1, 0xe8483f);
+        b(P, x, 0.62, 0.3, 0.3, 0.05, 0.08, 0x2a2b36);
+      }
+      light(0, 1.3, 0.6, [1, 0.55, 0.75], 0.8, 3.2);
+      break;
+    }
+    case 'poker': {
+      const felt = 0x1f7a4a, wood = 0x5a2a1a, chips = [0xe8483f, 0x2f7ae8, 0xf2c94c, 0x22242f, 0xf6f0e6];
+      b(WD, 0, 0, 0, 0.6, 0.68, 0.6, wood);
+      b(WD, 0, 0.68, 0, W - 0.1, 0.08, D - 0.1, wood, { top: shade(wood, 1.2) });
+      b(P, 0, 0.76, 0, W - 0.34, 0.012, D - 0.34, felt, { faces: PY });
+      b(P, 0, 0.775, 0, W - 0.9, 0.004, 0.02, 0xd9b45a, { faces: PY });
+      for (let k = 0; k < 6; k++) { const a = (k / 6) * 6.28, rr = Math.min(W, D) * 0.32; b(P, Math.cos(a) * rr, 0.78, Math.sin(a) * rr, 0.08, 0.03 + (k % 3) * 0.03, 0.08, chips[k % 5]); }
+      for (let k = 0; k < 4; k++) b(P, -0.2 + k * 0.13, 0.775, -0.05, 0.1, 0.006, 0.14, 0xffffff, { ry: (k - 1.5) * 0.2 });
+      for (const [sx, sz] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) b(WD, sx * (W / 2 + 0.3), 0, sz * (D / 2 + 0.3), 0.36, 0.48, 0.36, 0xb33951, { top: 0xd04a5a });
+      light(0, 1.4, 0, [1, 0.85, 0.55], 0.9, 2.6);
       break;
     }
     case 'pedestal': {
@@ -593,7 +624,7 @@ export function buildWorld(L) {
     }
     const f = floor[i];
     const bld = f === 'wood' ? B.wood : f === 'carpet' ? B.carpet : f === 'tile' ? B.tile : f === 'grass' ? B.grass : y === roadTop ? B.concrete : B.asphalt;
-    const tint = f === 'carpet' ? 0x8e9be6 : f === 'tile' ? 0xffffff : 0xffffff;
+    const tint = f === 'carpet' ? (L.def.carpet || 0x8e9be6) : f === 'tile' ? 0xffffff : 0xffffff;
     const sub = f === 'grass' || f === 'road' ? 1 : 2;
     for (let sy = 0; sy < sub; sy++) for (let sx = 0; sx < sub; sx++) bld.box(x + (sx + 0.5) / sub, -0.05, y + (sy + 0.5) / sub, 1 / sub, 0.05, 1 / sub, tint, { faces: PY });
     if (f === 'road' && y === roadTop + 1 && x % 2 === 0) B.plain.box(x + 1, -0.01, y + 1, 1.1, 0.02, 0.12, 0xf2c94c, { faces: PY });

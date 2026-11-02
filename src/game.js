@@ -247,6 +247,15 @@ export class Game {
       return { f, cx, cz, glass, gems, smashed: false, prog: 0 };
     });
     this.caseLoot = def.caseLoot || 0;
+    // slot machine banks (pull a lever: jackpot distraction)
+    this.slots = L.furn.filter((f) => f.type === 'slots').map((f) => {
+      const cx = f.x0 + f.w / 2, cz = f.y0 + f.d / 2, face = f.y0 < L.H / 2 ? 1 : -1;
+      const top = new Mesh(new BoxGeometry(f.w - 0.2, 0.08, 0.08), new MeshBasicMaterial({ color: 0xffd75a, toneMapped: false }));
+      top.position.set(cx, 1.52, cz + face * 0.15);
+      top.visible = false;
+      this.root.add(top);
+      return { f, cx, cz, face, top, used: false, prog: 0, t: 0 };
+    });
     // sweeping ceiling spotlights
     this.spots = (def.spots || []).map((sd) => {
       const pool = new Mesh(new CircleGeometry(sd.r, 28).rotateX(-Math.PI / 2), new MeshBasicMaterial({
@@ -263,7 +272,7 @@ export class Game {
       return { def: sd, pool, cone, fix, ax: a[0] + 0.5, az: a[1] + 0.5, bx: b[0] + 0.5, bz: b[1] + 0.5, len: Math.hypot(b[0] - a[0], b[1] - a[1]), susp: 0, cool: 0, x: 0, z: 0, tickT: 0 };
     });
     this.policeLane = L.van ? { x: L.exit.x, z: L.exit.z + 2.5 } : { x: L.start.x + 0.5, z: L.start.y + 1.5 };
-    this.baseLootTotal = v.stash + v.bundle * v.bundles + L.loot.reduce((s, l) => s + v[l.type], 0) + this.cases.length * this.caseLoot * v.jewel;
+    this.baseLootTotal = v.stash + v.bundle * v.bundles + L.loot.reduce((s, l) => s + v[l.type], 0) + this.cases.length * this.caseLoot * v.jewel + this.slots.length * v.cash;
     this.lootTotal = this.baseLootTotal;
     this.reset();
   }
@@ -342,7 +351,8 @@ export class Game {
     this.safe.door.rotation.y = 0;
     this.van.group.visible = !!L.van;
     if (L.van) this.van.group.position.set(L.van.x + 0.5, 0, L.van.y + 1);
-    this.casesSmashed = 0;
+    this.casesSmashed = 0; this.slotLures = 0;
+    for (const sl of this.slots || []) { sl.used = false; sl.prog = 0; sl.t = 0; sl.top.visible = false; }
     for (const c of this.cases || []) { c.smashed = false; c.prog = 0; c.glass.visible = true; c.gems.visible = true; }
     this.van.group.rotation.set(0, 0, 0);
     this.van.vx = 0;
@@ -526,6 +536,7 @@ export class Game {
     this.updateAlarm(dt, playing);
     this.updateLasers(dt, playing);
     this.updateSpots(dt, playing);
+    this.updateSlots(dt);
 
     this.updateLoot(dt, playing);
     this.updateProps(dt);
@@ -638,6 +649,18 @@ export class Game {
       const dx = d.x + 0.5, dz = d.y + 0.5;
       if (Math.hypot(p.x - dx, p.z - dz) < 1.5 && Math.abs(angDiff(p.face, Math.atan2(dx - p.x, dz - p.z))) < 1.0) nearDoor = d;
     }
+    // slot machines: hold E to pull the lever
+    let nearSlot = null;
+    for (const sl of this.slots) {
+      if (sl.used) continue;
+      const fz = sl.cz + sl.face * 0.9;
+      if (Math.abs(p.z - fz) < 0.9 && Math.abs(p.x - sl.cx) < sl.f.w / 2 + 0.3) nearSlot = sl;
+    }
+    for (const sl of this.slots) if (sl !== nearSlot) sl.prog = Math.max(0, sl.prog - dt * 2);
+    if (nearSlot) {
+      app.hint('slot');
+      if (inp.act) { nearSlot.prog += dt / 0.5; p.crack = true; if (nearSlot.prog >= 1) this.pullSlot(nearSlot); }
+    }
     // display cases: hold E to smash
     let nearCase = null;
     for (const c of this.cases) {
@@ -698,6 +721,7 @@ export class Game {
       app.hint('ko');
       if (pressed && !nearSafe) this.knockout(ko);
     }
+    if (nearSlot && !nearSafe && !ko) { app.setPrompt('slot', nearSlot.prog); this.updateObjective(); return; }
     if (nearCase && !nearSafe && !ko) { app.setPrompt('case', nearCase.prog); this.updateObjective(); return; }
     // answer a knocked-out guard's radio
     let caller = null;
@@ -976,8 +1000,9 @@ export class Game {
       if (g.state === 'sleep') { this.wake(g, x, z); continue; }
       if (g.state !== 'investigate' && g.state !== 'suspicious') {
         this.app.audio.play('huh');
-        this.app.floaters.spawn(lure ? 'Huh? A coin?' : '?', g.x, 1.9, g.z, 'q', 0.9);
-        if (lure) this.lures++;
+        this.app.floaters.spawn(typeof lure === 'string' ? lure : lure ? 'Huh? A coin?' : '?', g.x, 1.9, g.z, 'q', 0.9);
+        if (lure === true) this.lures++;
+        if (lure === 'Jackpot!?') this.slotLures++;
       }
       g.state = 'investigate'; g.tx = x; g.tz = z; g.hurry = g.speed * 1.4;
       g.susp = Math.max(g.susp, 0.3);
@@ -1185,6 +1210,13 @@ export class Game {
     g.navGoal = -1;
   }
 
+  roamCell(z) {
+    for (let i = 0; i < 40; i++) {
+      const x = z[0] + Math.floor(Math.random() * (z[2] - z[0] + 1)), y = z[1] + Math.floor(Math.random() * (z[3] - z[1] + 1));
+      if (this.walkable(x, y)) return [x, y];
+    }
+    return [z[0], z[1]];
+  }
   effRange(g) { return g.yawnT > 0 ? g.range * 0.35 : g.range; }
   canSee(g) {
     const p = this.player, dx = p.x - g.x, dz = p.z - g.z, d = Math.hypot(dx, dz);
@@ -1270,7 +1302,8 @@ export class Game {
         g.face = g.baseFace + Math.sin(k * 2.4) * 0.9;
         if (g.t <= 0) {
           const n = d.path.length;
-          if (d.loop) g.wp = (g.wp + 1) % n;
+          if (d.roam) { d.path = [[Math.floor(g.x), Math.floor(g.z)], this.roamCell(d.roam)]; g.wp = 1; }
+          else if (d.loop) g.wp = (g.wp + 1) % n;
           else { if (g.wp + g.dir >= n || g.wp + g.dir < 0) g.dir *= -1; g.wp += g.dir; }
           g.state = 'patrol';
         }
@@ -1772,6 +1805,15 @@ export class Game {
     app.particles.burst(bp.x, bp.y + 0.3, bp.z, { count: 24, colors: [0xfff1a8, 0x7fd8ff, 0xffffff], speed: 3, up: 3, size: 0.04, life: 0.6 });
     app.floaters.spawn('LASERS OFF', bp.x, 1.6, bp.z, 'big', 1.3);
   }
+  updateSlots(dt) {
+    for (const sl of this.slots) {
+      if (sl.t <= 0) { sl.top.visible = false; continue; }
+      sl.t -= dt;
+      sl.top.visible = true;
+      sl.top.material.color.setHSL((this.t * 2) % 1, 1, 0.6);
+      sl.top.scale.y = 1 + Math.sin(this.t * 30) * 0.5;
+    }
+  }
   updateSpots(dt, playing) {
     const p = this.player, app = this.app;
     for (const sp of this.spots) {
@@ -1846,6 +1888,17 @@ export class Game {
       app.floaters.spawn('On my way!', best.x, 2.0, best.z, 'warn', 1.1);
     }
     if (this.app.diff === 'hard' && this.app.mode !== 'daily' && this.app.mode !== 'tutorial') this.triggerAlarm('A guard missed his radio check-in!');
+  }
+
+  pullSlot(sl) {
+    const app = this.app, v = this.def.values;
+    sl.used = true; sl.prog = 0; sl.t = 3;
+    app.audio.play('jackpot');
+    app.shake.add(0.15);
+    app.floaters.spawn('JACKPOT!', sl.cx, 1.9, sl.cz + sl.face * 0.6, 'big', 1.4);
+    for (let i = 0; i < 4; i++) setTimeout(() => app.particles.burst(sl.cx, 1.3, sl.cz + sl.face * 0.4, { count: 10, colors: [0xffd75a, 0xfff1a8, 0xffffff], speed: 2.2, up: 3.5, size: 0.06, life: 0.9 }), i * 250);
+    this.makeNoise(sl.cx, sl.cz, 8, null, 'Jackpot!?');
+    this.loot.push({ type: 'cash', x: sl.cx, y: 1.0, z: sl.cz + sl.face * 0.5, vx: (Math.random() - 0.5) * 2, vy: 4, vz: sl.face * 2.2, st: 'fly', t: 0, value: v.cash, ph: 0, ms: 0, s: 1, rot: 0 });
   }
 
   smashCase(c) {

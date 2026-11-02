@@ -44,6 +44,8 @@ City map menu: levels are pins on a stylised night city map (locked pins greyed,
 
 Yawning guards: when a guard pauses on patrol he sometimes yawns, shrinking his vision cone for ~2 s — a short window to slip past.
 
+Level 5 — The Casino (unlocks after the Museum): neon casino floor with banks of slot machines, poker tables and a bar, security office with the keycard, counting room vault, VIP lounge. Hold E at a slot machine for a flashing, jingling jackpot that lures guards (and spits out cash). Two roaming security guards pick random routes across the floor. Contract: distract guards with a slot machine; achievement: High Roller.
+
 Daily Challenge: one seeded run per day (Normal rules) with a mutator of the day (Paranoid Guards, Insomniac Owner, Gold Rush, Butterfingers, Rapid Response, Hungry Hound) and fixed contracts; separate daily best and a day streak.
 
 Difficulty: Easy / Normal / Hard (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.

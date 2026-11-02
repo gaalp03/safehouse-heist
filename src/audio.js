@@ -155,6 +155,10 @@ export class Audio {
         T(140, 0.2, { type: 'sine', slide: 60, vol: 0.3 }); break;
       case 'radio': N(0.35, { freq: 1800, vol: 0.12, q: 1.2 }); T(1200, 0.05, { type: 'square', vol: 0.05, delay: 0.02 }); T(900, 0.05, { type: 'square', vol: 0.05, delay: 0.12 }); N(0.15, { freq: 2400, vol: 0.08, q: 2, delay: 0.25 }); break;
       case 'radioOk': N(0.12, { freq: 1800, vol: 0.12, q: 1.2 }); T(1400, 0.06, { type: 'square', vol: 0.06, delay: 0.05 }); T(1800, 0.08, { type: 'square', vol: 0.06, delay: 0.13 }); break;
+      case 'jackpot':
+        for (let i = 0; i < 14; i++) T([1046, 1318, 1568, 2093][i % 4] * (i > 9 ? 1.5 : 1), 0.1, { type: 'square', vol: 0.07, delay: i * 0.08 });
+        for (let i = 0; i < 18; i++) T(2400 + Math.random() * 1800, 0.06, { type: 'triangle', vol: 0.05, delay: 0.3 + i * 0.07 });
+        T(523, 0.6, { type: 'triangle', vol: 0.1, delay: 1.1 }); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
     }

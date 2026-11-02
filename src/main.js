@@ -26,6 +26,7 @@ const HINTS = {
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
   dog: ['A guard dog! It follows your scent and barks. Coins distract it.', 'A guard dog! It follows your scent and barks. Coins distract it.'],
   clerk: ['The clerk is running for the alarm button! Knock them out first!', 'The clerk is running for the alarm button! Knock them out first!'],
+  slot: ['Slot machine! Hold E to hit a noisy jackpot that lures guards away', 'Slot machine! Hold ✋ to hit a noisy jackpot that lures guards away'],
   spot: ['Spotlight! Stay out of the moving light pools, or cut the power at the breaker', 'Spotlight! Stay out of the moving light pools, or cut the power at the breaker'],
   radio: ['A knocked-out guard\'s radio is calling! Hold E next to him to answer, or backup comes', 'A knocked-out guard\'s radio is calling! Hold ✋ next to him to answer, or backup comes'],
   case: ['Hold E to smash a display case. Loud! Guards who see a broken case raise the alarm', 'Hold ✋ to smash a display case. Loud! Guards who see a broken case raise the alarm'],
@@ -112,7 +113,7 @@ class App {
   bindUI() {
     const click = (id, fn) => $(id).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); fn(); });
     click('bPlay', () => this.playSel());
-    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
+    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
     for (const el of document.querySelectorAll('#diff button')) {
       el.addEventListener('click', (e) => {
         e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
@@ -127,6 +128,7 @@ class App {
       if (this.levelIdx === 0 && this.mode !== 'daily' && this.bankUnlocked()) this.start('classic', 1);
       else if (this.levelIdx === 1 && this.jewelryUnlocked()) this.start('classic', 2);
       else if (this.levelIdx === 2 && this.museumUnlocked()) this.start('classic', 3);
+      else if (this.levelIdx === 3 && this.casinoUnlocked()) this.start('classic', 4);
       else this.showSoon();
     });
     click('bRMenu', () => this.showMenu());
@@ -193,6 +195,11 @@ class App {
     $('lvl3').classList.toggle('lock', !ju);
     $('lvl3art').textContent = ju ? '💎' : '🔒';
     $('lvl3stars').innerHTML = ju ? this.starsHTML(jb ? jb.stars : 0) : '';
+    const cu = this.casinoUnlocked(), cb = this.save.best[diffKey('casino', this.diff)];
+    $('lvl5').classList.toggle('lock', !cu);
+    $('lvl5art').textContent = cu ? '🎰' : '🔒';
+    $('lvl5stars').innerHTML = cu ? this.starsHTML(cb ? cb.stars : 0) : '';
+    $('lvl5best').textContent = cu ? (cb ? 'Best ' + fmtMoney(cb.score) : 'New!') : 'Escape the Museum to unlock';
     const mu = this.museumUnlocked(), mb = this.save.best[diffKey('museum', this.diff)];
     $('lvl4').classList.toggle('lock', !mu);
     $('lvl4art').textContent = mu ? '🏛️' : '🔒';
@@ -265,7 +272,7 @@ class App {
     $('rAch').classList.toggle('hidden', !list.length);
     if (list.length) setTimeout(() => this.audio.play('contract'), 1600);
   }
-  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : false; }
+  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : false; }
   selectPin(k) {
     this.sel = k; this.save.sel = k;
     if (this.pinLocked(k)) { const c = $(k); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
@@ -275,7 +282,7 @@ class App {
     let k = this.sel || this.save.sel || 'lvl1';
     if (!$(k)) k = 'lvl1';
     this.sel = k;
-    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'daily']) $(id).classList.toggle('on', id === k);
+    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'daily']) $(id).classList.toggle('on', id === k);
     const el = $(k), locked = this.pinLocked(k);
     $('selName').textContent = k === 'daily' ? 'Daily: ' + $('dMut').textContent : el.querySelector('.t').textContent;
     const st = el.querySelector('.stars');
@@ -284,14 +291,14 @@ class App {
     $('bPlay').textContent = locked ? '🔒 LOCKED' : 'PLAY';
     $('bPlay').classList.toggle('dis', locked);
     let tot = 0;
-    for (const id of ['safehouse', 'bank', 'jewelry', 'museum']) tot += Math.max(...['', '_easy', '_hard'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
-    $('starTotal').textContent = `★ ${tot}/12`;
+    for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino']) tot += Math.max(...['', '_easy', '_hard'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
+    $('starTotal').textContent = `★ ${tot}/15`;
   }
   playSel() {
     const k = this.sel || 'lvl1';
     if (this.pinLocked(k)) { this.audio.play('nope'); this.selectPin(k); return; }
     if (k === 'daily') this.start('daily');
-    else this.start('classic', { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3 }[k]);
+    else this.start('classic', { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4 }[k]);
   }
   showSoon() {
     SDK.gameplayStop();
@@ -299,6 +306,10 @@ class App {
     $('soonName').textContent = 'More heists';
     $('soonList').innerHTML = ['Downtown jewelry store', 'Penthouse with laser grids', 'Night train job'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
+  }
+  casinoUnlocked() {
+    const b = this.save.best;
+    return !!(b.museum || b.museum_easy || b.museum_hard || this.save.casinoOpen);
   }
   museumUnlocked() {
     const b = this.save.best;
@@ -454,16 +465,16 @@ class App {
   setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
     const sn = (this.level && this.level.safeName ? this.level.safeName : 'safe').toUpperCase();
-    const txt = kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
+    const txt = kind === 'slot' ? (t ? 'HOLD ✋ TO PULL THE LEVER' : 'HOLD E: PULL THE LEVER') : kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.textContent = txt;
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind);
-      this.els.bAct.lastChild.textContent = kind === 'radio' ? 'ANSWER' : kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
+      this.els.bAct.lastChild.textContent = kind === 'slot' ? 'PULL' : kind === 'radio' ? 'ANSWER' : kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
-    if ((kind === 'safe' || kind === 'panel' || kind === 'breaker' || kind === 'case' || kind === 'radio') && prog > 0) {
+    if ((kind === 'safe' || kind === 'panel' || kind === 'breaker' || kind === 'case' || kind === 'radio' || kind === 'slot') && prog > 0) {
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));
       ring.classList.remove('hidden');
     } else ring.classList.add('hidden');
