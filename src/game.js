@@ -415,7 +415,8 @@ export class Game {
     if (this.heli) this.heli.group.visible = false;
     for (const v of this.vents || []) v.flap.rotation.x = 0;
     for (const tv of this.tvs || []) { tv.on = tv.used = false; tv.scr.visible = tv.glow.visible = false; }
-    this.tvLures = 0; this.disguiseT = 0; this.disguises = 0; this.uniformProg = 0;
+    this.tvLures = 0; this.closeCalls = 0; this.koStreak = 0; this.lastKo = -99;
+    for (const g of this.guards) g.peak = 0; this.disguiseT = 0; this.disguises = 0; this.uniformProg = 0;
     for (const g of this.guards) g.stripped = false;
     this.ventsUsed = 0; this.player.venting = null;
     for (const g of this.guards) this.resetGuard(g);
@@ -964,7 +965,11 @@ export class Game {
     g.safeRun = false; g.claimed = false;
     if (g.kind === 'clerk' && g.state === 'flee') { this.clerkStopped = true; this.app.floaters.spawn('ALARM STOPPED', g.x, 2.2, g.z, 'big', 1.2); }
     g.state = 'ko'; g.koT = 9; g.susp = 0; g.fallT = 0; g.radioCall = 0; g.answerProg = 0; g.callT = 0;
-    g.c.flash = 0.2;
+    this.koStreak = this.time - (this.lastKo ?? -99) < 8 ? (this.koStreak || 1) + 1 : 1; this.lastKo = this.time;
+    if (this.koStreak >= 2) {
+      app.floaters.spawn(['', '', 'DOUBLE TAKEDOWN!', 'TRIPLE TAKEDOWN!'][this.koStreak] || 'UNSTOPPABLE!', g.x, 2.3, g.z, 'big', 1.3);
+      app.audio.play('combo', this.koStreak * 3); app.shake.add(0.2);
+    }    g.c.flash = 0.2;
     squash(g.c, 0.6);
     this.kos++;
     this.hitstop = 0.08; this.juice(0.38, 0.3, -9, -0.05, (Math.random() < 0.5 ? -1 : 1) * 0.07);
@@ -1637,6 +1642,7 @@ export class Game {
       // in uniform: from a distance you're just another guard (up close they see your face)
       if (this.disguiseT > 0 && g.kind !== 'owner' && seen > 2.3 && p.dashT <= 0) rate *= 0.12;
       g.susp = Math.min(1, g.susp + rate * dt);
+      if (g.state !== 'alert') g.peak = Math.max(g.peak || 0, g.susp); else g.peak = 0;
       g.lastX = p.x; g.lastZ = p.z; g.lostT = 0;
       if (g.state !== 'alert') {
         if (g.susp >= 1) this.alert(g);
@@ -1645,6 +1651,13 @@ export class Game {
     } else {
       g.lostT += dt;
       if (g.state !== 'alert') g.susp = Math.max(0, g.susp - dt * 0.3);
+      // close call: he almost had you, then lost interest
+      if (g.state !== 'alert' && g.peak > 0.72 && g.susp < 0.15 && perceive) {
+        g.peak = 0; this.closeCalls++;
+        const p = this.player, fx = Math.sin(p.face), fz = Math.cos(p.face);
+        app.floaters.spawn('PHEW! Close call +$50', p.x + fx * 1.5, 1.35, p.z + fz * 1.5, 'combo', 1.2);
+        app.audio.play('star', 1); this.lootGot += 50; this.lootTotal += 50; app.onLoot(true);
+      }
     }
     // smarter guards: notice knocked-out colleagues and an open safe
     if (perceive && (g.state === 'patrol' || g.state === 'wait' || g.state === 'post' || g.state === 'look' || g.state === 'suspicious')) this.noticeThings(g);
