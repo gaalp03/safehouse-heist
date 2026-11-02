@@ -2392,7 +2392,7 @@ export class Game {
 
   // ---------- lockpicking minigame ----------
   startPick(d) {
-    this.picking = { d, pin: 0, t: Math.random() * 6, speed: 2.2, w: 0.26, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
+    this.picking = { d, pin: 0, t: Math.random() * 6, speed: this.tut ? 1.7 : 2.2, w: this.tut ? 0.36 : 0.26, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
     this.newPinZone();
     this.app.audio.play('click');
     this.app.onPick(this.picking);

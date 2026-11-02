@@ -10,7 +10,7 @@ import { LEVELS, loadLevel } from './levels/index.js';
 import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
 import { DIFFS, diffKey } from './difficulty.js';
-import { todaysDaily, prevDayKey } from './daily.js';
+import { todaysDaily, prevDayKey, nextDailyIn } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
 import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
 import { TUT_STEPS } from './tutorial.js';
@@ -327,7 +327,8 @@ class App {
     $('selName').textContent = k === 'daily' ? 'Daily: ' + $('dMut').textContent : el.querySelector('.t').textContent;
     const st = el.querySelector('.stars');
     $('selStars').innerHTML = st ? st.innerHTML : '';
-    $('selSub').textContent = k === 'daily' ? $('dDesc').textContent + ' · ' + $('dBest').textContent : el.querySelector('.best').textContent;
+    const dPlayed = !!(this.save.daily || {})[this.daily && this.daily.key];
+    $('selSub').textContent = k === 'daily' ? $('dDesc').textContent + ' · ' + $('dBest').textContent + (dPlayed ? ` · new Daily in ${nextDailyIn()}` : '') : el.querySelector('.best').textContent;
     // next goal: missing stars on this heist + the next outfit unlock
     const goals = [];
     if (!locked && k !== 'daily' && this.save.tutDone) {
@@ -335,12 +336,15 @@ class App {
       if (n === 0) goals.push('Escape to earn your first ★');
       else if (n < 3) goals.push('Next ★: grab 70% loot · or never get spotted');
     }
+    const sk = this.save.streak;
+    if (sk && sk.n >= 1 && sk.last === prevDayKey()) goals.unshift(`🔥 Play today's Daily to keep your ${sk.n}-day streak`);
     const nT = Object.keys(this.save.ach || {}).length, nxt = OUTFITS.filter((o) => o.need && o.need > nT).sort((a, b) => a.need - b.need)[0];
     if (nxt && this.save.tutDone) goals.push(`🧤 ${nxt.need - nT} more troph${nxt.need - nT === 1 ? 'y' : 'ies'} → ${nxt.name} outfit`);
-    $('selGoal').textContent = goals.join('  ·  ');
+    $('selGoal').textContent = goals.slice(0, 2).join('  ·  ');
     $('selGoal').classList.toggle('hidden', !goals.length);
     $('bPlay').textContent = locked ? '🔒 LOCKED' : 'PLAY';
     $('bPlay').classList.toggle('dis', locked);
+    $('daily').classList.toggle('done', dPlayed);
     $('bPlay').classList.toggle('pulse', !locked && !this.save.tutDone && !this.runs);
     let tot = 0;
     for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
@@ -828,7 +832,7 @@ class App {
     $('rScore').textContent = '$0';
     $('rCtr').innerHTML = res.contracts.map((c) => `<li class="${c.st === 'ok' ? 'ok' : 'no'}">${c.st === 'ok' ? '✔' : '✖'} ${c.text}<b>${c.st === 'ok' ? '+' + fmtMoney(c.bonus) : '—'}</b></li>`).join('');
     $('rCtrTotal').textContent = 'Contracts done (all time): ' + (this.save.contracts || 0);
-    $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day streak` : '');
+    $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day streak · next Daily in ${nextDailyIn()}` : '');
     $('rMult').textContent = res.mult === 1 ? '' : `${res.diff} ×${res.mult}`;
     $('rBest').classList.toggle('new', newBest);
     if (!res.daily && this.ghostMsg) $('rBest').textContent += '  ·  ' + this.ghostMsg;

@@ -28,3 +28,10 @@ export function todaysDaily() {
   const mutator = MUTATORS[(rng() * MUTATORS.length) | 0];
   return { key, label: dayLabel(), mutator, seed: (rng() * 1e9) | 0 };
 }
+
+// time until the next daily (local midnight), e.g. "5h 12m"
+export function nextDailyIn() {
+  const n = new Date(), m = new Date(n); m.setHours(24, 0, 0, 0);
+  const s = Math.max(0, (m - n) / 1000), h = Math.floor(s / 3600), mi = Math.floor((s % 3600) / 60);
+  return h ? `${h}h ${mi}m` : `${mi}m`;
+}
