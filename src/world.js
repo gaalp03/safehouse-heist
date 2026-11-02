@@ -562,7 +562,7 @@ export function buildWorld(L) {
       B.plain.box(x + 0.5, 1.55, y + 0.5, doorX ? 1.04 : 1.12, 0.07, doorX ? 1.12 : 1.04, CROWN, { faces: 63 & ~PY });
       for (const s of [-1, 1]) B.plain.box(x + 0.5 + (doorX ? s * 0.48 : 0), 0, y + 0.5 + (doorY ? s * 0.48 : 0), doorX ? 0.07 : 1.12, 1.55, doorY ? 0.07 : 1.12, CROWN, { faces: 63 & ~NY & ~PY });
       // open door leaf resting against an adjacent wall (not for security doors)
-      const opts = c === 'D' ? [] : doorX ? [[-1, 1], [1, 1], [-1, -1], [1, -1]] : [[1, -1], [1, 1], [-1, -1], [-1, 1]];
+      const opts = c === 'D' || c === 'L' ? [] : doorX ? [[-1, 1], [1, 1], [-1, -1], [1, -1]] : [[1, -1], [1, 1], [-1, -1], [-1, 1]];
       for (const [a, bb] of opts) {
         const cx = doorX ? x + a : x + bb, cy = doorX ? y + bb : y + a;
         if (!isWall(doorX ? x + a : x, doorX ? y : y + a) || isWall(cx, cy) || isOut(cx, cy)) continue;
@@ -798,6 +798,22 @@ export function buildLaser(cells) {
   const grp = new Group();
   grp.add(beamMesh, new Mesh(posts.build(), new MeshLambertMaterial({ vertexColors: true })));
   return { group: grp, mat, alongX, line: alongX ? cz : cx, lo: alongX ? x0 : y0, hi: alongX ? x1 : y1 };
+}
+export function buildWoodDoor(alongX) {
+  const g = new GeoBuilder();
+  const col = 0x8a5a3c, lt = shade(col, 1.15);
+  // leaf extends from the hinge (origin) along +x (or +z)
+  const L = 0.98, T = 0.07, H = 1.52;
+  const bx = (x, y, z, w, h, d, c, o) => (alongX ? g.box(x, y, z, w, h, d, c, o) : g.box(z, y, x, d, h, w, c, o));
+  bx(L / 2, 0, 0, L, H, T, col, { faces: 63, top: shade(col, 0.8) });
+  for (const s of [-1, 1]) for (const py of [0.15, 0.85]) bx(L / 2, py, s * 0.036, 0.62, 0.55, 0.01, lt, { faces: alongX ? (s > 0 ? 16 : 32) : (s > 0 ? 1 : 2) });
+  for (const s of [-1, 1]) {
+    bx(L - 0.14, 0.72, s * 0.05, 0.06, 0.06, 0.04, 0xd9b45a, { faces: 63 });
+    bx(L - 0.14, 0.62, s * 0.042, 0.05, 0.1, 0.02, 0x3a3a46, { faces: 63 });
+  }
+  const pivot = new Group();
+  pivot.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
+  return { group: pivot, led: null };
 }
 export function buildKeycard() {
   const g = new GeoBuilder();

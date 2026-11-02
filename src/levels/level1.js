@@ -2,7 +2,7 @@
 //  #  wall            .  wood floor      _  carpet        ,  tile        g grass   p pavement/road
 //  h  shelf (tall)    f  fridge (tall)   b  bed           t  desk        k counter
 //  c  couch           e  tv stand        i  table         u  bathtub
-//  x  wardrobe (hide inside)
+//  x  wardrobe (hide inside)   L  locked door (pick the lock)
 //  q  plant         n  nightstand      r  stove         y  chair       o toilet  w sink
 //  $  cash            G  gold bar        J  jewel         A  painting    S  THE SAFE (stash)
 //  P  player start    V  getaway van (exit is the sidewalk tile above it)
@@ -19,7 +19,7 @@ export default {
     'g#..tt...#____bb____#...S...#g',
     'g#..tt.G.#__J____J__#.......#g',
     'g#x......#_________q#q..A...#g',
-    'g####.#######.########.######g',
+    'g####.#######.########L######g',
     'g#...........................g',
     'g#q...$.........$..x....$...#g',
     'g#####.#########.######.#####g',

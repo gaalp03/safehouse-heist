@@ -70,6 +70,12 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 #vigfp{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 75% 70% at 50% 48%,transparent 55%,rgba(40,18,36,.38) 85%,rgba(28,10,26,.6) 100%)}
 #slats{position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(177deg,rgba(38,20,12,.9) 0 26px,rgba(38,20,12,.55) 30px,rgba(38,20,12,0) 34px 58px,rgba(38,20,12,.55) 62px,rgba(38,20,12,.9) 66px 92px);box-shadow:inset 0 0 120px 50px rgba(20,10,6,.9)}
 #slats::after{content:'';position:absolute;left:50%;top:0;bottom:0;width:14px;margin-left:-7px;background:rgba(30,16,10,.95)}
+#lockpick{position:fixed;left:50%;top:calc(50% + 84px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px}
+.lp-bar{position:relative;width:min(280px,70vw);height:24px;border-radius:12px;background:rgba(28,19,48,.85);border:3px solid #ffc94a;overflow:hidden}
+.lp-zone{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,#8ff0c4,#3fcf8e)}
+.lp-needle{position:absolute;top:-2px;bottom:-2px;width:6px;margin-left:-3px;background:#fff6e8;box-shadow:0 0 6px #fff}
+#lockpick.cool .lp-bar{border-color:#ff5a6a;animation:shakeX .3s}
+.lp-pins{display:flex;gap:8px}.lp-pins b{width:14px;height:14px;border-radius:4px;background:rgba(28,19,48,.8);border:2px solid #ffc94a}.lp-pins b.on{background:#ffc94a}
 #speed{position:fixed;inset:-20%;pointer-events:none;opacity:0;background:repeating-conic-gradient(from 0deg,rgba(255,246,232,.0) 0deg 5deg,rgba(255,246,232,.35) 5.4deg,rgba(255,246,232,0) 6deg 11deg);-webkit-mask:radial-gradient(circle,transparent 38%,#000 70%);mask:radial-gradient(circle,transparent 38%,#000 70%)}
 #ring circle{fill:none;stroke-width:6}#ring .bg{stroke:rgba(29,33,64,.7)}#ring .fg{stroke:var(--y);stroke-dasharray:126;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
 #touch{position:fixed;inset:0;pointer-events:none}
@@ -197,7 +203,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <div id="prompt" class="hidden"></div>
 <div id="ctoast" class="hidden o"></div>
 <div id="hint" class="hidden"></div>
-<div id="fp" class="hidden"><div id="vigfp"></div><div id="speed"></div><div id="ind"></div><div id="wp" class="hidden"><span></span></div><div id="xh"></div>
+<div id="fp" class="hidden"><div id="vigfp"></div><div id="lockpick" class="hidden"><div class="lp-bar"><i class="lp-zone"></i><i class="lp-needle"></i></div><div class="lp-pins"><b></b><b></b><b></b></div></div><div id="speed"></div><div id="ind"></div><div id="wp" class="hidden"><span></span></div><div id="xh"></div>
 <svg id="ring" class="hidden" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="20"/><circle class="fg" cx="27" cy="27" r="20"/></svg></div>
 <div id="touch" class="hidden">
   <div id="joyzone"></div><div id="lookzone"></div><div id="joy"><div id="knob"></div></div>

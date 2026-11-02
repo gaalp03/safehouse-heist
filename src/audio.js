@@ -147,6 +147,8 @@ export class Audio {
       case 'powerdown': T(440, 0.8, { type: 'sawtooth', slide: 40, vol: 0.16 }); N(0.15, { freq: 2000, vol: 0.25, q: 0.7 }); T(60, 0.5, { type: 'sine', vol: 0.4, delay: 0.05 }); break;
       case 'scream': T(900, 0.45, { type: 'sawtooth', slide: 1400, vol: 0.09 }); T(1100, 0.4, { type: 'square', slide: 1600, vol: 0.04, delay: 0.05 }); break;
       case 'smoke': T(160, 0.12, { type: 'sine', slide: 60, vol: 0.4 }); N(1.4, { freq: 4000, slide: 900, vol: 0.22, q: 0.6 }); N(0.5, { freq: 900, vol: 0.12, type: 'lowpass', delay: 0.05 }); break;
+      case 'pin': T(2400 + p * 300, 0.05, { type: 'square', vol: 0.08 }); T(1600 + p * 200, 0.08, { type: 'triangle', vol: 0.1, delay: 0.03 }); N(0.03, { freq: 6000, vol: 0.1, type: 'highpass' }); break;
+      case 'slip': N(0.18, { freq: 2200, vol: 0.22, q: 3 }); T(320, 0.15, { type: 'square', slide: 180, vol: 0.08 }); N(0.12, { freq: 1500, vol: 0.15, q: 4, delay: 0.08 }); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
     }

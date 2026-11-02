@@ -12,6 +12,7 @@ export const CONTRACTS = [
   { id: 'power', text: 'Cut the power', bonus: 500, needs: (g) => !!g.breaker, check: (g) => P(g.powerOff) },
   { id: 'clerk', text: 'Stop a fleeing clerk', bonus: 500, needs: (g) => g.buttons.length > 0, check: (g) => P(g.clerkStopped) },
   { id: 'smoke', text: "Break a guard's sight with smoke", bonus: 500, check: (g) => P(g.smokeHid) },
+  { id: 'cleanpick', text: 'Pick a lock without a slip', bonus: 500, needs: (g) => g.doors.some((d) => d.type === 'lock'), check: (g) => P(g.cleanPick) },
   { id: 'lure', text: 'Lure a guard with a coin', bonus: 400, check: (g) => P(g.lures > 0) },
   { id: 'ko2', text: 'Knock out 2 guards', bonus: 500, tag: 'ko', check: (g) => P(g.kos >= 2) },
   { id: 'noko', text: 'No knockouts', bonus: 700, tag: 'ko', check: (g, end) => (g.kos > 0 ? 'fail' : end ? 'ok' : 'pending') },

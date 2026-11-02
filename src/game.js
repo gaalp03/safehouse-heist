@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { textures } from './textures.js';
 import { parseLevel } from './level.js';
-import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildKeycard, buildLaser, buildBreaker, WALL_H } from './world.js';
+import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
@@ -78,8 +78,11 @@ export class Game {
     // security doors + keycards
     const isW = (x, y) => L.ch[y * L.W + x] === '#';
     this.doors = L.doors.map((d) => {
-      const m = buildSecDoor(isW(d.x - 1, d.y) && isW(d.x + 1, d.y));
-      m.group.position.set(d.x + 0.5, 0, d.y + 0.5);
+      const alongX = isW(d.x - 1, d.y) && isW(d.x + 1, d.y);
+      const m = d.type === 'lock' ? buildWoodDoor(alongX) : buildSecDoor(alongX);
+      if (d.type === 'lock') m.group.position.set(alongX ? d.x + 0.01 : d.x + 0.5, 0, alongX ? d.y + 0.5 : d.y + 0.01);
+      else m.group.position.set(d.x + 0.5, 0, d.y + 0.5);
+      d.alongX = alongX;
       this.root.add(m.group);
       return { ...d, m, open: false, t: 0 };
     });
@@ -251,7 +254,8 @@ export class Game {
     for (const d of this.doors || []) {
       const i = d.y * this.L.W + d.x;
       d.open = false; d.t = 0; this.L.walk[i] = 0; this.L.opaque[i] = 1;
-      d.m.group.position.y = 0; d.m.group.visible = true; d.m.led.material.color.setHex(0xff2a3a);
+      d.m.group.position.y = 0; d.m.group.rotation.y = 0; d.m.group.visible = true; if (d.m.led) d.m.led.material.color.setHex(0xff2a3a);
+      this.picking = null; this.cleanPick = false; this.app.onPick && this.app.onPick(null);
     }
     for (const k of this.keyMeshes || []) k.m.visible = true;
     this.app.onKey && this.app.onKey(false);
@@ -503,6 +507,7 @@ export class Game {
     p.pitch = clamp(p.pitch - _lk.y * sens, -1.25, 1.2);
     p.face = p.yaw + Math.PI;
     if (p.hiding) { this.updateHiding(dt, inp); return; }
+    if (this.picking) { this.updatePicking(dt, inp); return; }
     const fx = Math.sin(p.face), fz = Math.cos(p.face), rx = -fz, rz = fx;
     const wx = rx * _mv.x - fx * _mv.y, wz = rz * _mv.x - fz * _mv.y;
     p.strafe = _mv.x;
@@ -629,6 +634,12 @@ export class Game {
     if (ko) {
       app.hint('ko');
       if (pressed && !nearSafe) this.knockout(ko);
+    }
+    if (nearDoor && !nearSafe && !ko && nearDoor.type === 'lock') {
+      app.hint('pick');
+      if (pressed) this.startPick(nearDoor); else app.setPrompt('pick');
+      this.updateObjective();
+      return;
     }
     if (nearDoor && !nearSafe && !ko) {
       if (pressed) {
@@ -1415,7 +1426,12 @@ export class Game {
   }
 
   updateProps(dt) {
-    for (const d of this.doors) if (d.open && d.t < 1) { d.t = Math.min(1, d.t + dt * 1.6); d.m.group.position.y = (1 - Math.pow(1 - d.t, 3)) * (WALL_H - 0.12); }
+    for (const d of this.doors) if (d.open && d.t < 1) {
+      d.t = Math.min(1, d.t + dt * 1.6);
+      const e = 1 - Math.pow(1 - d.t, 3);
+      if (d.type === 'lock') d.m.group.rotation.y = (d.alongX ? 1 : -1) * 1.55 * (e + Math.sin(d.t * Math.PI) * 0.12);
+      else d.m.group.position.y = e * (WALL_H - 0.12);
+    }
     if (this.safeOpen && this.doorT < 1) {
       this.doorT = Math.min(1, this.doorT + dt * 3);
       const k = this.doorT, e = 1 + 2.7 * Math.pow(k - 1, 3) + 1.7 * Math.pow(k - 1, 2);
@@ -1582,6 +1598,7 @@ export class Game {
   }
   policeBust() {
     const app = this.app, p = this.player;
+    if (this.picking) this.stopPick();
     this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = null; this.policeBusted = true;
     this.hitstop = 0.15;
     app.shake.add(0.7);
@@ -1594,6 +1611,7 @@ export class Game {
 
   bust(g) {
     const app = this.app;
+    if (this.picking) this.stopPick();
     this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = g;
     g.face = Math.atan2(this.player.x - g.x, this.player.z - g.z);
     squash(this.player.c, 0.55);
@@ -1645,11 +1663,63 @@ export class Game {
       }
     }
   }
+  // ---------- lockpicking minigame ----------
+  startPick(d) {
+    this.picking = { d, pin: 0, t: Math.random() * 6, speed: 2.2, w: 0.26, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
+    this.newPinZone();
+    this.app.audio.play('click');
+    this.app.onPick(this.picking);
+  }
+  newPinZone() {
+    const pk = this.picking;
+    let z;
+    do z = 0.18 + Math.random() * 0.64; while (Math.abs(z - pk.pos) < 0.25);
+    pk.zone = z;
+  }
+  stopPick() { this.picking = null; this.app.onPick(null); }
+  updatePicking(dt, inp) {
+    const pk = this.picking, p = this.player, app = this.app, d = pk.d;
+    inp.move(_mv); inp.consumeDash(); inp.consumeThrow(); inp.consumeSmoke();
+    p.vx = p.vz = 0; p.moving = 0; p.crack = true;
+    if (Math.hypot(_mv.x, _mv.y) > 0.5) { this.stopPick(); return; }
+    pk.t += dt * pk.speed; pk.cool -= dt;
+    pk.pos = 0.5 + 0.5 * Math.sin(pk.t);
+    if (inp.consumeAct() && pk.cool <= 0) {
+      if (Math.abs(pk.pos - pk.zone) < pk.w / 2) {
+        pk.pin++;
+        app.audio.play('pin', pk.pin);
+        app.shake.add(0.05);
+        app.particles.burst(d.x + 0.5, 0.72, d.y + 0.5, { count: 4, colors: [0xfff1a8, 0xffffff], speed: 1, up: 1, size: 0.025, life: 0.3 });
+        if (pk.pin >= 3) {
+          if (pk.slips === 0) this.cleanPick = true;
+          this.stopPick(); this.openDoor(d);
+          return;
+        }
+        pk.w *= 0.78; pk.speed *= 1.25; this.newPinZone();
+      } else {
+        pk.slips++; pk.cool = 0.45;
+        app.audio.play('slip');
+        app.shake.add(0.15);
+        app.floaters.spawn('*rattle*', d.x + 0.5, 1.2, d.y + 0.5, 'warn', 0.8);
+        this.makeNoise(d.x + 0.5, d.y + 0.5, 3.4, null);
+      }
+    }
+    app.onPick(pk);
+    app.setPrompt('picking');
+  }
+
   openDoor(d) {
     const app = this.app, i = d.y * this.L.W + d.x;
     d.open = true; d.t = 0;
     this.L.walk[i] = 1; this.L.opaque[i] = 0;
     for (const g of this.guards) g.navGoal = -1;
+    if (d.type === 'lock') {
+      app.audio.play('creak');
+      app.hintDone('pick');
+      app.floaters.spawn('UNLOCKED!', d.x + 0.5, 1.5, d.y + 0.5, 'big', 1.2);
+      app.particles.burst(d.x + 0.5, 0.75, d.y + 0.5, { count: 10, colors: [0xd9b45a, 0xffffff], speed: 1.5, up: 1.5, size: 0.03, life: 0.5 });
+      return;
+    }
     d.m.led.material.color.setHex(0x3ddc84);
     app.audio.play('disarm'); app.audio.play('creak');
     app.shake.add(0.25);
@@ -1659,14 +1729,16 @@ export class Game {
   objectiveTarget() {
     const L = this.L;
     if (this.hasStash) return { x: L.exit.x, z: L.exit.z, label: 'VAN' };
-    const closed = this.doors.find((d) => !d.open);
+    const closed = this.doors.find((d) => !d.open && d.type !== 'lock');
     if (closed && !this.hasKey) { const k = this.keyMeshes.find((k) => k.m.visible); if (k) return { x: k.x + 0.5, z: k.y + 0.5, label: 'KEYCARD' }; }
     if (closed) return { x: closed.x + 0.5, z: closed.y + 0.5, label: 'DOOR' };
+    const lock = this.doors.find((d) => !d.open && d.type === 'lock');
+    if (lock) return { x: lock.x + 0.5, z: lock.y + 0.5, label: 'LOCKED DOOR' };
     return { x: L.safe.x + 0.5, z: L.safe.y + 0.5, label: (this.def.safeName || 'safe').toUpperCase() };
   }
   updateObjective() {
-    const closed = this.doors.find((d) => !d.open);
-    const t = this.hasStash ? 'Escape to the van!' : closed && !this.hasKey ? 'Find the keycard!' : closed ? 'Open the vault door!' : `Crack the ${this.def.safeName || 'safe'}!`;
+    const closed = this.doors.find((d) => !d.open && d.type !== 'lock'), lock = this.doors.find((d) => !d.open && d.type === 'lock');
+    const t = this.hasStash ? 'Escape to the van!' : closed && !this.hasKey ? 'Find the keycard!' : closed ? 'Open the vault door!' : lock ? 'Pick the lock!' : `Crack the ${this.def.safeName || 'safe'}!`;
     if (t !== this.objText) { this.objText = t; this.app.setObjective(t); }
   }
 

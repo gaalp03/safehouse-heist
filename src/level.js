@@ -23,7 +23,7 @@ export function parseLevel(def) {
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x, c = ch[i];
     if (c === '#') { opaque[i] = 1; continue; }
-    if (c === 'D') { opaque[i] = 1; walk[i] = 0; doors.push({ x, y }); continue; }
+    if (c === 'D' || c === 'L') { opaque[i] = 1; walk[i] = 0; doors.push({ x, y, type: c === 'L' ? 'lock' : 'key' }); continue; }
     if (c === 'K') keys.push({ x, y });
     if (FURN[c]) { opaque[i] = TALL.has(c) ? 1 : 0; walk[i] = 0; }
     else if (c === 'S') { safe = { x, y }; walk[i] = 0; }
