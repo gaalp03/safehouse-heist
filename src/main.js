@@ -793,7 +793,12 @@ class App {
   }
   onLoot(big, silent) {
     const g = this.game;
-    $('lootv').textContent = fmtMoney(g.lootGot);
+    // rolling cash counter: the shown value climbs toward the real one in updateHud; a "+$X" pops beside it
+    if (silent || this.lootShown == null) { this.lootShown = g.lootGot; $('lootv').textContent = fmtMoney(g.lootGot); }
+    else if (g.lootGot > this.lootShown) {
+      const d = g.lootGot - (this.lootTarget ?? this.lootShown); this.lootTarget = g.lootGot;
+      if (d > 0) { const pe = $('lootplus'); pe.textContent = '+' + fmtMoney(d); pe.classList.remove('go'); void pe.offsetWidth; pe.classList.add('go'); }
+    }
     $('lootp').textContent = Math.round((g.lootGot / g.lootTotal) * 100) + '%';
     $('lootbar').style.width = Math.min(100, (g.lootGot / g.lootTotal) * 100) + '%';
     // live "new record" moment: loot alone passes your best score on this heist
@@ -1179,6 +1184,10 @@ class App {
   updateHud() {
     this.updateTutorial();
     const g = this.game, p = g.player;
+    if (this.lootShown != null && this.lootShown < g.lootGot) {
+      this.lootShown = Math.min(g.lootGot, this.lootShown + Math.max(7, (g.lootGot - this.lootShown) * 0.18));
+      $('lootv').textContent = fmtMoney(Math.round(this.lootShown));
+    } else if (this.lootShown != null && this.lootShown > g.lootGot) { this.lootShown = g.lootGot; $('lootv').textContent = fmtMoney(g.lootGot); }
     const s = Math.floor(g.time);
     if (s !== this.lastSec) { this.lastSec = s; $('time').textContent = fmtTime(s); }
     this.drawMinimap();

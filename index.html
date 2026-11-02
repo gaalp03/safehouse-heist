@@ -35,7 +35,7 @@ body{font-family:"Trebuchet MS","Arial Rounded MT Bold","Segoe UI",system-ui,san
 .pill{background:linear-gradient(180deg,rgba(52,38,82,.92),rgba(28,19,48,.92));border-radius:14px;padding:8px 14px;display:inline-flex;align-items:center;gap:8px;font-size:20px;border:2px solid rgba(255,214,160,.22);box-shadow:0 4px 0 rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.12)}
 .pill svg{width:20px;height:20px;flex:none}
 #loot{position:absolute;left:12px;top:10px;flex-direction:column;align-items:flex-start;gap:4px;min-width:140px;transform-origin:left top}
-#loot .row{display:flex;gap:8px;align-items:baseline}#lootv{color:#7dff9b;font-size:24px}#lootp{font-size:14px;opacity:.75}
+#loot .row{display:flex;gap:8px;align-items:baseline;position:relative}#lootplus{position:absolute;left:calc(100% + 22px);top:2px;z-index:2;white-space:nowrap;font-family:var(--disp);font-size:20px;color:#ffd75a;opacity:0;pointer-events:none;text-shadow:0 2px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink)}#lootplus.go{animation:lplus .9s ease-out}@keyframes lplus{0%{opacity:0;translate:0 6px;scale:.6}15%{opacity:1;translate:0 0;scale:1.15}70%{opacity:1}100%{opacity:0;translate:0 -14px;scale:1}}#lootv{color:#7dff9b;font-size:24px}#lootp{font-size:14px;opacity:.75}
 #loot .bar{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;position:relative}
 #loot .bar::after{content:"";position:absolute;left:70%;top:0;bottom:0;width:2px;background:var(--y)}
 #lootbar{height:100%;width:0;background:#7dff9b;transition:width .3s}#lootbar.star{background:var(--y)}
@@ -310,7 +310,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 <div id="fxl"></div>
 <div id="flash"></div>
 <div id="hud" class="hidden">
-  <div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootp">0%</span><span id="weight" class="hidden"></span></div><div class="bar"><div id="lootbar"></div></div></div>
+  <div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootplus"></span><span id="lootp">0%</span><span id="weight" class="hidden"></span></div><div class="bar"><div id="lootbar"></div></div></div>
   <div id="obj" class="pill o">Crack the safe!</div>
   <div id="sneakp" class="pill o hidden">🦶 SNEAKING</div>
   <div id="disgp" class="pill o hidden">🕴 DISGUISED</div>
