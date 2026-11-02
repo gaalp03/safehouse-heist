@@ -537,6 +537,12 @@ class App {
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 3200);
     } else if (fresh && this.mode === 'classic' && this.save.tutDone) this.showIntel();
     else $('ctoast').classList.add('hidden');
+    if (!(fresh && this.mode === 'classic' && this.save.tutDone) && this.mode !== 'daily') {
+      const gs = $('gostamp'); gs.querySelector('small').textContent = this.level.name.toUpperCase();
+      gs.classList.remove('hidden'); gs.style.animation = 'none'; void gs.offsetWidth; gs.style.animation = '';
+      clearTimeout(this.goT); this.goT = setTimeout(() => gs.classList.add('hidden'), 1200);
+      this.audio.play('dash');
+    }
     this.hint('move');
     SDK.gameplayStart();
   }
