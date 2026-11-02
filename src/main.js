@@ -357,6 +357,7 @@ class App {
       ['Contracts', s.contracts], ['Best Safe House', bt('safehouse')], ['Best Bank', bt('bank')], ['Best Jewelry', bt('jewelry')],
       ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')], ['Best Train', bt('train')], ['Best Warehouse', bt('warehouse')], ['Best Mansion', bt('mansion')]];
     $('trJobs').innerHTML = this.jobsHTML();
+    $('jobsIn').textContent = `(new jobs in ${nextDailyIn()})`;
     for (let i = rows.length - 1; i >= 0; i--) if (String(rows[i][0]).startsWith('Best ') && rows[i][1] === '—') rows.splice(i, 1);
     $('trStats').innerHTML = rows.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('trAch').innerHTML = ACH.map((a) => `<div class="ach ${got[a.id] ? 'on' : ''}"><i>${got[a.id] ? a.icon : '🔒'}</i><b>${a.name}</b><small>${a.desc}</small></div>`).join('');
