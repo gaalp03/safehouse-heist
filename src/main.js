@@ -117,6 +117,7 @@ class App {
       if (b && this.input && this.input.touch && this.shake && this.shake.scale > 0 && navigator.vibrate) { try { navigator.vibrate(b); } catch (_) {} }
     };
     this.audio.setMuted(!!this.save.muted);
+    SDK.onSettings((st) => this.audio.setPlatformMuted(st && st.muteAudio));
     this.input = new Input(this.els);
     this.particles = new Particles(this.scene);
     this.shake = new Shake();

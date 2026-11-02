@@ -45,7 +45,7 @@ export class Audio {
   }
   apply() {
     if (!this.ctx) return;
-    const v = this.muted || this.adMuted ? 0 : 1;
+    const v = this.muted || this.adMuted || this.platMuted ? 0 : 1;
     this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.03);
   }
   setVolumes(music, sfx) {
@@ -58,6 +58,7 @@ export class Audio {
     this.lp.frequency.setTargetAtTime(on ? 900 : 20000, this.ctx.currentTime, on ? 0.03 : 0.15);
   }
   setMuted(m) { this.muted = m; this.apply(); }
+  setPlatformMuted(m) { this.platMuted = !!m; this.apply(); }
   setAdMuted(m) {
     this.adMuted = m; this.apply();
     if (!this.ctx) return;

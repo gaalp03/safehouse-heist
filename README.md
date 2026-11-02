@@ -171,3 +171,14 @@ Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` 
    - Saves via `SDK.data` with a `localStorage` fallback
 4. No external links, no own ads, English UI. Outside CrazyGames the SDK script fails or reports `disabled` and every call becomes a no-op.
 5. Test with the CrazyGames QA tool / `?useLocalSdk=true` before submitting.
+
+## CrazyGames checklist
+
+- SDK v3: `loadingStart/Stop` around boot, `gameplayStart` only while actually playing, `gameplayStop` on pause/menus/results, `happytime` on escapes.
+- Respects the platform's `muteAudio` setting (initial value + `addSettingsChangeListener`), separate from the in-game mute.
+- Progress saved through the SDK data module (cloud) with a localStorage fallback.
+- Ads: `ADS_ENABLED = false` until full launch; the rewarded/midgame hooks (with audio mute + pause) are already wired.
+- Auto-pause and mute when the tab is hidden or loses focus; WebGL context loss is caught (progress saved, reload prompt).
+- No external links, no third-party branding, English UI, all assets CC0/OFL (see CREDITS.md).
+- Mobile: touch controls, no page scroll/zoom/text selection/long-press menus, layouts checked in portrait and landscape.
+- Small download: ~260 KB gzipped to the menu; sound effects (~240 KB) stream in afterwards.

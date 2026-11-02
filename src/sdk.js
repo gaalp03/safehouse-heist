@@ -27,6 +27,14 @@ export const SDK = {
   gameplayStart() { if (playing) return; playing = true; this._c((s) => s.game.gameplayStart()); },
   gameplayStop() { if (!playing) return; playing = false; this._c((s) => s.game.gameplayStop()); },
   happytime() { this._c((s) => s.game.happytime()); },
+  // CrazyGames platform settings (e.g. the site-wide mute): call back now and on every change
+  onSettings(fn) {
+    this._c((s) => {
+      const g = s.game;
+      if (g.settings) fn(g.settings);
+      if (g.addSettingsChangeListener) g.addSettingsChangeListener((st) => fn(st));
+    });
+  },
 
   // type: 'midgame' | 'rewarded'. Resolves true if the ad finished (reward granted).
   ad(type) {
