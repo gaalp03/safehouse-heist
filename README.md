@@ -80,6 +80,8 @@ Disguise: hold E over a knocked-out guard to put on his uniform (25 s, your slee
 
 Guard chatter: two calm guards passing each other trade a line ("Quiet night, huh?" / "Too quiet."), with storm, new-guy and missing-colleague variants.
 
+Heist rank: every run earns XP (score/100 for an escape, a little for a bust), filling a bar from Rookie through Pickpocket, Burglar, Safecracker ... up to Legend. The results and busted screens animate the bar (with a RANK UP! moment), and the city map shows your rank. The menu also shows your next goal (missing stars on the selected heist, trophies to the next outfit, a streak-at-risk reminder for the Daily).
+
 Heavy loot: gold bars (−6%) and paintings (−10%) slow you down while carried (max −35%, shown as a 🏋 badge); walk back near the van / exit to stash them and get your speed back. Contract: stash heavy loot before cracking the safe.
 
 Pickpocketing: guards carry a visible wallet (and on keycard levels one carries a spare keycard). Behind an unaware guard, tap E to knock him out or HOLD E to lift the wallet / keycard (he gets slightly suspicious while you lift). Contract: pickpocket 2 guards; achievement: Sticky Fingers.

@@ -10,6 +10,7 @@ import { LEVELS, loadLevel } from './levels/index.js';
 import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
 import { DIFFS, diffKey } from './difficulty.js';
+import { rankOf, xpForRun } from './rank.js';
 import { todaysDaily, prevDayKey, nextDailyIn } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
 import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
@@ -349,6 +350,7 @@ class App {
     let tot = 0;
     for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
     $('starTotal').textContent = `★ ${tot}/21`;
+    { const r = rankOf(this.save.xp || 0); $('rankChip').innerHTML = `🎖 ${r.name}<i style="width:${(r.frac * 100).toFixed(0)}%"></i>`; $('rankChip').title = r.next ? `${r.toNext} XP to ${r.next}` : 'Max rank'; }
   }
   playSel() {
     const k = this.sel || 'lvl1';
@@ -759,6 +761,27 @@ class App {
     f.className = ''; void f.offsetWidth; f.className = kind;
   }
   onEscapeStart() { $('touch').classList.add('hidden'); $('fp').classList.add('hidden'); $('hud').classList.add('hidden'); $('alarm').classList.add('hidden'); this.audio.siren(false); this.input.exitLock(); }
+  // award XP for a finished run and animate the rank bar in the given container
+  awardXP(win, score, loot, elId) {
+    const before = this.save.xp || 0, gain = xpForRun(win, score, loot), after = before + gain;
+    this.save.xp = after;
+    const r0 = rankOf(before), r1 = rankOf(after), el = $(elId);
+    el.innerHTML = `<span class="rk">🎖 <b>${r0.name}</b></span><span class="xpbar"><i style="width:${(r0.frac * 100).toFixed(1)}%"></i></span><span class="xpg">+${gain} XP</span>`;
+    const bar = el.querySelector('i'), nm = el.querySelector('b');
+    setTimeout(() => {
+      if (r1.i > r0.i) {
+        bar.style.width = '100%';
+        setTimeout(() => {
+          nm.textContent = r1.name; bar.style.transition = 'none'; bar.style.width = '0%'; void bar.offsetWidth; bar.style.transition = '';
+          bar.style.width = (r1.frac * 100).toFixed(1) + '%';
+          el.classList.add('up'); el.querySelector('.xpg').textContent = 'RANK UP!';
+          this.audio.play('contract'); this.shake.add(0.2);
+        }, 650);
+      } else bar.style.width = (r1.frac * 100).toFixed(1) + '%';
+    }, 900);
+    el.classList.remove('up');
+    return { gain, up: r1.i > r0.i, rank: r1 };
+  }
   bustTip() {
     const g = this.game, t = this.input.touch, Z = t ? 'the 🦶 button' : 'Z', E = t ? '✋' : 'E';
     if (g.policeBusted) return 'The police arrived! Knock out alerted guards before they radio in, or disarm the alarm keypad.';
@@ -783,6 +806,7 @@ class App {
     $('bRevive').classList.toggle('hidden', !ADS_ENABLED || !SDK.available || this.game.revived);
     $('bustTip').textContent = this.bustTip();
     const fresh = recordRun(this.save, this.runRecord(false));
+    this.awardXP(false, 0, this.game.lootGot, 'bXP');
     SDK.store(this.save);
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).join('<br>');
     this.screen('busted');
@@ -839,6 +863,7 @@ class App {
     const tutJustDone = this.game.tut && !this.save.tutDone;
     if (this.game.tut) this.save.tutDone = true;
     const freshA = recordRun(this.save, this.runRecord(true, res));
+    this.awardXP(true, res.score, res.loot, 'rXP');
     const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
     this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
     this.showAchToast(freshA);
