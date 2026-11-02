@@ -19,6 +19,7 @@ export const CONTRACTS = [
   { id: 'slot', text: 'Distract guards with a slot machine', bonus: 500, needs: (g) => g.slots.length > 0, check: (g) => P(g.slotLures > 0) },
   { id: 'pocket2', text: 'Pickpocket 2 guards', bonus: 600, needs: (g) => g.guards.some((x) => x.kind === 'guard'), check: (g) => P(g.picks >= 2) },
   { id: 'camhit', text: 'Knock out a camera with a coin', bonus: 500, needs: (g) => g.cams.length > 0, check: (g) => P(g.camsHit > 0) },
+  { id: 'stashrun', text: 'Stash heavy loot before cracking the safe', bonus: 500, needs: (g) => g.totals.gold + g.totals.art > 0, check: (g) => P(g.stashedEarly) },
   { id: 'lure', text: 'Lure a guard with a coin', bonus: 400, check: (g) => P(g.lures > 0) },
   { id: 'ko2', text: 'Knock out 2 guards', bonus: 500, tag: 'ko', check: (g) => P(g.kos >= 2) },
   { id: 'noko', text: 'No knockouts', bonus: 700, tag: 'ko', check: (g, end) => (g.kos > 0 ? 'fail' : end ? 'ok' : 'pending') },

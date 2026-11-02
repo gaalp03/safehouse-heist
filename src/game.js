@@ -323,6 +323,7 @@ export class Game {
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
     this.hidFromAlert = false; this.clerkStopped = false; this.hidesUsed = 0; this.smokesUsed = 0; this.coinsThrown = 0; this.radioFaked = 0;
     this.trail = []; this.trailT = 0; this.marks = [];
+    this.heavy = []; this.stashRuns = 0; this.stashedEarly = false; this.app.onWeight && this.app.onWeight(1);
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
@@ -602,7 +603,7 @@ export class Game {
     if (inp.consumeCrouch()) { p.crouch = !p.crouch; app.onCrouch(p.crouch); app.hintDone('sneak'); }
     if (p.dashT > 0 && p.crouch) { p.crouch = false; app.onCrouch(false); }
     p.crouchK = damp(p.crouchK || 0, p.crouch ? 1 : 0, 10, dt);
-    const spd = P_SPEED * (1 - 0.1 * frac) * (p.crouch ? 0.5 : 1);
+    const spd = P_SPEED * (1 - 0.1 * frac) * (p.crouch ? 0.5 : 1) * this.weightMul();
     p.vx = damp(p.vx, wx * spd, 14, dt);
     p.vz = damp(p.vz, wz * spd, 14, dt);
     p.dashCd -= dt; p.inv -= dt; p.punchT -= dt;
@@ -808,6 +809,7 @@ export class Game {
     // exit
     const ex = this.L.exit;
     const de = Math.hypot(p.x - ex.x, p.z - ex.z);
+    if (de < 2.4 && this.heavy.length) this.stashHeavy();
     this.nopeT -= dt;
     if (de < 0.95) {
       if (this.hasStash) this.escape();
@@ -1625,7 +1627,24 @@ export class Game {
     app.hint('stash');
   }
 
+  weightMul() {
+    let w = 0;
+    for (const t of this.heavy) w += t === 'art' ? 0.1 : 0.06;
+    return Math.max(0.65, 1 - w);
+  }
+  stashHeavy() {
+    const app = this.app, p = this.player, n = this.heavy.length;
+    this.heavy = []; this.stashRuns++;
+    if (!this.hasStash) this.stashedEarly = true;
+    app.audio.play('disarm');
+    app.floaters.spawn(`STASHED ${n} IN THE ${this.L.van ? 'VAN' : 'HIDEOUT'}!`, p.x + Math.sin(p.face) * 1.5, 1.3, p.z + Math.cos(p.face) * 1.5, 'big', 1.3);
+    app.particles.burst(p.x, 0.9, p.z, { count: 10, colors: [0xffd23f, 0xffffff], speed: 1.6, up: 2, size: 0.04, life: 0.6 });
+    this.juice(0, 1, -3, 0, 0);
+    app.onWeight(1);
+    app.hintDone('heavy');
+  }
   collect(it) {
+    if ((it.type === 'gold' || it.type === 'art') && !it.bundle) { this.heavy.push(it.type); this.app.onWeight(this.weightMul()); this.app.hint('heavy'); }
     if (it.type !== 'cash' || !it.bundle) this.mark(it.type === 'cash' ? 'cash' : 'loot', it.x, it.z);
     const app = this.app;
     this.lootGot += it.value;

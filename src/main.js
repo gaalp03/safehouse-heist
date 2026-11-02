@@ -38,6 +38,7 @@ const HINTS = {
   door: ['Got the keycard! Swipe it at the vault door', 'Got the keycard! Swipe it at the vault door'],
   drill: ['Cracking the vault is LOUD. Guards will hear it!', 'Cracking the vault is LOUD. Guards will hear it!'],
   hide: ['E at a wardrobe: hide inside. Guards lose you if they did not see you!', 'Tap the hand at a wardrobe to hide inside'],
+  heavy: ['Gold and paintings are HEAVY and slow you down. Walk back to the van to stash them', 'Gold and paintings are HEAVY and slow you down. Walk back to the van to stash them'],
   sneak: ['Z: crouch-sneak. Slower and quieter, and crouching behind counters or tables hides you', 'Tap 🦶 to sneak. Slower and quieter, and crouching behind low cover hides you'],
   smoke: ['C: drop a smoke bomb. Guards cannot see into or through the cloud!', 'Tap 💨 to drop a smoke bomb. Guards cannot see through it!'],
   coin: ['Q: throw a coin to lure guards away', 'Tap the coin to lure guards away'],
@@ -624,6 +625,12 @@ class App {
     $('sneakp').classList.toggle('hidden', !on);
     this.els.bSneak.classList.toggle('on', on);
     document.body.classList.toggle('crouch', on);
+  }
+  onWeight(m) {
+    const w = $('weight'), pct = Math.round((1 - m) * 100);
+    w.classList.toggle('hidden', pct <= 0);
+    w.textContent = `🏋 −${pct}%`;
+    w.classList.toggle('hot', pct >= 25);
   }
   onSmoke(n) {
     const c = $('smokep');

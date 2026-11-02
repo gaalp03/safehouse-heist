@@ -209,6 +209,7 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
 .setp label b{color:var(--y)}.setp input[type=range]{width:100%;accent-color:#ffc94a;height:22px}
 .setp .chk{gap:18px}.setp .chk label{width:auto;align-items:center;gap:6px}.setp input[type=checkbox]{width:20px;height:20px;accent-color:#ffc94a}
 .setbtn{position:fixed;right:max(12px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));font-size:22px;z-index:2}
+#weight{font-size:12px;color:#ffc94a;margin-left:6px}#weight.hot{color:#ff8a6a}
 .keys{font-size:13px;opacity:.75;max-width:520px}body.touch .kb{display:none}body:not(.touch) .tc{display:none}
 #loading{background:radial-gradient(ellipse at center,#3d2c62,#1c1330);z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
@@ -234,7 +235,7 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
 <div id="fxl"></div>
 <div id="flash"></div>
 <div id="hud" class="hidden">
-  <div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootp">0%</span></div><div class="bar"><div id="lootbar"></div></div></div>
+  <div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootp">0%</span><span id="weight" class="hidden"></span></div><div class="bar"><div id="lootbar"></div></div></div>
   <div id="obj" class="pill o">Crack the safe!</div>
   <div id="sneakp" class="pill o hidden">🦶 SNEAKING</div>
   <div id="tut" class="hidden"><small></small><span></span><b><i></i></b><em></em></div>
