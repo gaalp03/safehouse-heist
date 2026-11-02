@@ -213,6 +213,20 @@ class App {
   }
   showMenu() {
     this.lastTutLevel = null;
+    // daily login bonus: cash for the Locker, growing with consecutive days
+    if (this.save.tutDone) {
+      const today = dayKeyNow(), lg = this.save.login || { last: '', n: 0 };
+      if (lg.last !== today) {
+        lg.n = lg.last === prevDayKey() ? lg.n + 1 : 1; lg.last = today; this.save.login = lg;
+        const amt = 500 * Math.min(lg.n, 7);
+        this.save.cash = (this.save.cash || 0) + amt; SDK.store(this.save);
+        const el = $('bonus'); el.querySelector('b').textContent = '+' + fmtMoney(amt);
+        el.querySelector('em').textContent = lg.n > 1 ? `Day ${lg.n} in a row! Come back tomorrow for more` : 'Come back tomorrow for a bigger one';
+        el.classList.remove('hidden'); el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+        clearTimeout(this.bonT); this.bonT = setTimeout(() => el.classList.add('hidden'), 3500);
+        setTimeout(() => { this.audio.play('safe'); this.shake.add(0.15); }, 250);
+      }
+    }
     SDK.gameplayStop();
     this.audio.siren(false);
     this.state = 'menu';
