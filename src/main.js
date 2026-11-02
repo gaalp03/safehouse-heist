@@ -95,6 +95,14 @@ class App {
     this.scene.add(sun);
 
     this.audio = new Audio();
+    // haptics on phones: piggyback on the key sound effects (respects the screen-shake setting)
+    const BUZZ = { ko: 35, zap: [60, 40, 60], alert: 25, bust: [90, 60, 160], alarm: [120, 80, 120], safe: [30, 40, 50], dash: 12, glass: 40, thunder: [20, 40, 60], clank: 25, jackpot: [20, 30, 20, 30, 40], win: [30, 50, 80] };
+    const play = this.audio.play.bind(this.audio);
+    this.audio.play = (n, p) => {
+      play(n, p);
+      const b = BUZZ[n];
+      if (b && this.input && this.input.touch && this.shake && this.shake.scale > 0 && navigator.vibrate) { try { navigator.vibrate(b); } catch (_) {} }
+    };
     this.audio.setMuted(!!this.save.muted);
     this.input = new Input(this.els);
     this.particles = new Particles(this.scene);
