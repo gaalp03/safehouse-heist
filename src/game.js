@@ -416,7 +416,7 @@ export class Game {
     for (const v of this.vents || []) v.flap.rotation.x = 0;
     for (const tv of this.tvs || []) { tv.on = tv.used = false; tv.scr.visible = tv.glow.visible = false; }
     this.tvLures = 0; this.photoFinish = false; this.closeCalls = 0; this.koStreak = 0; this.maxKoStreak = 0; this.lastKo = -99;
-    for (const g of this.guards) g.peak = 0; this.disguiseT = 0; this.disguises = 0; this.uniformProg = 0;
+    for (const g of this.guards) g.peak = 0; this.disguiseT = this.def.startDisguise && !this.tut ? this.def.startDisguise : 0; this.disguises = 0; this.uniformProg = 0;
     for (const g of this.guards) g.stripped = false;
     this.ventsUsed = 0; this.player.venting = null;
     for (const g of this.guards) this.resetGuard(g);

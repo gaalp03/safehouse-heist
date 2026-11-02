@@ -44,7 +44,7 @@ Level 3 — The Jewelry Store (unlocks after escaping the Bank): a night heist w
 
 Level 4 — The Museum (unlocks after the Jewelry Store): night heist through a grand hall of pedestals and statues, an antiquities gallery, a gem room and the locked curator's office. Sweeping ceiling spotlights glide along tracks; standing in a light pool builds detection and trips the alarm (smoke and hiding work; the breaker in the gem room kills them). Contract: never step into a spotlight; achievement: Night at the Museum.
 
-City map menu: levels are pins on a stylised night city map (locked pins greyed, dashed heist route, pulsing Daily pin, total stars ★ x/24); tap a pin to see its info, PLAY starts it.
+City map menu: levels are pins on a stylised night city map (locked pins greyed, dashed heist route, pulsing Daily pin, total stars ★ x/27); tap a pin to see its info, PLAY starts it.
 
 Yawning guards: when a guard pauses on patrol he sometimes yawns, shrinking his vision cone for ~2 s — a short window to slip past.
 
@@ -55,6 +55,8 @@ Level 6 — The Penthouse (unlocks after the Casino): night-time luxury apartmen
 Level 7 — The Night Train (unlocks after the Penthouse): four carriages rushing through the night (baggage car, coach, dining car, mail car). A night landscape scrolls past every window, the carriage sways, wheels clack over the rail joints and a low rumble runs under everything. Pick the gangway lock, lift the keycard in the coach, slip past the bartender (he runs for the alarm button), get through the mail-car laser and crack the mail safe, then climb onto the roof for a helicopter pickup. Achievement: Great Train Robbery.
 
 Level 8 — The Warehouse (unlocks after the Night Train): a stormy night at the docks. A maze of stacked crates (they block sight), a break room with the keycard and a TV you can switch on as a lure, a guard dog, sweeping searchlights, a roaming guard and the keycard office with the safe. Achievement: Dock Rat.
+
+Level 9 — The Mansion Gala (unlocks after the Warehouse): you arrive through the staff kitchen dressed as a waiter (40 s disguise: from afar nobody looks twice). Cross the ballroom full of guests, who run for the wall panic buttons if they recognise you, lift the keycard in the library, get past the study guard to the wall safe, raid the gallery (the cloakroom vent leads straight in) and leave by the van. Achievement: Party Crasher.
 
 Route recap: the results and busted screens animate a minimap of your run — your path (green while unseen, red while a guard was onto you), loot grabs, knockouts, where the alarm went off and where you got caught, plus the % of the run you were chased.
 

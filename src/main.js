@@ -136,7 +136,7 @@ class App {
   bindUI() {
     const click = (id, fn) => $(id).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); fn(); });
     click('bPlay', () => this.playSel());
-    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
+    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'lvl9', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
     for (const el of document.querySelectorAll('#diff button')) {
       el.addEventListener('click', (e) => {
         e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
@@ -161,6 +161,7 @@ class App {
       else if (this.levelIdx === 4 && this.penthouseUnlocked()) this.start('classic', 5);
       else if (this.levelIdx === 5 && this.trainUnlocked()) this.start('classic', 6);
       else if (this.levelIdx === 6 && this.warehouseUnlocked()) this.start('classic', 7);
+      else if (this.levelIdx === 7 && this.mansionUnlocked()) this.start('classic', 8);
       else this.showSoon();
     });
     click('bRMenu', () => this.showMenu());
@@ -248,6 +249,11 @@ class App {
     $('lvl5art').textContent = cu ? '🎰' : '🔒';
     $('lvl5stars').innerHTML = cu ? this.starsHTML(cb ? cb.stars : 0) : '';
     $('lvl5best').textContent = cu ? (cb ? 'Best ' + fmtMoney(cb.score) : 'New!') : 'Escape the Museum to unlock';
+    const mnu = this.mansionUnlocked(), mnb = this.save.best[diffKey('mansion', this.diff)];
+    $('lvl9').classList.toggle('lock', !mnu);
+    $('lvl9art').textContent = mnu ? '🥂' : '🔒';
+    $('lvl9stars').innerHTML = mnu ? this.starsHTML(mnb ? mnb.stars : 0) : '';
+    $('lvl9best').textContent = mnu ? (mnb ? 'Best ' + fmtMoney(mnb.score) : 'New!') : 'Escape the Warehouse to unlock';
     const wu = this.warehouseUnlocked(), wb = this.save.best[diffKey('warehouse', this.diff)];
     $('lvl8').classList.toggle('lock', !wu);
     $('lvl8art').textContent = wu ? '📦' : '🔒';
@@ -287,7 +293,7 @@ class App {
     return {
       win, level: this.level.id, diff: this.mode === 'daily' ? 'daily' : this.diff, ghost: win && res.ghost, time: g.time, kos: g.kos,
       frac: g.lootGot / g.lootTotal, loot: g.lootGot, contractsDone: win ? res.contracts.filter((c) => c.st === 'ok').length : 0,
-      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown, radio: g.radioFaked, picks: g.picks, vents: g.ventsUsed, close: g.closeCalls, photo: g.photoFinish, streak: g.maxKoStreak || 0, disguised: g.disguiseT > 0, lasers: g.lasersTripped, power: g.powerOff,
+      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown, radio: g.radioFaked, picks: g.picks, vents: g.ventsUsed, close: g.closeCalls, photo: g.photoFinish, streak: g.maxKoStreak || 0, disguised: g.disguiseT > 0 && g.disguises > 0, lasers: g.lasersTripped, power: g.powerOff,
     };
   }
   applyOutfit() {
@@ -348,7 +354,7 @@ class App {
     const bt = (id) => (s.best[id] != null ? fmtTime(s.best[id]) : '—');
     const rows = [['Heists', s.runs], ['Escapes', s.escapes], ['Busted', s.busts], ['Total loot', fmtMoney(s.loot)], ['Guards KO', s.kos],
       ['Contracts', s.contracts], ['Best Safe House', bt('safehouse')], ['Best Bank', bt('bank')], ['Best Jewelry', bt('jewelry')],
-      ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')], ['Best Train', bt('train')], ['Best Warehouse', bt('warehouse')]];
+      ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')], ['Best Train', bt('train')], ['Best Warehouse', bt('warehouse')], ['Best Mansion', bt('mansion')]];
     $('trJobs').innerHTML = this.jobsHTML();
     for (let i = rows.length - 1; i >= 0; i--) if (String(rows[i][0]).startsWith('Best ') && rows[i][1] === '—') rows.splice(i, 1);
     $('trStats').innerHTML = rows.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
@@ -378,7 +384,7 @@ class App {
     $('rAch').classList.toggle('hidden', !list.length);
     if (list.length) setTimeout(() => this.audio.play('contract'), 1600);
   }
-  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : k === 'lvl6' ? !this.penthouseUnlocked() : k === 'lvl7' ? !this.trainUnlocked() : k === 'lvl8' ? !this.warehouseUnlocked() : false; }
+  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : k === 'lvl6' ? !this.penthouseUnlocked() : k === 'lvl7' ? !this.trainUnlocked() : k === 'lvl8' ? !this.warehouseUnlocked() : k === 'lvl9' ? !this.mansionUnlocked() : false; }
   selectPin(k) {
     this.sel = k; this.save.sel = k;
     if (this.pinLocked(k)) { const c = $(k); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
@@ -388,7 +394,7 @@ class App {
     let k = this.sel || this.save.sel || 'lvl1';
     if (!$(k)) k = 'lvl1';
     this.sel = k;
-    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'daily']) $(id).classList.toggle('on', id === k);
+    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'lvl9', 'daily']) $(id).classList.toggle('on', id === k);
     const el = $(k), locked = this.pinLocked(k);
     $('selName').textContent = k === 'daily' ? 'Daily: ' + $('dMut').textContent : el.querySelector('.t').textContent;
     const st = el.querySelector('.stars');
@@ -398,7 +404,7 @@ class App {
     // next goal: missing stars on this heist + the next outfit unlock
     const goals = [];
     if (!locked && k !== 'daily' && this.save.tutDone) {
-      const id = LEVELS[{ lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6, lvl8: 7 }[k]].id, n = (this.save.best[diffKey(id, this.diff)] || { stars: 0 }).stars;
+      const id = LEVELS[{ lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6, lvl8: 7, lvl9: 8 }[k]].id, n = (this.save.best[diffKey(id, this.diff)] || { stars: 0 }).stars;
       if (n === 0) goals.push('Escape to earn your first ★');
       else if (n < 3) goals.push('Next ★: grab 70% loot · or never get spotted');
     }
@@ -415,8 +421,8 @@ class App {
     $('daily').classList.toggle('done', dPlayed);
     $('bPlay').classList.toggle('pulse', !locked && !this.save.tutDone && !this.runs);
     let tot = 0;
-    for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train', 'warehouse']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
-    $('starTotal').textContent = `★ ${tot}/24`;
+    for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train', 'warehouse', 'mansion']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
+    $('starTotal').textContent = `★ ${tot}/27`;
     LEVELS.forEach((l, i) => { const el = $('lvl' + (i + 1)); if (el) el.classList.toggle('gold', !!(this.save.mastered || {})[l.id]); });
     $('wchip').textContent = this.save.cash ? '💰 ' + fmtMoney(this.save.cash) : '';
     { const J = todaysJobs(this.save), n = J.ids.filter((x) => J.done[x]).length; $('bTrophy').innerHTML = `📋 JOBS <small>${n}/3</small>`; }
@@ -427,7 +433,7 @@ class App {
     const k = this.sel || 'lvl1';
     if (this.pinLocked(k)) { this.audio.play('nope'); this.selectPin(k); return; }
     if (k === 'daily') this.start('daily');
-    else this.start('classic', { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6, lvl8: 7 }[k]);
+    else this.start('classic', { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6, lvl8: 7, lvl9: 8 }[k]);
   }
   // animated heist route recap on a minimap canvas
   drawRecap(id, win) {
@@ -473,7 +479,7 @@ class App {
     SDK.gameplayStop();
     this.state = 'soon';
     $('soonName').textContent = 'More heists';
-    $('soonList').innerHTML = ['Mayor\'s mansion gala', 'Armored truck ambush', 'Diamond exchange'].map((t) => `<li>${t}</li>`).join('');
+    $('soonList').innerHTML = ['Armored truck ambush', 'Diamond exchange', 'Harbor yacht party'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
   }
   todays() {
@@ -484,7 +490,11 @@ class App {
     return d;
   }
   levelUnlocked(i) {
-    return [() => true, () => this.bankUnlocked(), () => this.jewelryUnlocked(), () => this.museumUnlocked(), () => this.casinoUnlocked(), () => this.penthouseUnlocked(), () => this.trainUnlocked(), () => this.warehouseUnlocked()][i]?.() || false;
+    return [() => true, () => this.bankUnlocked(), () => this.jewelryUnlocked(), () => this.museumUnlocked(), () => this.casinoUnlocked(), () => this.penthouseUnlocked(), () => this.trainUnlocked(), () => this.warehouseUnlocked(), () => this.mansionUnlocked()][i]?.() || false;
+  }
+  mansionUnlocked() {
+    const b = this.save.best;
+    return !!(b.warehouse || b.warehouse_easy || b.warehouse_hard || b.warehouse_ironman || this.save.mansionOpen);
   }
   warehouseUnlocked() {
     const b = this.save.best;
@@ -574,6 +584,8 @@ class App {
     if (this.ghost) $('ghostp').lastChild.textContent = fmtTime(this.ghost.t);
     this.onSmoke(this.game.smokesLeft);
     this.onCrouch(false);
+    this.onDisguise(this.game.disguiseT);
+    if (this.level.startDisguise) setTimeout(() => { if (this.state === 'play') this.announce('🍸 You\'re dressed as a waiter: from afar nobody looks twice'); }, 1300);
     this.renderContracts(this.game.contracts);
     this.tutStep = this.game.tut ? (this.lastTutLevel === this.level.id ? Math.min(this.tutStep || 0, 3) : 0) : TUT_STEPS.length; $('tut').dataset.k = '';
     this.lastTutLevel = this.game.tut ? this.level.id : null;
@@ -609,6 +621,8 @@ class App {
     if (g.tvs.length) it.push('📺 TV lure');
     if ((d.cameras || []).length) it.push(`📹 ${d.cameras.length} camera${d.cameras.length > 1 ? 's' : ''}`);
     if (d.train) it.push('🚂 Moving train');
+    if (d.startDisguise) it.push('🍸 Waiter disguise');
+    if ((d.clerks || []).length) it.push(`🙋 ${d.clerks.length} panic-button witness${d.clerks.length > 1 ? 'es' : ''}`);
     it.push(d.heli ? '🚁 Roof extraction' : L.van ? '🚐 Van out front' : '🪜 Roof hatch exit');
     const t = $('ctoast');
     t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small><span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span><span class="stargoal">★ Escape · ★ Grab 70% loot · ★ Never get spotted</span>`;
@@ -809,8 +823,9 @@ class App {
   onDisguise(t) {
     const el = $('disgp'), on = t > 0;
     el.classList.toggle('hidden', !on);
-    if (on) { const s = Math.ceil(t); if (el.dataset.s !== String(s)) { el.dataset.s = s; el.textContent = '🕴 DISGUISED ' + s + 's'; el.classList.toggle('low', s <= 5); } }
-    if (this.disgOn !== on) { this.disgOn = on; on ? this.vm.setOutfit(colorsOf({ sleeve: 0x2b3f7a, glove: 0x1a1c26, bar: 0x8a94a4, band: 0xf2c94c })) : this.applyOutfit(); }
+    const waiter = on && this.level && this.level.startDisguise && !this.game.disguises, look = !on ? '' : waiter ? 'w' : 'g';
+    if (on) { const s = Math.ceil(t), k = look + s; if (el.dataset.s !== k) { el.dataset.s = k; el.textContent = (waiter ? '🍸 WAITER ' : '🕴 DISGUISED ') + s + 's'; el.classList.toggle('low', s <= 5); } }
+    if (this.disgLook !== look) { this.disgLook = look; this.disgOn = on; look === 'w' ? this.vm.setOutfit(colorsOf({ sleeve: 0x17161d, glove: 0xf4f1ea, bar: 0x8a94a4, band: 0xd9b45a })) : look === 'g' ? this.vm.setOutfit(colorsOf({ sleeve: 0x2b3f7a, glove: 0x1a1c26, bar: 0x8a94a4, band: 0xf2c94c })) : this.applyOutfit(); }
   }
   onCrouch(on) {
     $('sneakp').classList.toggle('hidden', !on);
