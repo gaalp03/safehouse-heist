@@ -74,6 +74,8 @@ Radio check-ins: a few seconds after a knockout the guard's radio calls "Unit, r
 
 Wardrobe checks: after investigating or searching nearby, a guard may walk over and check a wardrobe — if you're inside, you're caught; each wardrobe is checked at most every 15 s.
 
+Shift changes: on Normal a fresh guard walks in through the entrance at ~60 s and ~120 s (Hard/Ironman: 45 s / 90 s) and roams the building on random routes, so slow heists get harder. Off on Easy, Daily and the tutorial.
+
 Smarter guards: a guard who sees a knocked-out colleague runs over and revives them; a guard who spots the opened safe rushes over and raises the alarm (Normal/Hard).
 
 Bonus contracts: every run rolls 3 random side objectives (steal the painting, grab every jewel, lure a guard with a coin, no knockouts, never trigger the alarm, don't wake the owner, escape under 60s, never dash...). They are tracked live on the HUD, pay cash bonuses on the results screen and count toward an all-time total.

@@ -170,6 +170,22 @@ export class Game {
       const o = def.owner;
       mkGuard('owner', { path: o.patrol, wait: 1.2, speed: o.speed, loop: true, owner: o });
     }
+    // shift-change reinforcements: created now, kept off-stage until called in
+    {
+      const W = L.W, seen = new Uint8Array(W * L.H), q = [L.start.y * W + L.start.x];
+      seen[q[0]] = 1; this.entrance = { x: L.start.x, y: L.start.y };
+      while (q.length) {
+        const c = q.shift(), x = c % W, y = (c / W) | 0;
+        if (!L.outdoor[c] && L.walk[c]) { this.entrance = { x, y }; break; }
+        for (const [dx, dy] of [[0, -1], [1, 0], [-1, 0], [0, 1]]) { const k = (y + dy) * W + x + dx; if (x + dx >= 0 && y + dy >= 0 && x + dx < W && y + dy < L.H && !seen[k] && L.walk[k]) { seen[k] = 1; q.push(k); } }
+      }
+      this.reserve = [];
+      for (let i = 0; i < 2; i++) {
+        const e = this.entrance;
+        const g = mkGuard('guard', { roam: [1, 1, L.W - 2, L.H - 2], path: [[e.x, e.y], [e.x, e.y]], wait: 1.3, speed: 1.7, reinforce: true });
+        this.guards.pop(); this.reserve.push(g);
+      }
+    }
     // guard dogs
     this.dogs = (def.dogs || []).map((dd) => {
       const m = makeDog();
@@ -345,6 +361,12 @@ export class Game {
     for (const g of this.guards || []) g.knowsHide = false;
     squash(p.c, 1);
 
+    for (const g of this.reserve || []) {
+      const i = this.guards.indexOf(g);
+      if (i >= 0) this.guards.splice(i, 1);
+      g.c.root.visible = false; g.cone.visible = false; g.shadow.visible = false; g.stars.visible = false; g.badge.className = 'badge';
+    }
+    this.shiftN = 0;
     for (const g of this.guards) this.resetGuard(g);
     // pickpocket targets: every guard carries a wallet; one patrol guard carries a spare keycard
     this.picks = 0; this.pocketProg = 0; this.koHold = 0; this.koTarget = null;
@@ -542,6 +564,9 @@ export class Game {
     const playing = !demo && this.state === 'play';
     if (playing) {
       this.time += dt; this.updatePlayer(dt);
+      // shift change: reinforcements walk in from the entrance
+      const sched = this.app.mode === 'tutorial' || this.daily || this.D.label === 'Easy' ? [] : this.D.mult >= 1.5 ? [45, 90] : [60, 120];
+      if (this.shiftN < sched.length && this.time >= sched[this.shiftN] && this.reserve[this.shiftN]) this.callReinforcement(this.reserve[this.shiftN++]);
       // route recap: sample position + whether anyone is onto us
       this.trailT -= dt;
       if (this.trailT <= 0) {
@@ -1307,12 +1332,27 @@ export class Game {
     g.navGoal = -1;
   }
 
-  roamCell(z) {
+  callReinforcement(g) {
+    const app = this.app, e = this.entrance;
+    g.def.path = [[e.x, e.y], this.roamCell(g.def.roam, e.x, e.y)];
+    this.resetGuard(g);
+    g.wallet = 0; g.spareKey = false; g.walletMesh.visible = false; g.keyMesh.visible = false;
+    g.c.root.visible = true;
+    this.guards.push(g);
+    app.audio.play('radio');
+    app.announce('📻 Shift change! A new guard is on duty');
+    app.floaters.spawn('Reporting for duty!', g.x, 2.0, g.z, 'warn', 1.4);
+  }
+  roamCell(z, fx, fz) {
+    let tries = 0;
     for (let i = 0; i < 40; i++) {
       const x = z[0] + Math.floor(Math.random() * (z[2] - z[0] + 1)), y = z[1] + Math.floor(Math.random() * (z[3] - z[1] + 1));
-      if (this.walkable(x, y)) return [x, y];
+      if (!this.walkable(x, y) || this.L.outdoor[y * this.L.W + x]) continue;
+      // only accept targets the guard can actually reach (closed rooms / vaults are skipped)
+      if (fx !== undefined && (x !== fx || y !== fz)) { if (tries++ >= 8) break; if (!this.path(fx, fz, x, y).length) continue; }
+      return [x, y];
     }
-    return [z[0], z[1]];
+    return fx !== undefined ? [fx, fz] : [z[0], z[1]];
   }
   effRange(g) { return g.yawnT > 0 ? g.range * 0.35 : g.range; }
   canSee(g) {
@@ -1400,7 +1440,7 @@ export class Game {
         g.face = g.baseFace + Math.sin(k * 2.4) * 0.9;
         if (g.t <= 0) {
           const n = d.path.length;
-          if (d.roam) { d.path = [[Math.floor(g.x), Math.floor(g.z)], this.roamCell(d.roam)]; g.wp = 1; }
+          if (d.roam) { const fx = Math.floor(g.x), fz = Math.floor(g.z); d.path = [[fx, fz], this.roamCell(d.roam, fx, fz)]; g.wp = 1; }
           else if (d.loop) g.wp = (g.wp + 1) % n;
           else { if (g.wp + g.dir >= n || g.wp + g.dir < 0) g.dir *= -1; g.wp += g.dir; }
           g.state = 'patrol';

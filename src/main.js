@@ -589,6 +589,11 @@ class App {
     $('siren').classList.toggle('on', on);
     if (on) { this.lastAlarmS = -1; if (why) { const w = $('alarmwhy'); w.textContent = why; w.classList.remove('hidden'); w.style.animation = 'none'; void w.offsetWidth; w.style.animation = ''; clearTimeout(this.whyT); this.whyT = setTimeout(() => w.classList.add('hidden'), 2600); } }
   }
+  announce(text) {
+    const w = $('alarmwhy'); w.textContent = text; w.classList.remove('hidden');
+    w.style.animation = 'none'; void w.offsetWidth; w.style.animation = '';
+    clearTimeout(this.whyT); this.whyT = setTimeout(() => w.classList.add('hidden'), 3000);
+  }
   onAlarmTime(t) {
     const s = Math.ceil(t);
     if (s === this.lastAlarmS) return;
