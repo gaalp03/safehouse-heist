@@ -124,6 +124,7 @@ class App {
     for (const el of document.querySelectorAll('#diff button')) {
       el.addEventListener('click', (e) => {
         e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
+        if (el.dataset.d === 'ironman' && !this.ironUnlocked()) { this.audio.play('nope'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); return; }
         this.diff = el.dataset.d; this.save.diff = this.diff; SDK.store(this.save); this.showMenu();
       });
     }
@@ -218,7 +219,8 @@ class App {
     $('lvl4best').textContent = mu ? (mb ? 'Best ' + fmtMoney(mb.score) : 'New!') : 'Escape the Jewelry Store to unlock';
     $('lvl3best').textContent = ju ? (jb ? 'Best ' + fmtMoney(jb.score) : 'New!') : 'Escape the Bank to unlock';
     this.renderSel();
-    for (const el of document.querySelectorAll('#diff button')) el.classList.toggle('on', el.dataset.d === this.diff);
+    if (this.diff === 'ironman' && !this.ironUnlocked()) this.diff = 'normal';
+    for (const el of document.querySelectorAll('#diff button')) { el.classList.toggle('on', el.dataset.d === this.diff); if (el.dataset.d === 'ironman') { el.classList.toggle('lock', !this.ironUnlocked()); el.title = this.ironUnlocked() ? 'Ironman: x2.5 score, 1 coin, no smoke, 15s police' : 'Escape any heist on Hard to unlock'; } }
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
     $('lvl1best').textContent = b ? 'Best ' + fmtMoney(b.score) : 'New!';
     this.daily = todaysDaily();
@@ -302,7 +304,7 @@ class App {
     $('bPlay').textContent = locked ? '🔒 LOCKED' : 'PLAY';
     $('bPlay').classList.toggle('dis', locked);
     let tot = 0;
-    for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino']) tot += Math.max(...['', '_easy', '_hard'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
+    for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
     $('starTotal').textContent = `★ ${tot}/15`;
   }
   playSel() {
@@ -360,19 +362,22 @@ class App {
   }
   casinoUnlocked() {
     const b = this.save.best;
-    return !!(b.museum || b.museum_easy || b.museum_hard || this.save.casinoOpen);
+    return !!(b.museum || b.museum_easy || b.museum_hard || b.museum_ironman || this.save.casinoOpen);
   }
   museumUnlocked() {
     const b = this.save.best;
-    return !!(b.jewelry || b.jewelry_easy || b.jewelry_hard || this.save.museumOpen);
+    return !!(b.jewelry || b.jewelry_easy || b.jewelry_hard || b.jewelry_ironman || this.save.museumOpen);
   }
   jewelryUnlocked() {
     const b = this.save.best;
-    return !!(b.bank || b.bank_easy || b.bank_hard || this.save.jewelryOpen);
+    return !!(b.bank || b.bank_easy || b.bank_hard || b.bank_ironman || this.save.jewelryOpen);
+  }
+  ironUnlocked() {
+    return Object.keys(this.save.best).some((k) => k.endsWith('_hard') || k.endsWith('_ironman'));
   }
   bankUnlocked() {
     const b = this.save.best;
-    return !!(b.safehouse || b.safehouse_easy || b.safehouse_hard || this.save.bankOpen);
+    return !!(b.safehouse || b.safehouse_easy || b.safehouse_hard || b.safehouse_ironman || this.save.bankOpen);
   }
   async useLevel(i) {
     if (this.loadedIdx === i) return;

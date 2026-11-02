@@ -56,7 +56,7 @@ Settings (⚙ on the menu, or from pause): look sensitivity, field of view, musi
 
 Daily Challenge: one seeded run per day (Normal rules) with a mutator of the day (Paranoid Guards, Insomniac Owner, Gold Rush, Butterfingers, Rapid Response, Hungry Hound) and fixed contracts; separate daily best and a day streak.
 
-Difficulty: Easy / Normal / Hard (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.
+Difficulty: Easy / Normal / Hard / Ironman (unlocks after any Hard escape: sharper and faster guards, 1 coin, no smoke, 15 s police, ×2.5 score) (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.
 
 Guard dog: roams the kitchen and east hallway, follows your scent trail, barks when it finds you (pulls nearby guards in) and sniffs out wardrobes so a guard can drag you out. Throw a coin and it runs off to sniff it. Contract: don't get barked at.
 

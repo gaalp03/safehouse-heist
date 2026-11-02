@@ -148,7 +148,9 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
 #diff{display:flex;gap:0;border:4px solid var(--ink);border-radius:14px;overflow:hidden;box-shadow:0 4px 0 var(--ink)}
 #diff button{font:inherit;font-size:15px;padding:8px 16px;border:0;background:#e9dcc6;color:#5a4a6a;cursor:pointer}
 #diff button+button{border-left:3px solid var(--ink)}
-#diff button.on[data-d=easy]{background:#8ff0c4;color:var(--ink)}#diff button.on[data-d=normal]{background:#ffc94a;color:var(--ink)}#diff button.on[data-d=hard]{background:#ff6a7a;color:#fff}
+#diff button.on[data-d=easy]{background:#8ff0c4;color:var(--ink)}#diff button.on[data-d=normal]{background:#ffc94a;color:var(--ink)}#diff button{white-space:nowrap}@media (max-width:640px){#diff button{padding:8px 10px;font-size:13px}}
+#diff button.on[data-d=ironman]{background:linear-gradient(180deg,#5a6474,#2a2f3a);color:#ffc94a}#diff button.lock{opacity:.45}#diff button.shake{animation:shakeX .35s}
+#diff button.on[data-d=hard]{background:#ff6a7a;color:#fff}
 #outfits{justify-content:flex-start;padding-top:18px;background:linear-gradient(180deg,rgba(28,19,48,.75),rgba(28,19,48,.1) 70%)}
 .of-panel{max-width:min(94vw,680px);gap:10px;padding:14px 18px}
 #ofGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
@@ -299,7 +301,7 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
     <div id="starTotal" class="o">★ 0/15</div>
   </div>
   <div id="selInfo"><b id="selName">Safe House</b><span id="selStars" class="stars"></span><small id="selSub"></small></div>
-  <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>
+  <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button><button data-d="ironman">🛡 IRON</button></div>
   <div class="row menurow"><button class="btn s" id="bTrophy">🏆 TROPHIES</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧤 OUTFITS</button></div>
   <button id="bTut" class="linkbtn o">🎓 Play the tutorial</button>
   <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Z sneak · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
