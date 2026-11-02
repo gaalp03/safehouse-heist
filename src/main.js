@@ -13,7 +13,7 @@ import { DIFFS, diffKey } from './difficulty.js';
 import { rankOf, xpForRun } from './rank.js';
 import { todaysJobs, recordJobs, jobDef, JOB_CASH, JOB_BONUS } from './jobs.js';
 import { GEAR, gearLv, nextPrice, gearMods } from './gear.js';
-import { todaysDaily, prevDayKey, nextDailyIn, dayKey as dayKeyNow, MUTATORS } from './daily.js';
+import { todaysDaily, prevDayKey, nextDailyIn, dayKey as dayKeyNow, MUTATORS, weekInfo } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
 import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
 import { TUT_STEPS } from './tutorial.js';
@@ -413,8 +413,9 @@ class App {
     const st = el.querySelector('.stars');
     $('selStars').innerHTML = st ? st.innerHTML : '';
     const dPlayed = !!(this.save.daily || {})[this.daily && this.daily.key];
+    const hotLine = k !== 'daily' && !locked && { lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6, lvl8: 7, lvl9: 8 }[k] === this.hotTarget() ? `🎯 HOT TARGET: double cash this week (${weekInfo().left} left)  ·  ` : '';
     const catLine = k !== 'daily' && !locked && this.save.tutDone ? ((this.save.cats || {})[LEVELS[{ lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6, lvl8: 7, lvl9: 8 }[k]].id] ? '  ·  🐱 cat found' : '  ·  🐱 a lucky cat is hidden here') : '';
-    $('selSub').textContent = k === 'daily' ? $('dDesc').textContent + ' · ' + $('dBest').textContent + (dPlayed ? ` · new Daily in ${nextDailyIn()}` : '') : el.querySelector('.best').textContent + catLine;
+    $('selSub').textContent = k === 'daily' ? $('dDesc').textContent + ' · ' + $('dBest').textContent + (dPlayed ? ` · new Daily in ${nextDailyIn()}` : '') : hotLine + el.querySelector('.best').textContent + catLine;
     // next goal: missing stars on this heist + the next outfit unlock
     const goals = [];
     if (!locked && k !== 'daily' && this.save.tutDone) {
@@ -438,7 +439,8 @@ class App {
     let tot = 0;
     for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train', 'warehouse', 'mansion']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
     $('starTotal').textContent = `★ ${tot}/27`;
-    LEVELS.forEach((l, i) => { const el = $('lvl' + (i + 1)); if (el) el.classList.toggle('gold', !!(this.save.mastered || {})[l.id]); });
+    const ht = this.hotTarget();
+    LEVELS.forEach((l, i) => { const el = $('lvl' + (i + 1)); if (el) { el.classList.toggle('gold', !!(this.save.mastered || {})[l.id]); el.classList.toggle('hot', i === ht); } });
     { const c = this.save.cash || 0, k = c >= 1e6 ? (c / 1e6).toFixed(1) + 'M' : c >= 1e3 ? (c / 1e3).toFixed(c >= 1e4 ? 0 : 1) + 'k' : String(c); $('bOutfit').innerHTML = `🧰 LOCKER${c ? ` <small>$${k}</small>` : ''}`; }
     { const J = todaysJobs(this.save), n = J.ids.filter((x) => J.done[x]).length; $('bTrophy').innerHTML = this.save.tutDone ? `📋 JOBS <small>${n}/3</small>` : '🏆 TROPHIES'; }
     $('bOutfit').classList.toggle('pulse', this.save.tutDone && this.canAffordGear());
@@ -496,6 +498,12 @@ class App {
     $('soonName').textContent = 'More heists';
     $('soonList').innerHTML = ['Armored truck ambush', 'Diamond exchange', 'Harbor yacht party'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
+  }
+  hotTarget() {
+    const open = LEVELS.map((l, i) => i).filter((i) => this.levelUnlocked(i));
+    if (open.length < 2) return -1;
+    const pool = open.filter((i) => i > 0), w = weekInfo().week;
+    return pool[((w * 2654435761) >>> 0) % pool.length];
   }
   todays() {
     const d = todaysDaily(LEVELS.map((l, idx) => ({ idx, owner: !!l.owner, dog: !!l.dog })).filter((l) => this.levelUnlocked(l.idx)));
@@ -1060,8 +1068,9 @@ class App {
     this.awardXP(true, res.score, res.loot, 'rXP');
     const jt = this.jobsToast(recordJobs(this.save, this.runRecord(true, res)));
     const hs = this.mode === 'tutorial' ? 0 : (this.save.hot = (this.save.hot || 0) + 1), hb = Math.min(0.5, 0.1 * Math.max(0, hs - 1)), extra = Math.round(res.score * hb);
-    this.save.cash = (this.save.cash || 0) + res.score + extra;
-    $('rCash').textContent = `💰 +${fmtMoney(res.score + extra)} to your stash${extra ? ` (🔥 streak ${hs}: +${Math.round(hb * 100)}%)` : ''} · ${fmtMoney(this.save.cash)}${this.canAffordGear() ? ' · 🧰 new gear!' : ''}`;
+    const hot = this.mode === 'classic' && this.levelIdx === this.hotTarget() ? res.score : 0;
+    this.save.cash = (this.save.cash || 0) + res.score + extra + hot;
+    $('rCash').textContent = `💰 +${fmtMoney(res.score + extra + hot)} to your stash${hot ? ' (🎯 hot target ×2)' : ''}${extra ? ` (🔥 streak ${hs}: +${Math.round(hb * 100)}%)` : ''} · ${fmtMoney(this.save.cash)}${this.canAffordGear() ? ' · 🧰 new gear!' : ''}`;
     const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
     this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
     this.showAchToast(freshA);

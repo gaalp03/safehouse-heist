@@ -199,7 +199,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 .pin b{font-size:12px;text-shadow:0 2px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink);white-space:nowrap;margin-top:3px}
 .pin .stars span{font-size:11px}.pin .best{display:none}
 .pin.lock .art{background:linear-gradient(135deg,#7d8bb8,#4b5585);filter:saturate(.6)}.pin.lock b{opacity:.65}
-.pin.on .art{transform:scale(1.22) translateY(-3px);box-shadow:0 0 0 4px #ffc94a,0 4px 0 var(--ink)}.pin.gold .art{background:linear-gradient(135deg,#fff1b8,#ffc94a 55%,#e8962a);box-shadow:0 0 0 3px #fff1b8,0 0 14px 4px rgba(255,201,74,.7),0 4px 0 var(--ink)}.pin.gold .art::before{content:'🏅';position:absolute;right:-10px;top:-10px;font-size:14px}
+.pin.on .art{transform:scale(1.22) translateY(-3px);box-shadow:0 0 0 4px #ffc94a,0 4px 0 var(--ink)}.pin.gold .art{background:linear-gradient(135deg,#fff1b8,#ffc94a 55%,#e8962a);box-shadow:0 0 0 3px #fff1b8,0 0 14px 4px rgba(255,201,74,.7),0 4px 0 var(--ink)}.pin.hot .t::before{content:'🎯×2';display:inline-block;margin-right:4px;border:2px solid var(--ink);border-radius:6px;background:#ff4f5e;color:#fff;font-size:10px;padding:0 4px;text-shadow:none;animation:unl .7s infinite alternate}.pin.hot .art{box-shadow:0 0 0 3px #ff4f5e,0 4px 0 var(--ink)}.pin.gold .art::before{content:'🏅';position:absolute;right:-10px;top:-10px;font-size:14px}
 .pin:not(.lock):hover .art{transform:scale(1.12)}
 .pin.daily .art{background:linear-gradient(135deg,#7b5cff,#ff6aa8);font-size:12px;animation:rdy .8s infinite alternate}
 .pin.daily .art small{display:none}.pin.daily.done .art{animation:none;filter:saturate(.6)}
@@ -368,17 +368,17 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
       <g stroke="#3a4570" fill="none" style="stroke-width:6px" vector-effect="non-scaling-stroke">
         <path d="M0 21 H100 M0 63 H100 M0 83 H100 M20 0 V100 M44 0 V100 M62 0 V100 M80 0 V100" vector-effect="non-scaling-stroke"/>
       </g>
-      <path id="route" d="M16 74 L40 40 L64 52 L84 17 L87 47 L34 82 L56 83 L77 83 L56 24" stroke="#ffc94a" fill="none" stroke-dasharray="2 2" vector-effect="non-scaling-stroke" style="stroke-width:3px;stroke-dasharray:8 7;opacity:.9"/>
+      <path id="route" d="M16 74 L40 40 L64 52 L84 23 L88 54 L34 82 L56 83 L77 83 L56 24" stroke="#ffc94a" fill="none" stroke-dasharray="2 2" vector-effect="non-scaling-stroke" style="stroke-width:3px;stroke-dasharray:8 7;opacity:.9"/>
     </svg>
     <button class="pin" id="lvl1" style="left:16%;top:74%"><i class="art">🏠</i><b class="t">Safe House</b><span class="stars" id="lvl1stars"></span><span class="best" id="lvl1best">New!</span></button>
     <button class="pin lock" id="lvl2" style="left:40%;top:40%"><i class="art" id="lvl2art">🔒</i><b class="t">The Bank</b><span class="stars" id="lvl2stars"></span><span class="best" id="lvl2best">Escape Safe House to unlock</span></button>
     <button class="pin lock" id="lvl3" style="left:64%;top:52%"><i class="art" id="lvl3art">🔒</i><b class="t">Jewelry Store</b><span class="stars" id="lvl3stars"></span><span class="best" id="lvl3best">Escape the Bank to unlock</span></button>
-    <button class="pin lock" id="lvl4" style="left:84%;top:17%"><i class="art" id="lvl4art">🔒</i><b class="t">The Museum</b><span class="stars" id="lvl4stars"></span><span class="best" id="lvl4best">Escape the Jewelry Store to unlock</span></button>
+    <button class="pin lock" id="lvl4" style="left:84%;top:23%"><i class="art" id="lvl4art">🔒</i><b class="t">The Museum</b><span class="stars" id="lvl4stars"></span><span class="best" id="lvl4best">Escape the Jewelry Store to unlock</span></button>
     <button class="pin lock" id="lvl6" style="left:34%;top:82%"><i class="art" id="lvl6art">🔒</i><b class="t">The Penthouse</b><span class="stars" id="lvl6stars"></span><span class="best" id="lvl6best">Escape the Casino to unlock</span></button>
     <button class="pin lock" id="lvl7" style="left:56%;top:83%"><i class="art" id="lvl7art">🔒</i><b class="t">Night Train</b><span class="stars" id="lvl7stars"></span><span class="best" id="lvl7best">Escape the Penthouse to unlock</span></button>
     <button class="pin lock" id="lvl8" style="left:77%;top:83%"><i class="art" id="lvl8art">🔒</i><b class="t">The Warehouse</b><span class="stars" id="lvl8stars"></span><span class="best" id="lvl8best">Escape the Night Train to unlock</span></button>
     <button class="pin lock" id="lvl9" style="left:56%;top:24%"><i class="art" id="lvl9art">🔒</i><b class="t">Mansion Gala</b><span class="stars" id="lvl9stars"></span><span class="best" id="lvl9best">Escape the Warehouse to unlock</span></button>
-    <button class="pin lock" id="lvl5" style="left:87%;top:47%"><i class="art" id="lvl5art">🔒</i><b class="t">The Casino</b><span class="stars" id="lvl5stars"></span><span class="best" id="lvl5best">Escape the Museum to unlock</span></button>
+    <button class="pin lock" id="lvl5" style="left:88%;top:54%"><i class="art" id="lvl5art">🔒</i><b class="t">The Casino</b><span class="stars" id="lvl5stars"></span><span class="best" id="lvl5best">Escape the Museum to unlock</span></button>
     <button class="pin daily" id="daily" style="left:14%;top:26%"><i class="art" id="dArt"></i><b class="t">Daily</b><span class="best" id="dBest"></span><span class="hidden" id="dMut">—</span><span class="hidden" id="dDesc"></span></button>
     <div id="starTotal" class="o">★ 0/15</div><div id="rankChip" class="o"></div>
   </div>

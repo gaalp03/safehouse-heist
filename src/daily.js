@@ -38,3 +38,12 @@ export function nextDailyIn() {
   const s = Math.max(0, (m - n) / 1000), h = Math.floor(s / 3600), mi = Math.floor((s % 3600) / 60);
   return h ? `${h}h ${mi}m` : `${mi}m`;
 }
+
+// weekly "hot target": week number since epoch (Mondays, local time) + time until it rotates
+export function weekInfo() {
+  const n = new Date(), d = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  const dow = (d.getDay() + 6) % 7, mon = new Date(d); mon.setDate(d.getDate() - dow);
+  const week = Math.round(mon.getTime() / 864e5 / 7), next = new Date(mon); next.setDate(mon.getDate() + 7);
+  const left = Math.max(0, next - n), days = Math.floor(left / 864e5), hrs = Math.floor((left % 864e5) / 36e5);
+  return { week, left: days ? `${days}d ${hrs}h` : `${hrs}h` };
+}
