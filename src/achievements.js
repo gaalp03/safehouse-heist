@@ -24,6 +24,8 @@ export const ACH = [
   { id: 'photo', icon: '🚨', name: 'Photo Finish', desc: 'Escape with under 10 s left on the police timer', check: (s, r) => r.win && r.photo },
   { id: 'mansion', icon: '🥂', name: 'Party Crasher', desc: 'Escape from the Mansion Gala', check: (s, r) => r.win && r.level === 'mansion' },
   { id: 'courier', icon: '💼', name: 'Special Delivery', desc: 'Grab a golden briefcase', check: (s, r) => (r.briefs || 0) > 0 },
+  { id: 'cats', icon: '🐱', name: 'Cat Collector', desc: 'Find all 9 hidden lucky cats', check: (s, r, save) => Object.keys(save.cats || {}).length >= 9 },
+  { id: 'cat1', icon: '🐾', name: 'Curious', desc: 'Find a hidden lucky cat', check: (s, r, save) => Object.keys(save.cats || {}).length >= 1 },
   { id: 'casino', icon: '🎰', name: 'High Roller', desc: 'Escape from the Casino', check: (s, r) => r.win && r.level === 'casino' },
   { id: 'pick10', icon: '👛', name: 'Sticky Fingers', desc: 'Pickpocket 10 guards (total)', check: (s) => (s.picks || 0) >= 10 },
   { id: 'iron', icon: '🛡️', name: 'Iron Will', desc: 'Escape on Ironman', check: (s, r) => r.win && r.diff === 'ironman' },

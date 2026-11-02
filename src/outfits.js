@@ -11,6 +11,7 @@ export const OUTFITS = [
   { id: 'gala', name: 'Gala Night', sleeve: 0xf4f1ea, glove: 0x17161d, bar: 0xd9b45a, band: 0xb33951, ach: 'mansion' },
   { id: 'chain', name: 'Gold Chain', sleeve: 0x2a2c3d, glove: 0xe8b33a, bar: 0xffd75a, band: 0xe8b33a, ach: 'loyal' },
   { id: 'dock', name: 'Dockhand', sleeve: 0xc9562a, glove: 0x3a3f4a, bar: 0x5a6a7a, band: 0xf2c94c, ach: 'warehouse' },
+  { id: 'lucky', name: 'Lucky Cat', sleeve: 0xffc23a, glove: 0xf4f1ea, bar: 0xe8303e, band: 0xe8303e, ach: 'cats' },
   { id: 'royal', name: 'Royal', sleeve: 0x6a4ad8, glove: 0xd9b45a, bar: 0xe8b33a, band: 0xd9b45a, need: 6 },
   { id: 'golden', name: 'Golden Boy', sleeve: 0xe8b33a, glove: 0xf2d48a, bar: 0xffd75a, band: 0xffffff, need: 10 },
 ];

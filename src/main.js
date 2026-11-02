@@ -405,7 +405,8 @@ class App {
     const st = el.querySelector('.stars');
     $('selStars').innerHTML = st ? st.innerHTML : '';
     const dPlayed = !!(this.save.daily || {})[this.daily && this.daily.key];
-    $('selSub').textContent = k === 'daily' ? $('dDesc').textContent + ' · ' + $('dBest').textContent + (dPlayed ? ` · new Daily in ${nextDailyIn()}` : '') : el.querySelector('.best').textContent;
+    const catLine = k !== 'daily' && !locked && this.save.tutDone ? ((this.save.cats || {})[LEVELS[{ lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6, lvl8: 7, lvl9: 8 }[k]].id] ? '  ·  🐱 cat found' : '  ·  🐱 a lucky cat is hidden here') : '';
+    $('selSub').textContent = k === 'daily' ? $('dDesc').textContent + ' · ' + $('dBest').textContent + (dPlayed ? ` · new Daily in ${nextDailyIn()}` : '') : el.querySelector('.best').textContent + catLine;
     // next goal: missing stars on this heist + the next outfit unlock
     const goals = [];
     if (!locked && k !== 'daily' && this.save.tutDone) {
@@ -850,6 +851,16 @@ class App {
   onHide(on) {
     $('slats').classList.toggle('hidden', !on);
     $('xh').classList.toggle('hidden', on);
+  }
+  foundCat(sc) {
+    sc.mesh.visible = false; sc.got = true;
+    const cats = (this.save.cats = this.save.cats || {}); cats[this.level.id] = 1;
+    const n = Object.keys(cats).length;
+    this.save.cash = (this.save.cash || 0) + 1000; SDK.store(this.save);
+    this.floaters.spawn(`🐱 LUCKY CAT ${n}/${LEVELS.length}! +$1,000`, sc.x, 1.3, sc.z, 'big', 1.8);
+    this.announce(`🐱 Secret found! Lucky cat ${n}/${LEVELS.length} (+$1,000 to your stash)`);
+    this.audio.play('jackpot'); this.flash('gold'); this.shake.add(0.2);
+    this.particles.burst(sc.x, 0.4, sc.z, { count: 24, colors: [0xffd23f, 0xffffff, 0xff9ec4], speed: 3, up: 4, size: 0.08, life: 0.9 });
   }
   onBrief(t) {
     const el = $('briefp'), s = Math.ceil(t), k = String(s);

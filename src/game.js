@@ -160,6 +160,28 @@ export class Game {
       return { scr, glow, cx, cz, fx: cx - bk[0] * (D / 2 + 0.9), fz: cz - bk[1] * (D / 2 + 0.9), on: false, used: false, t: 0, flick: 0, babble: 0 };
     });
     this.heli = def.heli ? buildHeli() : null;
+    { // secret lucky cat: tucked into the farthest reachable indoor corner from the start
+      const W2 = L.W, seen = new Int32Array(L.W * L.H).fill(-1), q = [L.start.y * W2 + L.start.x]; seen[q[0]] = 0;
+      const pass = (k) => L.walk[k] || L.doors.some((d) => d.y * W2 + d.x === k);
+      let far = q[0];
+      for (let h = 0; h < q.length; h++) { const c = q[h], x = c % W2, y = (c / W2) | 0;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, k = ny * W2 + nx; if (nx < 0 || ny < 0 || nx >= W2 || ny >= L.H || seen[k] >= 0 || !pass(k)) continue; seen[k] = seen[c] + 1; q.push(k); if (!L.outdoor[k] && L.walk[k] && !L.loot.some((l) => l.y * W2 + l.x === k) && seen[k] > seen[far]) far = k; } }
+      const cx = (far % W2) + 0.5, cz = ((far / W2) | 0) + 0.5, gold = 0xf0a01a, dk = 0xb8700a;
+      const gb = new GeoBuilder();
+      gb.box(0, 0, 0, 0.24, 0.05, 0.2, 0x9a1f3a, { faces: 63 });                       // cushion
+      gb.box(0, 0.05, 0, 0.18, 0.16, 0.14, gold, { faces: 63, top: 0xffc84a });        // body
+      gb.box(0, 0.2, 0.01, 0.16, 0.13, 0.13, gold, { faces: 63, top: 0xffc84a });      // head
+      for (const s of [-1, 1]) gb.box(s * 0.055, 0.33, 0.01, 0.04, 0.05, 0.04, dk, { faces: 63 }); // ears
+      gb.box(0.11, 0.22, 0.02, 0.05, 0.13, 0.05, gold, { faces: 63 });                 // raised paw
+      for (const s of [-1, 1]) gb.box(s * 0.035, 0.27, 0.076, 0.02, 0.02, 0.01, 0x1c1330, { faces: 16 }); // eyes
+      gb.box(0, 0.12, 0.072, 0.07, 0.06, 0.01, 0xe8303e, { faces: 16 });               // bib
+      gb.box(0, 0.11, 0.078, 0.03, 0.03, 0.01, 0xfff1c0, { faces: 16 });               // coin
+      const cat = new Mesh(gb.build(), new MeshBasicMaterial({ vertexColors: true }));
+      cat.position.set(cx, 0.02, cz); cat.scale.setScalar(1.6); this.root.add(cat);
+      // face the open side of the corner (toward the walkable neighbour with most space)
+      let face = 0, best = -1; for (const [dx, dz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { let n = 0; for (let k = 1; k < 4; k++) if (this.walkable(Math.floor(cx + dx * k), Math.floor(cz + dz * k))) n++; else break; if (n > best) { best = n; face = Math.atan2(dx, dz); } }
+      this.secret = { mesh: cat, x: cx, z: cz, face };
+    }
     { // golden briefcase (timed bonus event)
       const gb = new GeoBuilder(), gold = 0xf0b02a;
       gb.box(0, 0, 0, 0.56, 0.4, 0.16, gold, { faces: 63, top: 0xffd75a });
@@ -453,6 +475,7 @@ export class Game {
     this.chatT = 6 + Math.random() * 6; this.chatQ = null; this.chatI = Math.floor(Math.random() * 20);
     this.boltT = 8 + Math.random() * 8; this.thunderIn = 0; this.thunderT = 0;
     if (this.heli) this.heli.group.visible = false;
+    if (this.secret) { this.secret.got = false; this.secret.mesh.visible = !(this.app.save.cats || {})[this.def.id] && this.app.mode !== 'tutorial'; }
     this.brief = null; this.briefsGot = 0; this.app.onBrief && this.app.onBrief(0); if (this.briefcase) this.briefcase.group.visible = false;
     this.briefAt = this.app.mode === 'classic' && Math.random() < 0.55 ? 18 + Math.random() * 30 : Infinity;
     for (const v of this.vents || []) v.flap.rotation.x = 0;
@@ -669,6 +692,12 @@ export class Game {
       if (this.disguiseT > 0) { this.disguiseT -= dt; this.app.onDisguise(Math.max(0, this.disguiseT)); if (this.disguiseT <= 0) { this.app.audio.play('lost'); this.app.floaters.spawn('Disguise worn off', this.player.x, 1.6, this.player.z, 'warn', 1.2); } }
       if (this.tvs.length) this.updateTVs(dt);
       this.updateBriefcase(dt);
+      const sc = this.secret;
+      if (sc && sc.mesh.visible) {
+        sc.mesh.rotation.y = sc.face + Math.sin(this.t * 1.5) * 0.4;
+        if (Math.random() < dt * 2) this.app.particles.burst(sc.x, 0.45, sc.z, { count: 1, colors: [0xffe680, 0xffffff], speed: 0.2, up: 0.4, size: 0.04, gravity: 0, life: 0.6 });
+        if (Math.hypot(this.player.x - sc.x, this.player.z - sc.z) < 0.8) this.app.foundCat(sc);
+      }
       if (this.shiftN < sched.length && this.time >= sched[this.shiftN] && this.reserve[this.shiftN]) this.callReinforcement(this.reserve[this.shiftN++]);
       // route recap: sample position + whether anyone is onto us
       this.trailT -= dt;
