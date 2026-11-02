@@ -396,6 +396,7 @@ class App {
     let tot = 0;
     for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train', 'warehouse']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
     $('starTotal').textContent = `★ ${tot}/24`;
+    LEVELS.forEach((l, i) => { const el = $('lvl' + (i + 1)); if (el) el.classList.toggle('gold', !!(this.save.mastered || {})[l.id]); });
     $('wchip').textContent = this.save.cash ? '💰 ' + fmtMoney(this.save.cash) : '';
     $('bOutfit').classList.toggle('pulse', this.save.tutDone && this.canAffordGear());
     { const r = rankOf(this.save.xp || 0); $('rankChip').innerHTML = `🎖 ${r.name}<i style="width:${(r.frac * 100).toFixed(0)}%"></i>`; $('rankChip').title = r.next ? `${r.toNext} XP to ${r.next}` : 'Max rank'; }
@@ -908,6 +909,10 @@ class App {
       prev = this.save.best[bk] || { score: 0, stars: 0 };
       newBest = res.score > prev.score;
       this.save.best[bk] = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
+      // first 3-star clear of a heist (any difficulty): gold pin + one-time cash reward
+      const mastered = (this.save.mastered = this.save.mastered || {});
+      this.justMastered = nStars >= 3 && this.mode === 'classic' && !mastered[this.level.id];
+      if (this.justMastered) { mastered[this.level.id] = 1; this.save.cash = (this.save.cash || 0) + 2000; }
       bestScore = this.save.best[bk].score;
       const gh = this.ghost, faster = !gh || res.time < gh.t;
       this.ghostMsg = gh ? (faster ? `👻 Beat your ghost by ${(gh.t - res.time).toFixed(1)}s!` : `👻 Ghost was ${(res.time - gh.t).toFixed(1)}s faster`) : '';
@@ -951,6 +956,7 @@ class App {
       setTimeout(() => { if (this.state === 'result') { this.audio.play('contract'); this.shake.add(0.15); } }, 1500);
     }
     this.nextWasLocked = false;
+    if (this.justMastered) { $('rAch').innerHTML = `<span class="unlock">🏅 Heist mastered! +$2,000 bonus</span><br>` + $('rAch').innerHTML; $('rAch').classList.remove('hidden'); this.justMastered = false; }
     if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
     this.screen('result');
