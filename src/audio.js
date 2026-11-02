@@ -133,6 +133,14 @@ export class Audio {
         N(0.25, { vol: 0.5, freq: 900, type: 'lowpass', q: 0.5 });
         N(2.8, { vol: 0.55, freq: 220, slide: 60, type: 'lowpass', q: 0.7, attack: 0.08 });
         N(1.6, { vol: 0.3, freq: 120, type: 'lowpass', delay: 0.5, attack: 0.3 }); break;
+      case 'tvon': T(60, 0.4, { type: 'sawtooth', vol: 0.06 }); N(0.35, { vol: 0.12, freq: 5000, type: 'highpass', delay: 0.05 }); break;
+      case 'tv': {
+        const v = Math.max(0.05, p);
+        T(180 + Math.random() * 260, 0.1 + Math.random() * 0.08, { type: 'sawtooth', vol: 0.035 * v, slide: 150 + Math.random() * 300 });
+        if (Math.random() < 0.3) T(600 + Math.random() * 500, 0.08, { type: 'triangle', vol: 0.03 * v, delay: 0.05 });
+        N(0.12, { vol: 0.03 * v, freq: 1600, q: 2 });
+        break;
+      }
       case 'vent':
         T(140, 0.12, { type: 'square', vol: 0.12 }); N(0.12, { vol: 0.3, freq: 2200, q: 3 });
         for (let i = 0; i < 9; i++) N(0.11, { vol: 0.16, freq: 600 + (i % 3) * 250, q: 4, delay: 0.25 + i * 0.14 });

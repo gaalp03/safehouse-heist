@@ -482,6 +482,7 @@ class App {
     if (g.cases.length) it.push('💎 Display cases');
     if (g.slots.length) it.push('🎰 Slot machines');
     if (g.vents.length) it.push('🕳️ Air vent');
+    if (g.tvs.length) it.push('📺 TV lure');
     if ((d.cameras || []).length) it.push(`📹 ${d.cameras.length} camera${d.cameras.length > 1 ? 's' : ''}`);
     it.push(d.heli ? '🚁 Roof extraction' : L.van ? '🚐 Van out front' : '🪜 Roof hatch exit');
     const t = $('ctoast');
@@ -600,14 +601,14 @@ class App {
   setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
     const sn = (this.level && this.level.safeName ? this.level.safeName : 'safe').toUpperCase();
-    const txt = kind === 'slot' ? (t ? 'HOLD ✋ TO PULL THE LEVER' : 'HOLD E: PULL THE LEVER') : kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'vent' ? (t ? 'TAP ✋ TO CRAWL IN' : 'E: CRAWL INTO THE VENT') : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'pocket' ? (t ? 'TAP ✋ KO · HOLD ✋ PICKPOCKET' : 'TAP E: KO · HOLD E: PICKPOCKET') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
+    const txt = kind === 'slot' ? (t ? 'HOLD ✋ TO PULL THE LEVER' : 'HOLD E: PULL THE LEVER') : kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'tv' ? (t ? 'TAP ✋ TO TURN THE TV ON' : 'E: TURN THE TV ON (LURE)') : kind === 'vent' ? (t ? 'TAP ✋ TO CRAWL IN' : 'E: CRAWL INTO THE VENT') : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'pocket' ? (t ? 'TAP ✋ KO · HOLD ✋ PICKPOCKET' : 'TAP E: KO · HOLD E: PICKPOCKET') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.textContent = txt;
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind);
-      this.els.bAct.lastChild.textContent = kind === 'pocket' ? 'KO / LIFT' : kind === 'slot' ? 'PULL' : kind === 'radio' ? 'ANSWER' : kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'vent' ? 'CRAWL' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
+      this.els.bAct.lastChild.textContent = kind === 'pocket' ? 'KO / LIFT' : kind === 'slot' ? 'PULL' : kind === 'radio' ? 'ANSWER' : kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'tv' ? 'TV ON' : kind === 'vent' ? 'CRAWL' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
     if ((kind === 'safe' || kind === 'panel' || kind === 'breaker' || kind === 'case' || kind === 'radio' || kind === 'slot' || kind === 'pocket') && prog > 0) {
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));

@@ -23,6 +23,8 @@ const LEAF = [0x4c9a46, 0x5cb054, 0x3f8a48, 0x6cbf5a];
 export const lootMat = () => new MeshLambertMaterial({ vertexColors: true, emissive: 0x2a2010 });
 
 // ---------------------------------------------------------------- props
+// which side of a prop faces the wall (its back); the front faces away
+export function propBack(L, f) { return propFrame(L, f, null, null).back; }
 function propFrame(L, f, B, forceBack) {
   const { W: GW, H: GH, ch } = L;
   const isWall = (x, y) => x < 0 || y < 0 || x >= GW || y >= GH || ch[y * GW + x] === '#';
@@ -46,7 +48,7 @@ function propFrame(L, f, B, forceBack) {
     const [x, z] = wpos(lx, lz);
     bld.box(x, y, z, w, h, d, col, { ...o, ry: (o.ry || 0) + rot });
   };
-  return { b, W, D, rot, wpos };
+  return { b, W, D, rot, wpos, back };
 }
 
 function furniture(L, f, B, rng, lights) {

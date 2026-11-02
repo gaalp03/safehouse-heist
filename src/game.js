@@ -1,11 +1,11 @@
 // Gameplay: player, guards (vision cones, suspicion, chase, noise), loot, safe, escape, scoring.
 import {
   Group, Mesh, MeshBasicMaterial, InstancedMesh, BufferGeometry, BufferAttribute, CircleGeometry, RingGeometry,
-  CylinderGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial, ConeGeometry, AdditiveBlending,
+  CylinderGeometry, PlaneGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial, ConeGeometry, AdditiveBlending,
 } from 'three';
 import { textures } from './textures.js';
 import { parseLevel } from './level.js';
-import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, buildHeli, buildVent, WALL_H } from './world.js';
+import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, buildHeli, buildVent, propBack, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
@@ -123,6 +123,18 @@ export class Game {
       ends[0].other = ends[1]; ends[1].other = ends[0];
       this.vents.push(...ends);
     }
+    // TVs you can switch on as a distraction (a guard comes over to turn it off)
+    this.tvs = L.furn.filter((f) => f.type === 'tv').map((f) => {
+      const bk = propBack(L, f), rot = Math.atan2(-bk[0], -bk[1]), W = bk[0] ? f.d : f.w, D = bk[0] ? f.w : f.d;
+      const cx = f.x0 + f.w / 2, cz = f.y0 + f.d / 2;
+      const scr = new Mesh(new PlaneGeometry(W - 0.52, 0.8), new MeshBasicMaterial({ color: 0x9fd0ff, toneMapped: false }));
+      scr.position.set(cx + bk[0] * 0.15, 1.07, cz + bk[1] * 0.15); scr.rotation.y = rot;
+      const glow = new Mesh(new PlaneGeometry(3.2, 2.2), new MeshBasicMaterial({ map: textures().glow, color: 0x6fa8ff, transparent: true, opacity: 0.5, depthWrite: false, blending: AdditiveBlending, fog: false }));
+      glow.position.set(cx - bk[0] * 0.7, 0.03, cz - bk[1] * 0.7); glow.rotation.x = -Math.PI / 2;
+      scr.visible = glow.visible = false;
+      this.root.add(scr, glow);
+      return { scr, glow, cx, cz, fx: cx - bk[0] * (D / 2 + 0.9), fz: cz - bk[1] * (D / 2 + 0.9), on: false, used: false, t: 0, flick: 0, babble: 0 };
+    });
     this.heli = def.heli ? buildHeli() : null;
     if (this.heli) this.root.add(this.heli.group);
     this.van = buildVan();
@@ -385,6 +397,8 @@ export class Game {
     this.boltT = 8 + Math.random() * 8; this.thunderIn = 0; this.thunderT = 0;
     if (this.heli) this.heli.group.visible = false;
     for (const v of this.vents || []) v.flap.rotation.x = 0;
+    for (const tv of this.tvs || []) { tv.on = tv.used = false; tv.scr.visible = tv.glow.visible = false; }
+    this.tvLures = 0;
     this.ventsUsed = 0; this.player.venting = null;
     for (const g of this.guards) this.resetGuard(g);
     // pickpocket targets: every guard carries a wallet; one patrol guard carries a spare keycard
@@ -590,6 +604,7 @@ export class Game {
         this.app.announce('📻 "Relief guard arriving in 10 seconds" — grab what you can!');
       }
       if (this.def.rain) this.updateStorm(rdt);
+      if (this.tvs.length) this.updateTVs(dt);
       if (this.shiftN < sched.length && this.time >= sched[this.shiftN] && this.reserve[this.shiftN]) this.callReinforcement(this.reserve[this.shiftN++]);
       // route recap: sample position + whether anyone is onto us
       this.trailT -= dt;
@@ -852,6 +867,8 @@ export class Game {
       return;
     }
     if (nearBreaker && !nearSafe && !ko) { app.setPrompt('breaker', this.breakProg); this.updateObjective(); return; }
+    const tvN = !nearPanel && !nearSafe && !ko ? this.nearTV() : null;
+    if (tvN) { if (pressed) { this.tvOn(tvN); this.updateObjective(); return; } else { app.setPrompt('tv'); this.updateObjective(); return; } }
     const vent = !nearPanel && !nearSafe && !ko && !this.heavy.length ? this.nearVent() : null;
     if (vent) { app.hint('vent'); if (pressed) { this.enterVent(vent); return; } app.setPrompt('vent'); this.updateObjective(); return; }
     const hideOk = hide && !nearPanel && !nearSafe && !ko;
@@ -980,6 +997,43 @@ export class Game {
     inp.move(_mv);
     app.setPrompt('leave');
     if (p.hideT > 0.35 && (inp.consumeAct() || Math.hypot(_mv.x, _mv.y) > 0.5)) this.leaveHide(false);
+  }
+
+  // ---------- TVs ----------
+  nearTV() {
+    const p = this.player;
+    for (const tv of this.tvs) {
+      if (tv.on || tv.used) continue;
+      if (Math.hypot(p.x - tv.cx, p.z - tv.cz) < 1.9 && Math.abs(angDiff(p.face, Math.atan2(tv.cx - p.x, tv.cz - p.z))) < 0.7) return tv;
+    }
+    return null;
+  }
+  tvOn(tv) {
+    const app = this.app;
+    tv.on = true; tv.t = 0; tv.scr.visible = tv.glow.visible = true;
+    app.audio.play('click'); app.audio.play('tvon');
+    this.makeNoise(tv.fx, tv.fz, 7.5, null, 'Who turned the TV on?');
+    app.setPrompt('');
+  }
+  tvOff(tv, g) {
+    tv.on = false; tv.used = true; tv.scr.visible = tv.glow.visible = false;
+    this.app.audio.play('click');
+    if (g) { this.tvLures++; this.app.floaters.spawn('Stupid TV...', g.x, 2.0, g.z, 'q', 1.2); }
+  }
+  updateTVs(dt) {
+    const p = this.player;
+    for (const tv of this.tvs) {
+      if (!tv.on) continue;
+      tv.t += dt; tv.flick -= dt; tv.babble -= dt;
+      if (tv.flick <= 0) {
+        tv.flick = 0.12 + Math.random() * 0.25;
+        const c = [0x9fd0ff, 0xffd27a, 0x8affc0, 0xff9ad0, 0xffffff][(Math.random() * 5) | 0];
+        tv.scr.material.color.setHex(c); tv.glow.material.color.setHex(c); tv.glow.material.opacity = 0.35 + Math.random() * 0.3;
+      }
+      const d = Math.hypot(p.x - tv.cx, p.z - tv.cz);
+      if (tv.babble <= 0) { tv.babble = 0.2 + Math.random() * 0.12; if (d < 14) this.app.audio.play('tv', Math.max(0, 1 - d / 14)); }
+      if (tv.t > 18) this.tvOff(tv, null);
+    }
   }
 
   // ---------- air vents ----------
@@ -1341,6 +1395,7 @@ export class Game {
   }
   arrive(g) {
     const app = this.app;
+    for (const tv of this.tvs) if (tv.on && Math.hypot(tv.fx - g.x, tv.fz - g.z) < 2.2) { g.face = Math.atan2(tv.cx - g.x, tv.cz - g.z); this.tvOff(tv, g); return; }
     // after investigating/searching, guards sometimes check a nearby wardrobe
     if (g.kind === 'guard' && this.hides.length && !g.reviveT && !g.safeRun && Math.random() < (this.player.hiding ? 0.55 : 0.35)) {
       let best = null, bd = 4.5;
