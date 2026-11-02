@@ -17,6 +17,10 @@ export const ACH = [
   { id: 'inside', icon: '🕴', name: 'Inside Man', desc: 'Escape while wearing a guard uniform', check: (s, r) => r.win && r.disguised },
   { id: 'train', icon: '🚂', name: 'Great Train Robbery', desc: 'Escape from the Night Train', check: (s, r) => r.win && r.level === 'train' },
   { id: 'warehouse', icon: '📦', name: 'Dock Rat', desc: 'Escape from the Warehouse', check: (s, r) => r.win && r.level === 'warehouse' },
+  { id: 'close10', icon: '😅', name: 'Nerves of Steel', desc: 'Survive 10 close calls (total)', check: (s) => (s.close || 0) >= 10 },
+  { id: 'triple', icon: '💥', name: 'Combo Breaker', desc: 'Pull off a triple takedown', check: (s, r) => (r.streak || 0) >= 3 },
+  { id: 'kitted', icon: '🧰', name: 'Fully Kitted', desc: 'Buy 5 gear upgrades', check: (s, r, save) => Object.values(save.gear || {}).reduce((a, b) => a + b, 0) >= 5 },
+  { id: 'loyal', icon: '📅', name: 'Loyal Crew', desc: 'Log in 7 days in a row', check: (s, r, save) => !!(save.login && save.login.n >= 7) },
   { id: 'casino', icon: '🎰', name: 'High Roller', desc: 'Escape from the Casino', check: (s, r) => r.win && r.level === 'casino' },
   { id: 'pick10', icon: '👛', name: 'Sticky Fingers', desc: 'Pickpocket 10 guards (total)', check: (s) => (s.picks || 0) >= 10 },
   { id: 'iron', icon: '🛡️', name: 'Iron Will', desc: 'Escape on Ironman', check: (s, r) => r.win && r.diff === 'ironman' },
@@ -44,6 +48,7 @@ export function recordRun(save, run) {
   s.radio = (s.radio || 0) + (run.radio || 0);
   s.picks = (s.picks || 0) + (run.picks || 0);
   s.vents = (s.vents || 0) + (run.vents || 0);
+  s.close = (s.close || 0) + (run.close || 0);
   s.kos += run.kos; s.hides += run.hides; s.smokes += run.smokes; s.coins += run.coins;
   const got = (save.ach = save.ach || {}), fresh = [];
   for (const a of ACH) if (!got[a.id] && a.check(s, run, save)) { got[a.id] = Date.now(); fresh.push(a); }

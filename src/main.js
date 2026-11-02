@@ -286,7 +286,7 @@ class App {
     return {
       win, level: this.level.id, diff: this.mode === 'daily' ? 'daily' : this.diff, ghost: win && res.ghost, time: g.time, kos: g.kos,
       frac: g.lootGot / g.lootTotal, loot: g.lootGot, contractsDone: win ? res.contracts.filter((c) => c.st === 'ok').length : 0,
-      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown, radio: g.radioFaked, picks: g.picks, vents: g.ventsUsed, disguised: g.disguiseT > 0, lasers: g.lasersTripped, power: g.powerOff,
+      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown, radio: g.radioFaked, picks: g.picks, vents: g.ventsUsed, close: g.closeCalls, streak: g.maxKoStreak || 0, disguised: g.disguiseT > 0, lasers: g.lasersTripped, power: g.powerOff,
     };
   }
   applyOutfit() {

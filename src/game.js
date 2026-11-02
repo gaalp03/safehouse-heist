@@ -415,7 +415,7 @@ export class Game {
     if (this.heli) this.heli.group.visible = false;
     for (const v of this.vents || []) v.flap.rotation.x = 0;
     for (const tv of this.tvs || []) { tv.on = tv.used = false; tv.scr.visible = tv.glow.visible = false; }
-    this.tvLures = 0; this.closeCalls = 0; this.koStreak = 0; this.lastKo = -99;
+    this.tvLures = 0; this.closeCalls = 0; this.koStreak = 0; this.maxKoStreak = 0; this.lastKo = -99;
     for (const g of this.guards) g.peak = 0; this.disguiseT = 0; this.disguises = 0; this.uniformProg = 0;
     for (const g of this.guards) g.stripped = false;
     this.ventsUsed = 0; this.player.venting = null;
@@ -965,7 +965,7 @@ export class Game {
     g.safeRun = false; g.claimed = false;
     if (g.kind === 'clerk' && g.state === 'flee') { this.clerkStopped = true; this.app.floaters.spawn('ALARM STOPPED', g.x, 2.2, g.z, 'big', 1.2); }
     g.state = 'ko'; g.koT = 9; g.susp = 0; g.fallT = 0; g.radioCall = 0; g.answerProg = 0; g.callT = 0;
-    this.koStreak = this.time - (this.lastKo ?? -99) < 8 ? (this.koStreak || 1) + 1 : 1; this.lastKo = this.time;
+    this.koStreak = this.time - (this.lastKo ?? -99) < 8 ? (this.koStreak || 1) + 1 : 1; this.lastKo = this.time; this.maxKoStreak = Math.max(this.maxKoStreak || 0, this.koStreak);
     if (this.koStreak >= 2) {
       app.floaters.spawn(['', '', 'DOUBLE TAKEDOWN!', 'TRIPLE TAKEDOWN!'][this.koStreak] || 'UNSTOPPABLE!', g.x, 2.3, g.z, 'big', 1.3);
       app.audio.play('combo', this.koStreak * 3); app.shake.add(0.2);
