@@ -318,25 +318,57 @@ function furniture(L, f, B, rng, lights) {
       break;
     }
     case 'pedestal': {
-      const stone = 0xe8e2d6, ex = [0xd9b45a, 0x3f8f9a, 0xb33951, 0x6a5fa8][(f.x0 + f.y0) % 4];
-      b(P, 0, 0, 0, 0.62, 0.12, 0.62, shade(stone, 0.85));
-      b(P, 0, 0.12, 0, 0.46, 0.7, 0.46, stone);
-      b(P, 0, 0.82, 0, 0.6, 0.08, 0.6, shade(stone, 0.92));
-      b(P, 0, 0.9, 0, 0.2, 0.22, 0.2, ex, { top: shade(ex, 1.2) });
-      b(P, 0, 1.12, 0, 0.12, 0.1, 0.12, shade(ex, 1.15));
-      b(P, 0.0, 0.45, 0.235, 0.24, 0.1, 0.01, 0xd9b45a, { faces: PZ });
-      light(0, 1.6, 0, [1, 0.85, 0.6], 0.7, 2.0);
+      // fluted marble display column, velvet cushion, one of four treasures
+      const stone = 0xece6da, kind = (f.x0 * 3 + f.y0) % 4, gold = 0xe8b33a;
+      b(P, 0, 0, 0, 0.64, 0.12, 0.64, shade(stone, 0.82), { top: shade(stone, 0.95) });
+      b(P, 0, 0.12, 0, 0.46, 0.68, 0.46, stone);
+      for (const [x, z, w, d] of [[0, 0.232, 0.06, 0.01], [0.12, 0.232, 0.04, 0.01], [-0.12, 0.232, 0.04, 0.01], [0.232, 0, 0.01, 0.06], [-0.232, 0, 0.01, 0.06], [0, -0.232, 0.06, 0.01]])
+        b(P, x, 0.16, z, w, 0.58, d, shade(stone, 0.86), { faces: 63 & ~PY & ~NY });
+      b(P, 0, 0.8, 0, 0.6, 0.08, 0.6, shade(stone, 0.92));
+      b(P, 0, 0.88, 0, 0.36, 0.06, 0.36, 0x9a1f3a, { top: 0xb8284a });              // velvet cushion
+      b(P, 0.0, 0.42, 0.236, 0.22, 0.08, 0.008, gold, { faces: PZ });
+      const y = 0.94;
+      if (kind === 0) {        // golden amphora
+        b(P, 0, y, 0, 0.12, 0.05, 0.12, gold); b(P, 0, y + 0.05, 0, 0.2, 0.14, 0.2, gold, { top: shade(gold, 1.2) });
+        b(P, 0, y + 0.19, 0, 0.1, 0.1, 0.1, gold); b(P, 0, y + 0.29, 0, 0.16, 0.04, 0.16, shade(gold, 1.15));
+        for (const s2 of [-1, 1]) b(P, s2 * 0.12, y + 0.14, 0, 0.03, 0.14, 0.03, gold);
+        b(P, 0, y + 0.1, 0.101, 0.16, 0.03, 0.005, 0x1f6a7a, { faces: PZ });
+      } else if (kind === 1) { // jeweled crown
+        b(P, 0, y, 0, 0.24, 0.08, 0.24, gold, { faces: 63 & ~PY });
+        for (const [x, z] of [[-0.1, -0.1], [0.1, -0.1], [-0.1, 0.1], [0.1, 0.1], [0, 0.11], [0, -0.11], [0.11, 0], [-0.11, 0]]) b(P, x, y + 0.08, z, 0.04, 0.07, 0.04, gold);
+        b(U, 0, y + 0.03, 0.122, 0.05, 0.04, 0.005, 0xff3b6a, { faces: PZ }); b(U, 0.122, y + 0.03, 0, 0.005, 0.04, 0.05, 0x3bd3ff, { faces: PX }); b(U, -0.122, y + 0.03, 0, 0.005, 0.04, 0.05, 0x3bff8a, { faces: NX });
+      } else if (kind === 2) { // jeweled egg
+        b(P, 0, y, 0, 0.12, 0.04, 0.12, gold);
+        b(P, 0, y + 0.04, 0, 0.16, 0.06, 0.16, 0x3f6ad8); b(P, 0, y + 0.1, 0, 0.2, 0.1, 0.2, 0x3f6ad8, { top: 0x5a86f0 }); b(P, 0, y + 0.2, 0, 0.14, 0.08, 0.14, 0x3f6ad8); b(P, 0, y + 0.28, 0, 0.07, 0.04, 0.07, gold);
+        b(P, 0, y + 0.135, 0, 0.21, 0.025, 0.21, gold, { faces: 63 & ~PY & ~NY });
+      } else {                 // golden mask
+        b(P, 0, y, 0, 0.14, 0.04, 0.1, 0x2a2a34);
+        b(P, 0, y + 0.04, 0, 0.22, 0.28, 0.06, gold, { top: shade(gold, 1.2) });
+        b(P, 0, y + 0.32, 0, 0.26, 0.06, 0.08, 0x2a4ab3);
+        for (const s2 of [-1, 1]) b(P, s2 * 0.05, y + 0.2, 0.031, 0.05, 0.03, 0.005, 0x1c1330, { faces: PZ });
+        b(P, 0, y + 0.1, 0.031, 0.04, 0.06, 0.005, shade(gold, 0.8), { faces: PZ });
+      }
+      light(0, 1.6, 0, [1, 0.85, 0.6], 0.8, 2.0);
       break;
     }
     case 'statue': {
-      const st = 0xb8b4ac, dk = shade(st, 0.8);
-      b(P, 0, 0, 0, 0.8, 0.35, 0.8, dk, { top: st });
-      b(P, 0, 0.35, 0, 0.62, 0.08, 0.62, st);
-      b(P, -0.1, 0.43, 0, 0.16, 0.5, 0.18, st); b(P, 0.1, 0.43, 0, 0.16, 0.5, 0.18, st);
-      b(P, 0, 0.93, 0, 0.42, 0.45, 0.24, st, { top: dk });
-      b(P, -0.27, 0.95, 0.05, 0.12, 0.42, 0.13, st, { ry: 0.2 }); b(P, 0.27, 1.2, 0, 0.12, 0.42, 0.13, st, { ry: -0.6 });
-      b(P, 0, 1.38, 0, 0.26, 0.3, 0.26, st, { top: dk });
-      b(P, 0, 1.55, -0.02, 0.28, 0.08, 0.28, dk);
+      // classical marble hero on a two-tier plinth, golden torch raised, laurel wreath
+      const st = 0xe4ded2, dk = shade(st, 0.78), gold = 0xe0b04a;
+      b(P, 0, 0, 0, 0.84, 0.16, 0.84, dk, { top: shade(st, 0.9) });
+      b(P, 0, 0.16, 0, 0.68, 0.3, 0.68, st, { top: shade(st, 1.04) });
+      b(P, 0, 0.24, 0.341, 0.34, 0.1, 0.008, gold, { faces: PZ });                  // plaque
+      b(P, 0, 0.46, 0, 0.56, 0.06, 0.56, dk);
+      b(P, 0, 0.52, 0, 0.36, 0.42, 0.3, st, { top: dk });                          // toga skirt
+      b(P, 0, 0.9, 0, 0.42, 0.42, 0.24, st);                                        // torso
+      b(P, 0.06, 0.9, 0.125, 0.3, 0.42, 0.01, shade(st, 0.92), { faces: PZ, ry: 0.15 }); // drape fold
+      b(P, -0.27, 0.92, 0.04, 0.12, 0.38, 0.13, st, { ry: 0.25 });                   // arm on hip
+      b(P, 0.27, 1.18, 0, 0.12, 0.42, 0.13, st);                                     // raised arm
+      b(P, 0.27, 1.6, 0, 0.08, 0.2, 0.08, gold);                                     // torch
+      b(U, 0.27, 1.8, 0, 0.12, 0.14, 0.12, 0xffa23a); b(U, 0.27, 1.9, 0, 0.07, 0.08, 0.07, 0xffe08a);
+      b(P, 0, 1.32, 0, 0.24, 0.28, 0.24, st);                                        // head
+      b(P, 0, 1.56, -0.01, 0.27, 0.08, 0.27, dk);                                    // curls
+      b(P, 0, 1.52, 0, 0.29, 0.04, 0.29, 0x6aa04a, { faces: 63 & ~PY });             // laurel
+      light(0.27, 1.85, 0, [1, 0.7, 0.35], 0.5, 1.8);
       break;
     }
     case 'case': {
@@ -381,12 +413,20 @@ function furniture(L, f, B, rng, lights) {
       break;
     }
     case 'plant': {
-      b(P, 0, 0, 0, 0.36, 0.34, 0.36, 0xc8673f, { top: 0x4a3426 });
-      b(P, 0, 0.3, 0, 0.42, 0.06, 0.42, 0xd8774f);
-      b(WD, 0, 0.36, 0, 0.05, 0.5, 0.05, 0x6a4a2a);
-      for (let k = 0; k < 9; k++) {
-        const a = k * 2.4, r = rr(0.08, 0.26), y = rr(0.45, 1.2);
-        b(P, Math.cos(a) * r, y, Math.sin(a) * r, rr(0.18, 0.3), 0.04, rr(0.1, 0.16), LEAF[k % 4], { ry: a });
+      // terracotta pot + a chunky voxel bush or a small palm
+      const pot = 0xc8673f;
+      b(P, 0, 0, 0, 0.34, 0.3, 0.34, pot, { top: 0x4a3426 });
+      b(P, 0, 0.26, 0, 0.42, 0.08, 0.42, shade(pot, 1.12));
+      b(P, 0, 0.1, 0, 0.36, 0.04, 0.36, shade(pot, 0.82), { faces: PX | NX | PZ | NZ });
+      if ((f.x0 + f.y0) % 2) {
+        b(WD, 0, 0.34, 0, 0.07, 0.62, 0.07, 0x7a5a36);
+        b(WD, 0.02, 0.6, 0, 0.06, 0.36, 0.06, 0x6a4a2a, { ry: 0.3 });
+        for (let k = 0; k < 7; k++) { const a = k * 0.9; b(P, Math.cos(a) * 0.2, 1.02 - (k % 2) * 0.06, Math.sin(a) * 0.2, 0.42, 0.04, 0.12, LEAF[k % 4], { ry: -a }); }
+        b(P, 0, 1.04, 0, 0.16, 0.1, 0.16, LEAF[2]);
+      } else {
+        const L3 = [[0, 0.42, 0, 0.42], [0.08, 0.66, 0.05, 0.34], [-0.07, 0.62, -0.06, 0.32], [0, 0.86, 0, 0.26]];
+        L3.forEach(([x, y, z, sz], k) => b(P, x, y, z, sz, sz, sz, LEAF[k % 4], { ry: k * 0.5, top: shade(LEAF[k % 4], 1.15) }));
+        for (let k = 0; k < 6; k++) { const a = k * 1.05; b(P, Math.cos(a) * 0.22, 0.5 + (k % 3) * 0.14, Math.sin(a) * 0.22, 0.12, 0.12, 0.12, LEAF[(k + 1) % 4], { ry: a }); }
       }
       break;
     }
@@ -403,21 +443,39 @@ function furniture(L, f, B, rng, lights) {
       break;
     }
     case 'toilet': {
-      b(P, 0, 0, 0.05, 0.36, 0.38, 0.46, 0xf6f7f8);
-      b(P, 0, 0.38, 0.07, 0.4, 0.04, 0.5, 0xffffff);
-      b(P, 0, 0.3, -D / 2 + 0.2, 0.44, 0.45, 0.2, 0xf6f7f8, { top: 0xffffff });
-      b(P, 0.15, 0.7, -D / 2 + 0.25, 0.06, 0.02, 0.03, 0xc3ccd6);
+      const por = 0xf6f7f8;
+      b(P, 0, 0, 0.04, 0.3, 0.06, 0.38, 0xe4e8ea);                         // base
+      b(P, 0, 0.06, 0.05, 0.32, 0.26, 0.42, por);                          // bowl
+      b(P, 0, 0.32, 0.07, 0.4, 0.05, 0.5, 0xffffff);                       // seat
+      b(P, 0, 0.365, 0.08, 0.3, 0.005, 0.36, 0x9fc9d6, { faces: PY });     // water
+      b(P, 0, 0.37, -D / 2 + 0.33, 0.38, 0.32, 0.04, 0xffffff);            // lid, raised
+      b(P, 0, 0.3, -D / 2 + 0.17, 0.44, 0.48, 0.2, por, { top: 0xffffff }); // tank
+      b(P, 0, 0.78, -D / 2 + 0.17, 0.48, 0.04, 0.24, 0xffffff);            // tank lid
+      b(P, 0.16, 0.66, -D / 2 + 0.28, 0.08, 0.025, 0.04, 0xc3ccd6);         // flush
+      b(P, -0.36, 0.5, -D / 2 + 0.08, 0.12, 0.12, 0.1, 0xc3ccd6);           // paper holder
+      b(P, -0.36, 0.44, -D / 2 + 0.12, 0.1, 0.12, 0.1, 0xffffff);
       break;
     }
     case 'sink': {
-      b(P, 0, 0, 0, W - 0.2, 0.8, D - 0.42, 0x6aa58e);
-      b(P, 0, 0.12, D / 2 - 0.205, W - 0.3, 0.6, 0.01, shade(0x6aa58e, 1.15), { faces: PZ });
-      b(P, 0, 0.8, 0, W - 0.14, 0.05, D - 0.36, 0xffffff);
-      b(P, 0, 0.84, 0.02, 0.4, 0.015, 0.28, 0xc9d6de, { faces: PY });
-      b(P, 0, 0.85, -D / 2 + 0.26, 0.04, 0.16, 0.04, 0xc3ccd6);
-      b(P, 0, 1.0, -D / 2 + 0.03, 0.62, 0.72, 0.03, 0xd9b45a);
-      b(U, 0, 1.04, -D / 2 + 0.05, 0.54, 0.64, 0.005, 0xb9d6e4, { faces: PZ });
-      b(U, -0.12, 1.3, -D / 2 + 0.054, 0.12, 0.3, 0.004, 0xe6f4fa, { faces: PZ, ry: 0.0 });
+      // wooden vanity, white basin, chrome faucet, framed mirror, a few toiletries
+      const wood = 0x8a5a3a;
+      b(WD, 0, 0, 0, W - 0.18, 0.78, D - 0.44, wood, { top: shade(wood, 1.1) });
+      for (const s2 of [-1, 1]) {
+        b(WD, s2 * (W - 0.24) / 4, 0.08, D / 2 - 0.215, (W - 0.3) / 2 - 0.04, 0.6, 0.012, shade(wood, 1.18), { faces: PZ });
+        b(P, s2 * 0.05, 0.5, D / 2 - 0.205, 0.03, 0.12, 0.02, 0xd9b45a);
+      }
+      b(P, 0, 0.78, 0, W - 0.12, 0.05, D - 0.36, 0xf4f1ea);                 // counter top
+      b(P, 0, 0.8, 0.02, 0.44, 0.07, 0.32, 0xffffff);                       // basin
+      b(P, 0, 0.865, 0.03, 0.34, 0.006, 0.22, 0x9fc9d6, { faces: PY });
+      b(P, 0, 0.83, -D / 2 + 0.26, 0.06, 0.2, 0.06, 0xc9d2dc);              // faucet
+      b(P, 0, 1.0, -D / 2 + 0.31, 0.04, 0.04, 0.12, 0xc9d2dc);
+      b(P, -0.08, 0.95, -D / 2 + 0.26, 0.05, 0.03, 0.05, 0xff6a6a); b(P, 0.08, 0.95, -D / 2 + 0.26, 0.05, 0.03, 0.05, 0x6aa8ff);
+      b(P, 0.3, 0.83, -D / 2 + 0.3, 0.08, 0.14, 0.08, 0x4fc3a8); b(P, 0.3, 0.97, -D / 2 + 0.3, 0.03, 0.04, 0.03, 0xffffff); // soap
+      b(P, -0.3, 0.83, -D / 2 + 0.3, 0.08, 0.12, 0.08, 0xffd23f); b(P, -0.29, 0.95, -D / 2 + 0.3, 0.015, 0.1, 0.015, 0x3a7ae8); // cup + brush
+      b(WD, 0, 1.02, -D / 2 + 0.03, 0.66, 0.76, 0.03, 0x6a4a2a);            // mirror frame
+      b(U, 0, 1.06, -D / 2 + 0.05, 0.56, 0.66, 0.005, 0xb9d6e4, { faces: PZ });
+      b(U, -0.12, 1.3, -D / 2 + 0.054, 0.12, 0.3, 0.004, 0xe6f4fa, { faces: PZ });
+      b(U, -0.2, 1.2, -D / 2 + 0.054, 0.05, 0.2, 0.004, 0xe6f4fa, { faces: PZ });
       break;
     }
   }
