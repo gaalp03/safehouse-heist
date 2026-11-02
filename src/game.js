@@ -1303,7 +1303,7 @@ export class Game {
     switch (g.state) {
       case 'patrol': {
         const w = d.path[g.wp];
-        if (this.navTo(g, w[0] + 0.5, w[1] + 0.5, g.speed, dt)) {
+        if (this.navTo(g, w[0] + 0.5, w[1] + 0.5, g.speed, dt) || g.stateT > 14) {
           g.state = 'wait'; g.t = d.wait ?? 1; g.baseFace = g.face;
           if (g.kind === 'guard' && g.susp < 0.1 && Math.random() < 0.35) { g.yawnT = 2.2; g.t = Math.max(g.t, 2.2); app.floaters.spawn('*yaaawn*', g.x, 1.9, g.z, 'zz', 1.4); }
         }

@@ -52,9 +52,9 @@ export default {
   guards: [
     { roam: [3, 8, 28, 15], path: [[4, 10], [26, 13]], wait: 1.2, speed: 1.7 },
     { roam: [3, 8, 28, 15], path: [[26, 10], [6, 13]], wait: 1.2, speed: 1.6 },
-    { post: [6, 4], face: 0.6, sweep: 0.9, sweepSpeed: 0.6 },
+    { post: [7, 4], face: 0.6, sweep: 0.9, sweepSpeed: 0.6 },
     { path: [[12, 3], [18, 5]], wait: 1.5, speed: 1.4 },
-    { path: [[3, 17], [28, 17]], wait: 1.8, speed: 1.6 },
+    { path: [[4, 18], [25, 18]], wait: 1.8, speed: 1.6 },
   ],
   panel: { x: 13, y: 18, dx: 0, dy: 1 },
   cameras: [

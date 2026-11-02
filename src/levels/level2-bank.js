@@ -50,7 +50,7 @@ export default {
   guards: [
     { path: [[3, 16], [28, 16]], wait: 1.4, speed: 1.8 },
     { path: [[2, 9], [28, 8]], wait: 1.2, speed: 1.9 },
-    { post: [14, 5], face: 0, sweep: 0.9, sweepSpeed: 0.7 },
+    { post: [14, 6], face: 0, sweep: 0.9, sweepSpeed: 0.7 },
     { path: [[20, 3], [28, 6]], wait: 1.6, speed: 1.4 },
   ],
   clerks: [
