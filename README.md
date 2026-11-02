@@ -3,7 +3,7 @@
 A tiny, juicy first-person voxel stealth-heist game for the browser. Through the robber's eyes (gloved hands + crowbar, head bob, mouse/touch look), sneak into the house, crack the safe, grab the loot and get back to the getaway van. Three stars per level: **escape**, **70%+ loot**, **ghost (never spotted)**.
 
 - Three.js (bundled locally, tree-shaken), no runtime CDN for game code
-- All geometry and all audio are procedural: **zero image/audio/model files**
+- All geometry is procedural (**zero image/model files**); sound effects are CC0 recordings (Kenney, wyzowl/sfx-kit; ~240 KB in `sfx/`, lazy-loaded after the menu so the first load stays small) with WebAudio synth fallbacks and a procedural adaptive soundtrack
 - Initial download: `index.html` + one JS bundle, ~160 KB gzipped. Levels are separate lazy-loaded chunks
 - Mouse + keyboard and touch (dynamic virtual joystick + buttons), auto-detected
 - CrazyGames SDK v3 integrated with a safe fallback everywhere else

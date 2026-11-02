@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "zip": "node build.mjs && rm -f safehouse-heist.zip && zip -r -9 safehouse-heist.zip index.html js",
+    "zip": "node build.mjs && rm -f safehouse-heist.zip && zip -r -9 safehouse-heist.zip index.html js sfx",
     "serve": "python3 -m http.server 8080"
   },
   "devDependencies": {

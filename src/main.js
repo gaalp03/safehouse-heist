@@ -137,6 +137,7 @@ class App {
     this.renderer.setAnimationLoop(() => this.frame());
 
     SDK.loadingStop();
+    setTimeout(() => this.audio.loadSamples(), 300);
     $('loading').classList.add('hidden');
     this.showMenu();
   }
@@ -1082,7 +1083,7 @@ class App {
       this.sel = this.save.sel = 'lvl' + (ni + 1);
       $('rAch').innerHTML = `<span class="unlock">🔓 New heist unlocked: <b>${LEVELS[ni].name}</b></span>` + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : '');
       $('rAch').classList.remove('hidden');
-      setTimeout(() => { if (this.state === 'result') { this.audio.play('contract'); this.shake.add(0.15); } }, 1500);
+      setTimeout(() => { if (this.state === 'result') { this.audio.play('unlock'); this.shake.add(0.15); } }, 1500);
     }
     this.nextWasLocked = false;
     if (this.justMastered) { $('rAch').innerHTML = `<span class="unlock">🏅 Heist mastered! +$2,000 bonus</span><br>` + $('rAch').innerHTML; $('rAch').classList.remove('hidden'); this.justMastered = false; }

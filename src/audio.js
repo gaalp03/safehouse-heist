@@ -38,6 +38,7 @@ export class Audio {
       const d = this.noiseBuf.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.apply();
+      this.decodeSamples();
       this.timer = setInterval(() => this.sched(), 40);
     }
     if (this.ctx.state === 'suspended' && !this.hidden && !this.adMuted) this.ctx.resume();
@@ -96,8 +97,64 @@ export class Audio {
     src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.05);
   }
 
+  // ---- recorded sound effects (CC0, see CREDITS.md): fetched in the background after the menu is up ----
+  loadSamples(base = './sfx/') {
+    if (this.raw) return;
+    this.raw = {}; this.bufs = {};
+    fetch(base + 'manifest.json').then((r) => r.json()).then((man) => {
+      this.man = man;
+      const files = Object.values(man).flat();
+      // small parallel batches so the network stays free for gameplay
+      const next = () => { const f = files.shift(); if (!f) return; fetch(base + f).then((r) => r.arrayBuffer()).then((ab) => { this.raw[f] = ab; this.decodeSamples(); }).catch(() => {}).finally(next); };
+      for (let i = 0; i < 4; i++) next();
+    }).catch(() => {});
+  }
+  decodeSamples() {
+    if (!this.ctx || !this.raw) return;
+    for (const f of Object.keys(this.raw)) {
+      const ab = this.raw[f]; delete this.raw[f];
+      try { this.ctx.decodeAudioData(ab, (b) => { this.bufs[f] = b; }, () => {}); } catch (_) {}
+    }
+  }
+  // play a sample by logical name (random variant); returns false if not loaded so the caller can fall back
+  sample(name, o = {}) {
+    const list = this.man && this.man[name]; if (!list) return false;
+    const ready = list.filter((f) => this.bufs[f]); if (!ready.length) return false;
+    const ctx = this.ctx, src = ctx.createBufferSource(), g = ctx.createGain();
+    src.buffer = this.bufs[ready[(Math.random() * ready.length) | 0]];
+    src.playbackRate.value = (o.rate || 1) * (o.jitter ? 1 + (Math.random() - 0.5) * o.jitter : 1);
+    g.gain.value = o.vol ?? 0.6;
+    let out = g;
+    if (o.pan) { const pn = ctx.createStereoPanner(); pn.pan.value = o.pan; g.connect(pn); out = pn; }
+    src.connect(g); out.connect(o.dest || this.sfx);
+    src.start(ctx.currentTime + (o.delay || 0));
+    return true;
+  }
+
   play(name, p = 0) {
     if (!this.ctx || this.ctx.state !== 'running') return;
+    const S = (n, o) => this.sample(n, o);
+    const semi = (k) => Math.pow(2, k / 12);
+    const REC = {
+      dash: () => S('dash', { vol: 0.55, jitter: 0.1 }),
+      pick: () => S('pick', { vol: 0.5, rate: semi(Math.min(p, 12) * 0.6), jitter: 0.06 }),
+      gold: () => S('gold', { vol: 0.6 }), jewel: () => S('jewel', { vol: 0.55 }), art: () => S('art', { vol: 0.55 }),
+      ko: () => S('ko', { vol: 0.8, jitter: 0.12 }), alert: () => S('alert', { vol: 0.55 }), lost: () => S('lost', { vol: 0.45 }),
+      tick: () => S('tick', { vol: 0.35, rate: 1 + Math.min(1, p) * 0.35, jitter: 0.08 }),
+      safe: () => S('safe', { vol: 0.7 }) && (S('coins', { vol: 0.55, delay: 0.25 }), true),
+      win: () => S('win', { vol: 0.6 }), bust: () => S('bust', { vol: 0.6 }), alarm: () => S('alarm', { vol: 0.5 }),
+      thunder: () => S('thunder', { vol: 0.8, jitter: 0.1 }), vent: () => S('vent', { vol: 0.6 }), clank: () => S('clank', { vol: 0.6, jitter: 0.1 }),
+      click: () => S('click', { vol: 0.5 }), star: () => S('star', { vol: 0.5, rate: semi([0, 4, 7][Math.min(2, p | 0)] || 0) }),
+      throw: () => S('throw', { vol: 0.5, jitter: 0.1 }), clink: () => S('clink', { vol: 0.5 * Math.max(0.3, p || 1), jitter: 0.1 }),
+      disarm: () => S('disarm', { vol: 0.5 }), contract: () => S('contract', { vol: 0.55 }), creak: () => S('creak', { vol: 0.5, jitter: 0.1 }),
+      zap: () => S('zap', { vol: 0.55 }), powerdown: () => S('powerdown', { vol: 0.6 }), smoke: () => S('smoke', { vol: 0.6 }),
+      pin: () => S('pin', { vol: 0.6, rate: 1 + p * 0.12 }), slip: () => S('slip', { vol: 0.6 }), glass: () => S('glass', { vol: 0.75, jitter: 0.1 }),
+      radio: () => S('radio', { vol: 0.35 }), radioOk: () => S('radioOk', { vol: 0.5 }),
+      jackpot: () => S('jackpot', { vol: 0.6 }) && (S('coins', { vol: 0.5, delay: 0.3 }), true),
+      nope: () => S('nope', { vol: 0.45 }), combo: () => S('combo', { vol: 0.4, rate: semi(Math.min(p, 12)) }),
+      tvon: () => S('tvon', { vol: 0.5 }), unlock: () => S('unlock', { vol: 0.55 }),
+    };
+    if (REC[name] && REC[name]()) return;
     const T = (f, d, o) => this.tone(f, d, o), N = (d, o) => this.noise(d, o);
     switch (name) {
       case 'step': N(0.05, { vol: 0.05, freq: 500, type: 'lowpass' }); break;
@@ -342,6 +399,8 @@ export class Audio {
   // footsteps per surface; pan/vol for guards
   stepSound(surface, vol = 1, pan = 0) {
     if (!this.ctx || this.ctx.state !== 'running') return;
+    const sn = { carpet: 'step_carpet', tile: 'step_tile', road: 'step_tile', grass: 'step_grass', boot: 'step_tile' }[surface] || 'step_wood';
+    if (this.sample(sn, { vol: 0.3 * vol * (surface === 'boot' ? 1.2 : 1), rate: surface === 'boot' ? 0.82 : 1, jitter: 0.12, pan })) return;
     let dest = this.sfx;
     if (pan) { const p = this.ctx.createStereoPanner(); p.pan.value = pan; p.connect(this.sfx); dest = p; }
     const N = (d, o) => this.noise(d, { ...o, vol: (o.vol || 0.1) * vol, dest }), T = (f, d, o) => this.tone(f, d, { ...o, vol: (o.vol || 0.1) * vol, dest });
