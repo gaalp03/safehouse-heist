@@ -175,30 +175,86 @@ export class Audio {
   }
 
   // tiny sneaky bass loop (lookahead scheduler), gets busier when guards are alerted
+  // adaptive score: tension 0 calm, 1 suspicious, 2 alert, 3 alarm; mode 'game' | 'menu'
   sched() {
     const ctx = this.ctx;
     if (!ctx || ctx.state !== 'running' || !this.musicOn) return;
-    const spb = (60 / 108 / 4) * (this.tension > 0.5 ? 0.8 : 1);
+    const lvl = this.mode === 'menu' ? 0 : this.tension | 0;
+    const bpm = this.mode === 'menu' ? 96 : [104, 110, 128, 140][lvl] || 104;
+    const spb = 60 / bpm / 4;
+    this.lvl = this.lvl == null ? lvl : this.lvl + Math.sign(lvl - this.lvl) * 0; // snap per bar below
     if (this.nextT < ctx.currentTime) this.nextT = ctx.currentTime + 0.03;
     while (this.nextT < ctx.currentTime + 0.15) {
-      this.beat(this.step, this.nextT - ctx.currentTime);
+      if (this.step % 16 === 0) this.lvl = lvl; // change layers on bar lines
+      if (this.mode === 'menu') this.menuBeat(this.step, this.nextT - ctx.currentTime);
+      else this.beat(this.step, this.nextT - ctx.currentTime, this.lvl);
       this.nextT += spb;
-      this.step = (this.step + 1) % 32;
+      this.step = (this.step + 1) % 64;
     }
   }
-  beat(s, delay) {
-    const bass = [45, 0, 0, 45, 0, 0, 48, 0, 45, 0, 0, 43, 0, 40, 0, 0, 45, 0, 0, 45, 0, 0, 48, 0, 50, 0, 48, 0, 47, 0, 43, 0];
-    const n = bass[s], dest = this.mus, hot = this.tension > 0.5;
-    if (n) {
-      this.tone(midi(n + (hot ? 12 : 0)), 0.2, { type: 'triangle', vol: 0.32, delay, dest });
-      this.tone(midi(n), 0.12, { type: 'square', vol: 0.04, delay, dest });
+  pad(notes, dur, delay, vol) {
+    for (const n of notes) for (const det of [-5, 5]) {
+      const ctx = this.ctx, t = ctx.currentTime + delay, o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.value = midi(n); o.detune.value = det;
+      f.type = 'lowpass'; f.frequency.value = 900;
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + dur * 0.35); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+      o.connect(f).connect(g).connect(this.mus); o.start(t); o.stop(t + dur + 0.05);
     }
-    if (s % 4 === 2) this.noise(0.03, { vol: 0.08, freq: 7000, type: 'highpass', delay, dest });
-    if (s % 8 === 4) this.tone(midi(69 + (s % 16 === 4 ? 3 : 0)), 0.06, { type: 'sine', vol: 0.05, delay, dest });
-    if (hot) {
-      if (s % 4 === 0) { this.tone(120, 0.15, { type: 'sine', slide: 40, vol: 0.4, delay, dest }); }
-      if (s % 2 === 1) this.noise(0.02, { vol: 0.06, freq: 9000, type: 'highpass', delay, dest });
-      if (s % 8 === 6) this.tone(midi(81), 0.08, { vol: 0.04, delay, dest });
+  }
+  beat(s, delay, lvl) {
+    const dest = this.mus, T = (f, d, o) => this.tone(f, d, { ...o, delay, dest }), N = (d, o) => this.noise(d, { ...o, delay, dest });
+    // Am - F - C - G (each chord 16 steps)
+    const chords = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], roots = [45, 41, 48, 43];
+    const ci = (s >> 4) & 3, root = roots[ci] + (lvl >= 2 ? 12 : 0), st = s & 15;
+    // bass: sneaky pizzicato pattern
+    const bassPat = [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0];
+    if (bassPat[st]) T(midi(root + (st === 6 ? 7 : st === 13 ? 5 : 0)), 0.18, { type: 'triangle', vol: 0.3 });
+    if (bassPat[st] && lvl >= 1) T(midi(root + 12), 0.08, { type: 'square', vol: 0.035 });
+    // soft hats
+    if (st % 4 === 2) N(0.03, { vol: 0.07, freq: 7000, type: 'highpass' });
+    // pads
+    if (st === 0) this.pad(chords[ci], 16 * (60 / ([104, 110, 128, 140][lvl] || 104) / 4), delay, lvl >= 2 ? 0.012 : 0.018);
+    // level 1: plucky arpeggio + finger snaps
+    if (lvl >= 1) {
+      const arp = chords[ci], k = st % 3;
+      if (st % 2 === 0) T(midi(arp[k] + 12), 0.1, { type: 'sine', vol: 0.06 });
+      if (st === 4 || st === 12) N(0.04, { vol: 0.12, freq: 2500, q: 3 });
+    }
+    // level 2: drums
+    if (lvl >= 2) {
+      if (st % 4 === 0) T(120, 0.15, { type: 'sine', slide: 40, vol: 0.45 });
+      if (st === 4 || st === 12) { N(0.12, { vol: 0.18, freq: 1800, q: 0.8 }); T(200, 0.08, { type: 'triangle', slide: 120, vol: 0.12 }); }
+      if (st % 2 === 1) N(0.02, { vol: 0.06, freq: 9000, type: 'highpass' });
+      if (st === 14) T(midi(root + 24), 0.1, { type: 'square', vol: 0.04 });
+    }
+    // level 3: alarm stabs
+    if (lvl >= 3 && (st === 0 || st === 3 || st === 6)) { T(midi(root + 24), 0.12, { type: 'sawtooth', vol: 0.05 }); T(midi(root + 27), 0.12, { type: 'sawtooth', vol: 0.04 }); }
+  }
+  // menu: laid-back heist groove
+  menuBeat(s, delay) {
+    const dest = this.mus, T = (f, d, o) => this.tone(f, d, { ...o, delay, dest }), N = (d, o) => this.noise(d, { ...o, delay, dest });
+    const chords = [[57, 60, 64, 67], [50, 53, 57, 60], [52, 55, 59, 62], [57, 60, 64, 67]], roots = [45, 38, 40, 45];
+    const ci = (s >> 4) & 3, st = s & 15, root = roots[ci];
+    if (st === 0 || st === 7 || st === 10) T(midi(root), 0.25, { type: 'triangle', vol: 0.3 });
+    if (st === 0) this.pad(chords[ci], 2.4, delay, 0.014);
+    if (st === 4 || st === 12) N(0.05, { vol: 0.1, freq: 2600, q: 2.5 });
+    if (st % 2 === 0) N(0.025, { vol: 0.05, freq: 8000, type: 'highpass' });
+    if (st === 2 || st === 6 || st === 9 || st === 14) T(midi(chords[ci][(st >> 1) % 4] + 12), 0.12, { type: 'sine', vol: 0.05 });
+  }
+
+  // footsteps per surface; pan/vol for guards
+  stepSound(surface, vol = 1, pan = 0) {
+    if (!this.ctx || this.ctx.state !== 'running') return;
+    let dest = this.sfx;
+    if (pan) { const p = this.ctx.createStereoPanner(); p.pan.value = pan; p.connect(this.sfx); dest = p; }
+    const N = (d, o) => this.noise(d, { ...o, vol: (o.vol || 0.1) * vol, dest }), T = (f, d, o) => this.tone(f, d, { ...o, vol: (o.vol || 0.1) * vol, dest });
+    switch (surface) {
+      case 'carpet': N(0.07, { vol: 0.05, freq: 300, type: 'lowpass' }); break;
+      case 'tile': N(0.03, { vol: 0.09, freq: 3200, q: 1.5 }); T(900 + Math.random() * 200, 0.03, { type: 'triangle', vol: 0.03 }); break;
+      case 'grass': N(0.09, { vol: 0.07, freq: 1400, q: 0.6 }); break;
+      case 'road': N(0.06, { vol: 0.08, freq: 900, q: 0.9 }); break;
+      case 'boot': N(0.06, { vol: 0.1, freq: 450, type: 'lowpass' }); T(110, 0.06, { type: 'sine', vol: 0.08 }); break;
+      default: N(0.05, { vol: 0.07, freq: 600, type: 'lowpass' }); T(170 + Math.random() * 30, 0.05, { type: 'sine', vol: 0.06 }); // wood
     }
   }
 }

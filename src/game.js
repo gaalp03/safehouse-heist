@@ -479,7 +479,9 @@ export class Game {
     }
     for (const cam of this.cams) this.updateCam(cam, dt, playing);
     for (const d of this.dogs) this.updateDog(d, dt, playing);
-    this.tension = alertN > 0 || this.alarm ? 1 : 0;
+    let susN = 0;
+    for (const g of this.guards) if (g.susp > 0.3 || g.state === 'investigate' || g.state === 'search') susN++;
+    this.tension = this.alarm ? 3 : alertN > 0 ? 2 : susN > 0 ? 1 : 0;
     this.updateAlarm(dt, playing);
     this.updateLasers(dt, playing);
 
@@ -556,7 +558,10 @@ export class Game {
     p.moving = Math.min(1, sp / P_SPEED);
     const ph = Math.floor(p.bob / Math.PI);
     p.bob += Math.min(sp, P_SPEED) * dt * 2.6;
-    if (Math.floor(p.bob / Math.PI) !== ph) app.audio.play('step');
+    if (Math.floor(p.bob / Math.PI) !== ph) {
+      const L = this.L, cx = clamp(Math.floor(p.x), 0, L.W - 1), cz = clamp(Math.floor(p.z), 0, L.H - 1);
+      app.audio.stepSound(L.floor[cz * L.W + cx], p.dashT > 0 ? 1.6 : 1);
+    }
     if (sp > 0.5) app.hintDone('move');
 
     // ---- interactions ----
@@ -1235,6 +1240,19 @@ export class Game {
 
   syncGuard(g, dt) {
     const c = g.c;
+    // positional guard footsteps (stereo panned by direction relative to view)
+    if (g.moving && this.state === 'play') {
+      g.stepAcc = (g.stepAcc || 0) + dt * (g.state === 'alert' || g.state === 'flee' ? 3.4 : 2.2);
+      if (g.stepAcc > 1) {
+        g.stepAcc = 0;
+        const p = this.player, d = Math.hypot(g.x - p.x, g.z - p.z);
+        if (d < 8) {
+          const rel = angDiff(p.face, Math.atan2(g.x - p.x, g.z - p.z));
+          const muffle = this.los(g.x, g.z, p.x, p.z) ? 1 : 0.45;
+          this.app.audio.stepSound('boot', (1 - d / 8) * 0.9 * muffle, clamp(-Math.sin(rel), -0.9, 0.9));
+        }
+      }
+    }
     c.root.position.x = g.x; c.root.position.z = g.z;
     c.root.rotation.y = g.face;
     g.shadow.position.set(g.x, 0.02, g.z);

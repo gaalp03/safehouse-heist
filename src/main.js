@@ -589,7 +589,8 @@ class App {
     this.floaters.update(st === 'pause' ? 0 : rdt, this.camera, this.w, this.h);
     this.updateHints(rdt);
     if (st === 'play') this.updateHud();
-    this.audio.tension = this.game.tension;
+    this.audio.tension = st === 'play' ? this.game.tension : 0;
+    this.audio.mode = st === 'menu' || st === 'soon' || st === 'trophies' || st === 'outfits' ? 'menu' : 'game';
     $('vignette').style.opacity = st === 'play' && this.game.tension ? 1 : 0;
     this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
