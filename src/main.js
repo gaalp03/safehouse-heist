@@ -79,6 +79,14 @@ class App {
     this.maxDpr = mobile ? 1.25 : 1.75;
     this.dpr = Math.min(devicePixelRatio || 1, this.maxDpr);
     const r = (this.renderer = new WebGLRenderer({ canvas: this.els.canvas, antialias: !mobile, powerPreference: 'high-performance', stencil: false }));
+    // phones can drop the GPU context (app switch / low memory): keep progress, show a note, reload when it comes back
+    this.els.canvas.addEventListener('webglcontextlost', (e) => {
+      e.preventDefault();
+      try { SDK.store(this.save); } catch (_) {}
+      if (this.state === 'play') { this.state = 'pause'; SDK.gameplayStop(); }
+      $('ctxlost').classList.remove('hidden');
+    });
+    this.els.canvas.addEventListener('webglcontextrestored', () => { location.reload(); });
     r.setPixelRatio(this.dpr);
     r.toneMapping = ACESFilmicToneMapping;
     r.toneMappingExposure = 1.15;
