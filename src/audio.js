@@ -13,7 +13,8 @@ export class Audio {
       const ctx = (this.ctx = new AC());
       this.master = ctx.createGain();
       const comp = ctx.createDynamicsCompressor();
-      this.master.connect(comp).connect(ctx.destination);
+      this.lp = ctx.createBiquadFilter(); this.lp.type = 'lowpass'; this.lp.frequency.value = 20000;
+      this.master.connect(this.lp).connect(comp).connect(ctx.destination);
       this.sfx = ctx.createGain(); this.sfx.gain.value = 0.8 * (this.sfxVol ?? 1); this.sfx.connect(this.master);
       this.mus = ctx.createGain(); this.mus.gain.value = 0.32 * (this.musVol ?? 1); this.mus.connect(this.master);
       const len = ctx.sampleRate;
@@ -33,6 +34,11 @@ export class Audio {
   setVolumes(music, sfx) {
     this.musVol = music; this.sfxVol = sfx;
     if (this.mus) { this.mus.gain.value = 0.32 * music; this.sfx.gain.value = 0.8 * sfx; }
+  }
+  setMuffle(on) {
+    if (!this.lp || this.muffled === on) return;
+    this.muffled = on;
+    this.lp.frequency.setTargetAtTime(on ? 900 : 20000, this.ctx.currentTime, on ? 0.03 : 0.15);
   }
   setMuted(m) { this.muted = m; this.apply(); }
   setAdMuted(m) {

@@ -313,7 +313,7 @@ export class Game {
     this.app.onKey && this.app.onKey(false);
     this.hasStash = false; this.safeOpen = false; this.safeProg = 0; this.safeTick = 0; this.doorT = 0;
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
-    this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
+    this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false; this.slowT = 0; this.fovPunch = 0; this.kickP = 0; this.kickR = 0;
     this.daily = this.app.mode === 'daily' ? this.app.daily : null;
     this.tut = this.app.mode === 'tutorial';
     this.D = this.daily || this.tut ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
@@ -535,6 +535,8 @@ export class Game {
   update(rdt, demo) {
     let dt = rdt;
     if (this.hitstop > 0) { this.hitstop -= rdt; dt *= 0.08; }
+    else if (this.slowT > 0) { this.slowT -= rdt; dt *= this.slowK + (1 - this.slowK) * clamp(1 - this.slowT / 0.15, 0, 1); }
+    this.fovPunch = damp(this.fovPunch || 0, 0, 6, rdt); this.kickP = damp(this.kickP || 0, 0, 9, rdt); this.kickR = damp(this.kickR || 0, 0, 7, rdt);
     this.t += dt;
     const playing = !demo && this.state === 'play';
     if (playing) {
@@ -840,6 +842,12 @@ export class Game {
     return this.los(g.x, g.z, p.x, p.z);
   }
 
+  // game-feel: slow-motion window, FOV punch (negative = zoom in) and camera kick
+  juice(slow, slowK, fov, kickP, kickR) {
+    if (slow > 0 && (!this.slowT || this.slowT < slow)) { this.slowT = slow; this.slowK = slowK; }
+    const sc = this.app.shake.scale ?? 1;
+    this.fovPunch = (this.fovPunch || 0) + fov * sc; this.kickP = (this.kickP || 0) + kickP * sc; this.kickR = (this.kickR || 0) + kickR * sc;
+  }
   mark(t, x, z) { this.marks.push({ t, x, z }); }
   knockout(g) {
     this.mark('ko', g.x, g.z);
@@ -851,7 +859,7 @@ export class Game {
     g.c.flash = 0.2;
     squash(g.c, 0.6);
     this.kos++;
-    this.hitstop = 0.08;
+    this.hitstop = 0.08; this.juice(0.38, 0.3, -9, -0.05, (Math.random() < 0.5 ? -1 : 1) * 0.07);
     app.shake.add(0.35);
     p.punchT = 0.28;
     squash(p.c, 1.25);
@@ -1568,7 +1576,7 @@ export class Game {
     const app = this.app, sx = this.L.safe.x + 0.5, sz = this.L.safe.y + 0.5, v = this.def.values;
     this.safeOpen = true; this.hasStash = true; this.doorT = 0;
     this.lootGot += v.stash;
-    this.hitstop = 0.12;
+    this.hitstop = 0.12; this.juice(0.6, 0.35, -12, 0.04, 0);
     app.shake.add(0.55);
     app.audio.play('safe');
     app.flash('gold');
@@ -1610,7 +1618,7 @@ export class Game {
     if (it.type === 'cash') app.particles.burst(p.x + fx * 1.0, 1.0, p.z + fz * 1.0, { count: 6, colors: [0x6fcf7a, 0x9be39a, 0x4fae5a], speed: 1.4, up: 1.6, size: 0.1, life: 1.1, shape: 'bill', gravity: 3, drag: 2.5 });
     else app.particles.burst(p.x + fx * 1.5, 1.0, p.z + fz * 1.5, { count: 8, colors: [0xffffff, 0xfff1a8], speed: 1.2, up: 1, size: 0.025, life: 0.6, gravity: 0 });
     app.audio.play(it.type === 'cash' ? 'pick' : it.type, this.combo);
-    this.player.bagV += 4;
+    this.player.bagV += 4; this.juice(0, 1, it.type === 'cash' ? -1.2 : -3, it.type === 'cash' ? 0 : -0.015, 0);
     squash(this.player.c, 1.12);
     app.onLoot(false);
   }
@@ -1737,7 +1745,7 @@ export class Game {
     this.fovKick = damp(this.fovKick, p.dashT > 0 ? 12 : 0, p.dashT > 0 ? 25 : 6, dt);
     const sh = app.shake, drop = this.state === 'caught' ? 0.3 * Math.min(1, this.endT * 3) : 0;
     cam.position.set(p.x + rx * bobX, EYE - (p.crouchK || 0) * 0.42 + bobY * (1 - (p.crouchK || 0) * 0.5) - drop, p.z + rz * bobX);
-    cam.rotation.set(p.pitch + sh.y * 0.06, p.yaw + sh.x * 0.06, p.roll + sh.x * 0.02);
+    cam.rotation.set(p.pitch + sh.y * 0.06 + (this.kickP || 0), p.yaw + sh.x * 0.06, p.roll + sh.x * 0.02 + (this.kickR || 0));
   }
 
   updateNoiseRings(dt) {
@@ -1850,7 +1858,7 @@ export class Game {
     const app = this.app, p = this.player;
     if (this.picking) this.stopPick();
     this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = null; this.policeBusted = true;
-    this.hitstop = 0.15;
+    this.hitstop = 0.15; this.juice(0.5, 0.3, -14, 0.06, 0.04);
     app.shake.add(0.7);
     app.flash('red');
     app.audio.play('bust');
@@ -1866,7 +1874,7 @@ export class Game {
     this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = g;
     g.face = Math.atan2(this.player.x - g.x, this.player.z - g.z);
     squash(this.player.c, 0.55);
-    this.hitstop = 0.15;
+    this.hitstop = 0.15; this.juice(0.5, 0.3, -14, 0.06, -0.04);
     app.shake.add(0.7);
     app.flash('red');
     app.audio.play('bust');
@@ -2023,7 +2031,7 @@ export class Game {
     c.glass.visible = false; c.gems.visible = false;
     app.audio.play('glass');
     app.shake.add(0.28);
-    this.hitstop = 0.06;
+    this.hitstop = 0.06; this.juice(0, 1, -4, -0.06, (Math.random() - 0.5) * 0.08);
     app.particles.burst(c.cx, 1.05, c.cz, { count: 26, colors: [0xdff4ff, 0xbfe6ff, 0xffffff], speed: 3.2, up: 3, size: 0.07, life: 0.9, spin: 2 });
     app.particles.burst(c.cx, 0.95, c.cz, { count: 8, colors: [0x4cdcff, 0xff4f7a, 0xffd75a], speed: 1.5, up: 2.5, size: 0.05, life: 0.7 });
     this.makeNoise(c.cx, c.cz, 3.6, null);

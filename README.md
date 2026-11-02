@@ -108,6 +108,7 @@ Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` 
 - Procedural canvas textures generated at load (wood planks, wallpaper, wainscot panels, carpet, tiles, brick, rugs, grass, asphalt): no image files.
 - Warm lamp + golden window light and ambient occlusion are **baked into vertex colors** at load, so the house renders unlit (cheap on mobile) with soft light pools and contact shadows; characters and hands get a light-probe tint from the same bake.
 - Adaptive synthesized score: separate menu groove; in game 4 intensity levels (calm, suspicious, alert, alarm) that add arpeggios, drums and stabs, speed up the tempo and switch on bar lines over an Am-F-C-G pad progression. Surface-specific footsteps (wood, carpet, tile, grass, road) and stereo-panned, wall-muffled guard footsteps.
+- Game feel: knockouts trigger hitstop + a short slow-motion window (audio muffled) with a zoom punch and camera roll kick; opening the safe/vault gets a longer slow-mo beat; smashing cases and grabbing valuables kick the camera; busts slam the zoom. Kicks respect the screen-shake setting.
 - ACES tone mapping, gradient sky dome, fog, dust motes, lamp glows, window god-rays, guard flashlight beams, vignette, dash speed lines, paper-bill and sparkle particles.
 
 ## Performance

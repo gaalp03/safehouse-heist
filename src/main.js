@@ -769,6 +769,7 @@ class App {
     this.floaters.update(st === 'pause' ? 0 : rdt, this.camera, this.w, this.h);
     this.updateHints(rdt);
     if (st === 'play') this.updateHud();
+    this.audio.setMuffle(st === 'play' && this.game.slowT > 0.05);
     this.audio.tension = st === 'play' ? this.game.tension : 0;
     this.audio.mode = st === 'menu' || st === 'soon' || st === 'trophies' || st === 'outfits' ? 'menu' : 'game';
     $('vignette').style.opacity = st === 'play' && this.game.tension ? 1 : 0;
@@ -917,7 +918,7 @@ class App {
       fov = 42;
     } else {
       g.applyCamera(cam, dt);
-      fov = (this.aspect < 1 ? this.fovBase + 14 : this.fovBase) + g.fovKick;
+      fov = (this.aspect < 1 ? this.fovBase + 14 : this.fovBase) + g.fovKick + (g.fovPunch || 0);
       const sp = $('speed'), so = Math.min(1, g.fovKick / 9).toFixed(2);
       if (sp.dataset.o !== so) { sp.dataset.o = so; sp.style.opacity = so; }
     }
