@@ -50,6 +50,8 @@ Lockpicking: the safe room door in Safe House is locked. Press E to start pickin
 
 Hiding: press E at a wardrobe to climb in and peek out through the slats (heartbeat when guards are close). Alerted guards lose you, unless one saw you get in: then he comes and drags you out. Contract: hide from an alerted guard.
 
+Radio check-ins: a few seconds after a knockout the guard's radio calls "Unit, report in!". Hold E next to him to answer "All clear" (he stays down 8 s longer); miss it and the nearest guard runs over to check (on Hard the alarm goes off). Contract: fake a radio check-in; achievement: Smooth Talker.
+
 Smarter guards: a guard who sees a knocked-out colleague runs over and revives them; a guard who spots the opened safe rushes over and raises the alarm (Normal/Hard).
 
 Bonus contracts: every run rolls 3 random side objectives (steal the painting, grab every jewel, lure a guard with a coin, no knockouts, never trigger the alarm, don't wake the owner, escape under 60s, never dash...). They are tracked live on the HUD, pay cash bonuses on the results screen and count toward an all-time total.

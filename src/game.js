@@ -287,7 +287,7 @@ export class Game {
     this.lootTotal = this.baseLootTotal;
     this.smokesLeft = this.D.smoke; this.clouds = []; this.smokeHid = false; for (const s of this.smokeFx || []) s.pts.visible = false;
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
-    this.hidFromAlert = false; this.clerkStopped = false; this.hidesUsed = 0; this.smokesUsed = 0; this.coinsThrown = 0;
+    this.hidFromAlert = false; this.clerkStopped = false; this.hidesUsed = 0; this.smokesUsed = 0; this.coinsThrown = 0; this.radioFaked = 0;
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
@@ -681,6 +681,21 @@ export class Game {
       if (pressed && !nearSafe) this.knockout(ko);
     }
     if (nearCase && !nearSafe && !ko) { app.setPrompt('case', nearCase.prog); this.updateObjective(); return; }
+    // answer a knocked-out guard's radio
+    let caller = null;
+    for (const g of this.guards) {
+      if (g.state !== 'ko' || g.radioCall !== 1) { g.answerProg = 0; continue; }
+      if (Math.hypot(p.x - g.x, p.z - g.z) < 1.6) caller = g;
+    }
+    if (caller && !nearSafe) {
+      if (inp.act) {
+        caller.answerProg += dt / 0.7; p.crack = true;
+        if (caller.answerProg >= 1) this.fakeCheckIn(caller);
+      } else caller.answerProg = Math.max(0, caller.answerProg - dt);
+      app.setPrompt('radio', caller.answerProg);
+      this.updateObjective();
+      return;
+    }
     if (nearDoor && !nearSafe && !ko && nearDoor.type === 'lock') {
       app.hint('pick');
       if (pressed) this.startPick(nearDoor); else app.setPrompt('pick');
@@ -743,7 +758,7 @@ export class Game {
     if (g.reviveT) { g.reviveT.claimed = false; g.reviveT = null; }
     g.safeRun = false; g.claimed = false;
     if (g.kind === 'clerk' && g.state === 'flee') { this.clerkStopped = true; this.app.floaters.spawn('ALARM STOPPED', g.x, 2.2, g.z, 'big', 1.2); }
-    g.state = 'ko'; g.koT = 9; g.susp = 0; g.fallT = 0;
+    g.state = 'ko'; g.koT = 9; g.susp = 0; g.fallT = 0; g.radioCall = 0; g.answerProg = 0; g.callT = 0;
     g.c.flash = 0.2;
     squash(g.c, 0.6);
     this.kos++;
@@ -1175,6 +1190,15 @@ export class Game {
         return;
       case 'ko':
         g.koT -= dt; g.fallT += dt;
+        // radio check-in: answer it (hold E next to him) or someone comes looking
+        if (g.kind === 'guard' && perceive) {
+          if (!g.radioCall && g.koT < 5.5) { g.radioCall = 1; g.callT = 0; app.hint('radio'); }
+          if (g.radioCall === 1) {
+            g.callT -= dt;
+            if (g.callT <= 0) { g.callT = 1.1; app.audio.play('radio'); app.floaters.spawn('📻 "Unit, report in!"', g.x, 1.2, g.z, 'warn', 1.0); }
+            if (g.koT < 1.8) this.missedCheckIn(g);
+          }
+        }
         if (g.koT <= 0) { g.state = 'getup'; g.t = 0.5; }
         return;
       case 'getup':
@@ -1747,6 +1771,32 @@ export class Game {
       }
     }
   }
+  fakeCheckIn(g) {
+    const app = this.app;
+    g.radioCall = 2; g.answerProg = 0; g.koT += 8; this.radioFaked++;
+    app.audio.play('radioOk');
+    app.floaters.spawn('"All clear, over."', g.x, 1.3, g.z, 'big', 1.3);
+    app.hintDone('radio');
+  }
+  missedCheckIn(g) {
+    const app = this.app;
+    g.radioCall = 3;
+    app.audio.play('radio');
+    app.floaters.spawn('📻 "No answer... sending backup!"', g.x, 1.4, g.z, 'alert', 1.4);
+    let best = null, bd = 1e9;
+    for (const o of this.guards) {
+      if (o === g || o.kind !== 'guard' || ['ko', 'getup', 'sleep', 'alert', 'waking'].includes(o.state)) continue;
+      const d = Math.hypot(o.x - g.x, o.z - g.z);
+      if (d < bd) { bd = d; best = o; }
+    }
+    if (best) {
+      g.claimed = true;
+      best.state = 'investigate'; best.tx = g.x; best.tz = g.z; best.hurry = best.speed * 1.8; best.reviveT = g; best.susp = Math.max(best.susp, 0.7); best.navGoal = -1;
+      app.floaters.spawn('On my way!', best.x, 2.0, best.z, 'warn', 1.1);
+    }
+    if (this.app.diff === 'hard' && this.app.mode !== 'daily' && this.app.mode !== 'tutorial') this.triggerAlarm('A guard missed his radio check-in!');
+  }
+
   smashCase(c) {
     const app = this.app, v = this.def.values;
     c.smashed = true; c.prog = 0; this.casesSmashed++;
