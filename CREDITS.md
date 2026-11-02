@@ -15,3 +15,7 @@ Safehouse Heist is an original game. All content was created for this project.
 - CrazyGames HTML5 SDK v3, loaded from `sdk.crazygames.com` as required by the CrazyGames platform.
 
 No CC0 or other external assets are used. If any are added later, list them here with source URL and license.
+
+## Font
+
+- **Lilita One** by Juan Montoreano, SIL Open Font License 1.1 (embedded in index.html as a data URI; license text in `fonts/OFL.txt`). Used for all display text / HUD stickers.
