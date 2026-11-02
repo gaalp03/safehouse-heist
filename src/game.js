@@ -468,7 +468,7 @@ export class Game {
       type: l.type, x: l.x + 0.5, y: 0.45, z: l.y + 0.5, vx: 0, vy: 0, vz: 0, st: 'idle', t: 0,
       value: def.values[l.type], ph: i * 1.7, ms: 0, s: 1, rot: i,
     }));
-    this.safe.door.rotation.y = 0;
+    this.safe.door.rotation.y = 0; if (this.safe.dial) this.safe.dial.rotation.z = 0;
     this.van.group.visible = !!L.van;
     if (L.van) this.van.group.position.set(L.van.x + 0.5, 0, L.van.y + 1);
     this.casesSmashed = 0; this.slotLures = 0;
@@ -855,6 +855,7 @@ export class Game {
       app.hint('safe');
       if (inp.act) {
         this.safeProg += dt * this.gear.crack / (this.def.crackTime || 1.4);
+        if (this.safe.dial) this.safe.dial.rotation.z = Math.sin(this.safeProg * 9.4) * 2.6 + this.safeProg * 3;
         if (this.def.crackNoise) {
           this.crackNoiseT -= dt;
           if (this.crackNoiseT <= 0) { this.crackNoiseT = 1.1; this.makeNoise(sx, sz, this.def.crackNoise, null); app.hint('drill'); }

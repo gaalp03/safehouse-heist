@@ -1079,9 +1079,12 @@ export function buildSafe() {
   const ring = new CylinderGeometry(0.15, 0.15, 0.04, 20); ring.rotateX(Math.PI / 2);
   const face = new CylinderGeometry(0.115, 0.115, 0.05, 20); face.rotateX(Math.PI / 2);
   const knob = new CylinderGeometry(0.05, 0.06, 0.07, 12); knob.rotateX(Math.PI / 2);
-  d.add(ring, gold, 0.3, 0.6, 0.1); d.add(face, 0x22242f, 0.3, 0.6, 0.105); d.add(knob, 0xd8deea, 0.3, 0.6, 0.14);
-  for (let k = 0; k < 12; k++) { const a = (k * Math.PI) / 6; d.box(0.3 + Math.cos(a) * 0.095, 0.6 + Math.sin(a) * 0.095 - 0.008, 0.131, k % 3 ? 0.012 : 0.02, 0.016, 0.004, 0xfff1c0, { faces: PZ }); }
-  d.box(0.3, 0.745, 0.12, 0.02, 0.03, 0.02, 0xff3b4e, { faces: 63 });             // dial marker
+  d.add(ring, gold, 0.3, 0.6, 0.1);
+  d.box(0.3, 0.745, 0.12, 0.02, 0.03, 0.02, 0xff3b4e, { faces: 63 });             // fixed marker
+  const dg = new GeoBuilder();                                                    // spinning dial face
+  dg.add(face, 0x22242f, 0, 0, 0.005); dg.add(knob, 0xd8deea, 0, 0, 0.04);
+  for (let k = 0; k < 12; k++) { const a = (k * Math.PI) / 6; dg.box(Math.cos(a) * 0.095, Math.sin(a) * 0.095 - 0.008, 0.031, k % 3 ? 0.012 : 0.02, 0.016, 0.004, k ? 0xfff1c0 : 0xff3b4e, { faces: PZ }); }
+  dg.box(0, 0.025, 0.075, 0.016, 0.05, 0.012, 0x9aa3ae, { faces: 63 });           // knob grip
   // 4-spoke wheel handle
   const hub = new CylinderGeometry(0.035, 0.035, 0.08, 10); hub.rotateX(Math.PI / 2);
   d.add(hub, 0xd8deea, 0.56, 0.42, 0.13);
@@ -1093,8 +1096,11 @@ export function buildSafe() {
   for (const y of [0.32, 0.6, 0.88]) d.box(0.77, y, 0.03, 0.06, 0.06, 0.06, 0xd8deea, { faces: 63 });
   const door = new Mesh(d.build(), mat);
   door.position.set(-0.37, -0.08, 0.42);
+  const dial = new Mesh(dg.build(), mat);
+  dial.position.set(0.3, 0.6, 0.1);
+  door.add(dial);
   group.add(door);
-  return { group, door, mat };
+  return { group, door, dial, mat };
 }
 
 export function buildVan() {
