@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { textures } from './textures.js';
 import { parseLevel } from './level.js';
-import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, WALL_H } from './world.js';
+import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, buildHeli, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
@@ -110,6 +110,8 @@ export class Game {
       this.panel.at = { x: pd.x + 0.5 + pd.dx * 1.1, z: pd.y + 0.5 + pd.dy * 1.1 };
       this.root.add(this.panel.group);
     }
+    this.heli = def.heli ? buildHeli() : null;
+    if (this.heli) this.root.add(this.heli.group);
     this.van = buildVan();
     this.root.add(this.van.group);
 
@@ -367,6 +369,7 @@ export class Game {
       g.c.root.visible = false; g.cone.visible = false; g.shadow.visible = false; g.stars.visible = false; g.badge.className = 'badge';
     }
     this.shiftN = 0; this.shiftWarn = 0;
+    if (this.heli) this.heli.group.visible = false;
     for (const g of this.guards) this.resetGuard(g);
     // pickpocket targets: every guard carries a wallet; one patrol guard carries a spare keycard
     this.picks = 0; this.pocketProg = 0; this.koHold = 0; this.koTarget = null;
@@ -1802,6 +1805,15 @@ export class Game {
   // first-person camera (plus escape cinematic)
   applyCamera(cam, dt) {
     const p = this.player, app = this.app;
+    if (this.state === 'escape' && this.heli && this.heli.group.visible) {
+      // climb out of the hatch looking up at the chopper, then pull back to watch it fly off
+      const ex = this.L.exit, t = this.endT, hp = this.heli.group.position;
+      if (t < 1.1) { const k = Math.min(1, t / 1.1), e = k * k * (3 - 2 * k); cam.position.set(ex.x, EYE + e * 1.6, ex.z + e * 0.6); }
+      else { const k = Math.min(1, (t - 1.1) * 1.4); cam.position.x += (ex.x + 3 - cam.position.x) * k * dt * 2; cam.position.y += (6 - cam.position.y) * dt * 1.5; cam.position.z += (ex.z + 7 - cam.position.z) * dt * 1.5; }
+      cam.lookAt(hp.x, hp.y, hp.z);
+      this.fovKick = 0;
+      return;
+    }
     if (this.state === 'escape' && !this.L.van) {
       // rooftop escape: climb the hatch and rise above the store
       const ex = this.L.exit, t = this.endT, k = Math.min(1, Math.max(0, (t - 0.3) / 2.0)), e = k * k * (3 - 2 * k);
@@ -1864,13 +1876,30 @@ export class Game {
     app.shake.add(0.2);
     app.onEscapeStart();
   }
+  // helicopter extraction: hover over the hatch, then lift off and bank away over the city
+  updateHeli(dt) {
+    const h = this.heli, g = h.group, ex = this.L.exit, t = this.endT;
+    if (!g.visible) { g.visible = true; this.heliV = 0; g.position.set(ex.x, 4.4, ex.z - 1.2); g.rotation.set(0, 0, 0); }
+    h.rotor.rotation.y += dt * 32; h.tail.rotation.x += dt * 40;
+    h.blink.visible = (t * 2.5) % 1 < 0.4;
+    h.beam.rotation.z = Math.sin(t * 1.3) * 0.25;
+    if (t < 1.3) g.position.y = 4.4 + Math.sin(t * 3) * 0.08;
+    else {
+      this.heliV = Math.min(14, this.heliV + dt * 9);
+      g.position.x -= this.heliV * dt; g.position.y += (1.5 + this.heliV * 0.25) * dt;
+      g.rotation.z += (0.22 - g.rotation.z) * Math.min(1, dt * 3);
+      g.rotation.x += (-0.12 - g.rotation.x) * Math.min(1, dt * 2);
+    }
+    if (t > 0.6 && t < 1.4) this.app.shake.add(dt * 0.25);
+  }
   updateEscape(dt) {
     const p = this.player, van = this.van.group, app = this.app;
     if (!this.L.van) {
       this.endT += dt;
       if (!p.hidden) { p.hidden = true; p.c.root.visible = false; app.audio.play('creak'); }
-      if (this.endT > 0.5 && !this.whooshed) { this.whooshed = true; app.audio.play('dash'); }
-      if (this.endT > 2.8 && !this.endSent) { this.endSent = true; app.onWin(this.results()); }
+      if (this.endT > 0.5 && !this.whooshed) { this.whooshed = true; app.audio.play(this.heli ? 'chopper' : 'dash'); }
+      if (this.heli) this.updateHeli(dt);
+      if (this.endT > (this.heli ? 3.6 : 2.8) && !this.endSent) { this.endSent = true; app.onWin(this.results()); }
       return;
     }
     this.endT += dt;

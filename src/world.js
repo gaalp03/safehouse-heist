@@ -2,7 +2,7 @@
 // Each material is one merged mesh (~15 draw calls for the whole house). Unlit (MeshBasic) = cheap on mobile.
 import {
   Mesh, Group, MeshLambertMaterial, MeshBasicMaterial, OctahedronGeometry, Points, PointsMaterial,
-  BufferGeometry, BufferAttribute, AdditiveBlending, DoubleSide, BoxGeometry,
+  BufferGeometry, BufferAttribute, AdditiveBlending, DoubleSide, BoxGeometry, CylinderGeometry,
 } from 'three';
 import { GeoBuilder, PX, NX, PY, NY, PZ, NZ } from './geo.js';
 import { mulberry32, shade, clamp } from './util.js';
@@ -817,6 +817,41 @@ export function buildVan() {
   const grp = new Group();
   grp.add(m);
   return { group: grp, body: m };
+}
+
+// getaway helicopter (Penthouse roof extraction). Nose points +x like the van.
+export function buildHeli() {
+  const g = new GeoBuilder();
+  const body = 0x22252f, stripe = 0xf2b134, glass = 0x6fb7ff, dark = 0x14161c;
+  g.box(0, 0, 0, 2.2, 1.0, 1.1, body, { top: 0x2c303c });
+  g.box(1.25, 0.1, 0, 0.5, 0.75, 0.95, glass);
+  g.box(0.35, 0.45, 0, 1.0, 0.36, 1.12, glass, { faces: PZ | NZ });
+  g.box(0, 0.32, 0, 2.22, 0.1, 1.12, stripe, { faces: PX | NX | PZ | NZ });
+  g.box(-1.9, 0.45, 0, 1.9, 0.26, 0.26, body);
+  g.box(-2.8, 0.45, 0, 0.3, 0.75, 0.08, stripe);
+  g.box(0, 1.0, 0, 0.5, 0.22, 0.5, dark);
+  for (const z of [-0.62, 0.62]) {
+    g.box(0, -0.42, z, 2.2, 0.07, 0.08, dark, { faces: 63 });
+    g.box(0.5, -0.24, z * 0.92, 0.07, 0.36, 0.07, dark, { faces: 63 });
+    g.box(-0.5, -0.24, z * 0.92, 0.07, 0.36, 0.07, dark, { faces: 63 });
+  }
+  g.box(1.5, -0.28, 0, 0.1, 0.12, 0.3, 0xfff3b0);
+  const grp = new Group();
+  grp.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
+  const rotor = new Group(), bladeMat = new MeshBasicMaterial({ color: 0x0c0d12 });
+  for (let i = 0; i < 2; i++) { const b = new Mesh(new BoxGeometry(5.2, 0.04, 0.22), bladeMat); b.rotation.y = i * Math.PI / 2; rotor.add(b); }
+  rotor.position.y = 1.16; grp.add(rotor);
+  const tail = new Group();
+  tail.add(new Mesh(new BoxGeometry(0.04, 0.9, 0.12), bladeMat), new Mesh(new BoxGeometry(0.04, 0.12, 0.9), bladeMat));
+  tail.position.set(-2.8, 0.55, 0.1); grp.add(tail);
+  // searchlight beam (additive cone hanging under the nose)
+  const beam = new Mesh(new CylinderGeometry(0.08, 1.6, 6, 16, 1, true),
+    new MeshBasicMaterial({ color: 0xfff1c0, transparent: true, opacity: 0.16, blending: AdditiveBlending, depthWrite: false, side: DoubleSide }));
+  beam.position.set(1.5, -3.3, 0); grp.add(beam);
+  const blink = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshBasicMaterial({ color: 0xff2a3a }));
+  blink.position.set(-2.8, 0.95, 0); grp.add(blink);
+  grp.visible = false;
+  return { group: grp, rotor, tail, beam, blink };
 }
 
 export function buildPolice() {

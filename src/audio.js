@@ -67,7 +67,7 @@ export class Audio {
   }
   noise(dur, o = {}) {
     const ctx = this.ctx, t = ctx.currentTime + (o.delay || 0);
-    const src = ctx.createBufferSource(); src.buffer = this.noiseBuf;
+    const src = ctx.createBufferSource(); src.buffer = this.noiseBuf; src.loop = true;
     const f = ctx.createBiquadFilter(); f.type = o.type || 'bandpass';
     f.frequency.setValueAtTime(o.freq || 1000, t);
     if (o.slide) f.frequency.exponentialRampToValueAtTime(o.slide, t + dur);
@@ -129,6 +129,10 @@ export class Audio {
       case 'alarm':
         for (let i = 0; i < 6; i++) T(i % 2 ? 700 : 950, 0.15, { vol: 0.09, delay: i * 0.15 }); break;
       case 'wake': T(300, 0.25, { type: 'sawtooth', slide: 520, vol: 0.1 }); T(520, 0.2, { type: 'sawtooth', slide: 700, vol: 0.08, delay: 0.22 }); break;
+      case 'chopper':
+        // rotor thump: ~11 Hz low noise pulses that swell then fade as it flies off
+        for (let i = 0; i < 34; i++) { const a = i < 8 ? i / 8 : 1 - (i - 8) / 30; N(0.07, { vol: 0.08 + a * 0.32, freq: 160 + a * 120, type: 'lowpass', delay: i * 0.09 }); }
+        N(3.0, { vol: 0.08, freq: 2400, type: 'bandpass', q: 0.8, attack: 0.6 }); break;
       case 'engine':
         N(1.4, { vol: 0.35, freq: 200, slide: 600, type: 'lowpass' });
         T(55, 1.2, { type: 'sawtooth', slide: 140, vol: 0.12 }); break;

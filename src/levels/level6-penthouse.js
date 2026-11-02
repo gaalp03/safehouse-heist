@@ -8,6 +8,7 @@ export default {
   parTime: 150,
   tutorial: true,
   night: true,
+  heli: true,
   roadTop: 17,
   lampScale: 1.1,
   carpet: 0x3a4a7a,
