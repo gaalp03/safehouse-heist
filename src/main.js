@@ -226,9 +226,11 @@ class App {
         const amt = 500 * Math.min(lg.n, 7);
         this.save.cash = (this.save.cash || 0) + amt; SDK.store(this.save);
         const el = $('bonus'); el.querySelector('b').textContent = '+' + fmtMoney(amt);
-        el.querySelector('em').textContent = lg.n > 1 ? `Day ${lg.n} in a row! Come back tomorrow for more` : 'Come back tomorrow for a bigger one';
+        const d7 = ((lg.n - 1) % 7) + 1;
+        el.querySelector('.days').innerHTML = [1, 2, 3, 4, 5, 6, 7].map((d) => `<i class="${d < d7 ? 'on' : d === d7 ? 'now' : ''}">${d === 7 ? '🧤' : d}</i>`).join('');
+        el.querySelector('em').textContent = lg.n >= 7 ? `Day ${lg.n} in a row! Max bonus` : `Day ${lg.n} of 7 · day 7 unlocks the Gold Chain outfit`;
         el.classList.remove('hidden'); el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
-        clearTimeout(this.bonT); this.bonT = setTimeout(() => el.classList.add('hidden'), 3500);
+        clearTimeout(this.bonT); this.bonT = setTimeout(() => el.classList.add('hidden'), 4200);
         setTimeout(() => { this.audio.play('safe'); this.shake.add(0.15); }, 250);
       }
     }
