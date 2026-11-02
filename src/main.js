@@ -786,7 +786,8 @@ class App {
       if (off) { const k = m / Math.max(Math.abs(x), Math.abs(y), 0.001); x *= k; y *= k; if (behind && Math.abs(y) < m - 0.01) y = -m; }
       if (off && x < -0.4 && y > -0.3) x = -0.4;
       wp.classList.toggle('edge', off);
-      wp.style.transform = `translate(${((x + 1) / 2) * this.w}px,${((1 - y) / 2) * this.h}px) translate(-50%,-50%)`;
+      const wpx = Math.max(64, Math.min(this.w - 64, ((x + 1) / 2) * this.w)), wpy = Math.max(40, Math.min(this.h - 40, ((1 - y) / 2) * this.h));
+      wp.style.transform = `translate(${wpx}px,${wpy}px) translate(-50%,-50%)`;
       const txt = label + ' ' + Math.round(dist * 1.5) + 'm';
       if (wp.dataset.t !== txt) { wp.dataset.t = txt; wp.lastChild.textContent = txt; }
     }
