@@ -281,7 +281,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}#bEasy{color:#8ff0c4;font-w
 #ctr li:nth-child(odd){rotate:-1deg}#ctr li:nth-child(even){rotate:.8deg}
 #ctr li i{border-color:var(--ink);background:#fff}#ctr li b{color:#b5651d}
 #ctr li.ok{color:#126b45;background:#c9f7df}#ctr li.ok i{background:#22b573;border-color:var(--ink)}
-#ctr li.fail i{background:var(--hot);border-color:var(--ink)}
+#ctr li.fail i{background:var(--hot);border-color:var(--ink)}#ctr li{position:relative}#ctr li.just{animation:slipok .6s cubic-bezier(.2,1.8,.4,1)}#ctr li.ok.just::after{content:'DONE';position:absolute;right:6px;top:50%;translate:0 -50%;font-size:15px;color:#d23a3a;border:3px solid #d23a3a;border-radius:6px;padding:0 5px;rotate:-12deg;background:rgba(255,255,255,.6);animation:stamp .4s cubic-bezier(.2,1.6,.4,1) both}#ctr li.fail.just{animation:shakeX .4s}@keyframes slipok{0%{scale:1}40%{scale:1.12}100%{scale:1}}
 /* floating world text: thicker outline */
 .ft{font-size:24px;-webkit-text-stroke:1.5px var(--ink);paint-order:stroke fill;text-shadow:0 4px 0 var(--ink),3px 0 0 var(--ink),-3px 0 0 var(--ink),0 -3px 0 var(--ink),2px 2px 0 var(--ink),-2px 2px 0 var(--ink)}
 /* panels get a tilted headline */

@@ -790,11 +790,11 @@ class App {
     $('alarm').classList.toggle('hurry', s <= 10);
     if (s <= 10 && s > 0) this.audio.play('tick', 1.5);
   }
-  renderContracts(list) {
-    $('ctr').innerHTML = list.map((c) => `<li class="${c.st}"><i></i>${c.text}<b>+${fmtMoney(c.bonus)}</b></li>`).join('');
+  renderContracts(list, just) {
+    $('ctr').innerHTML = list.map((c) => `<li class="${c.st}${c === just ? ' just' : ''}"><i></i>${c.text}<b>+${fmtMoney(c.bonus)}</b></li>`).join('');
   }
   onContract(c, list) {
-    this.renderContracts(list);
+    this.renderContracts(list, c);
     if (c.st === 'ok' && this.game.state === 'play') {
       this.audio.play('contract');
       const t = $('ctoast');
