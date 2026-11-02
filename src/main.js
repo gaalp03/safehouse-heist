@@ -500,6 +500,7 @@ class App {
     this.game.load(this.level);
     this.buildMinimap();
     this.loadedIdx = i;
+    this.audio.theme = i;
     // per-level environment (day / night)
     const n = !!this.level.night;
     this.scene.background.setHex(n ? 0x141a33 : 0xf4b98a);

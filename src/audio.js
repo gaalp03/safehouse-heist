@@ -1,6 +1,22 @@
 // All sound is synthesized with WebAudio at runtime: zero audio files to download.
 const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
 
+// music themes: [root offset from tonic, major?] x4 chords; bass grooves; one theme per level
+const PROGS = [
+  [[0, 0], [-4, 1], [3, 1], [-2, 1]],   // i  VI III VII
+  [[0, 0], [5, 0], [7, 0], [0, 0]],     // i  iv v  i
+  [[0, 0], [-2, 1], [-4, 1], [-5, 1]],  // i  VII VI V (andalusian)
+  [[0, 0], [-4, 1], [5, 0], [7, 1]],    // i  VI iv V
+];
+const BASS = [
+  [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0],
+  [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0],
+  [1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0],
+];
+const THEMES = [
+  { prog: 0, tr: 0, bass: 0, k: 1 }, { prog: 1, tr: 2, bass: 1, k: 1.02 }, { prog: 2, tr: -3, bass: 2, k: 0.96 }, { prog: 3, tr: -5, bass: 0, k: 0.94 },
+  { prog: 0, tr: 3, bass: 2, k: 1.08 }, { prog: 2, tr: 1, bass: 1, k: 1 }, { prog: 1, tr: -2, bass: 2, k: 1.1 }, { prog: 3, tr: 4, bass: 1, k: 1 },
+];
 export class Audio {
   constructor() {
     this.ctx = null; this.muted = false; this.adMuted = false; this.hidden = false;
@@ -258,7 +274,7 @@ export class Audio {
     const ctx = this.ctx;
     if (!ctx || ctx.state !== 'running' || !this.musicOn) return;
     const lvl = this.mode === 'menu' ? 0 : this.tension | 0;
-    const bpm = this.mode === 'menu' ? 96 : [104, 110, 128, 140][lvl] || 104;
+    const bpm = this.mode === 'menu' ? 96 : ([104, 110, 128, 140][lvl] || 104) * ((THEMES[this.theme || 0] || THEMES[0]).k);
     const spb = 60 / bpm / 4;
     this.lvl = this.lvl == null ? lvl : this.lvl + Math.sign(lvl - this.lvl) * 0; // snap per bar below
     if (this.nextT < ctx.currentTime) this.nextT = ctx.currentTime + 0.03;
@@ -281,17 +297,20 @@ export class Audio {
   }
   beat(s, delay, lvl) {
     const dest = this.mus, T = (f, d, o) => this.tone(f, d, { ...o, delay, dest }), N = (d, o) => this.noise(d, { ...o, delay, dest });
-    // Am - F - C - G (each chord 16 steps)
-    const chords = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]], roots = [45, 41, 48, 43];
-    const ci = (s >> 4) & 3, root = roots[ci] + (lvl >= 2 ? 12 : 0), st = s & 15;
+    // per-level theme: progression (root offset + chord quality), transposition, bass groove
+    const th = THEMES[this.theme || 0] || THEMES[0], pr = PROGS[th.prog];
+    const ci = (s >> 4) & 3, [ro, q] = pr[ci], base = 45 + th.tr + ro;
+    const chords = pr.map(([o, qq]) => [45 + th.tr + o + 12, 45 + th.tr + o + (qq ? 16 : 15), 45 + th.tr + o + 19]);
+    const root = base + (lvl >= 2 ? 12 : 0), st = s & 15;
+    void q;
     // bass: sneaky pizzicato pattern
-    const bassPat = [1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0];
+    const bassPat = BASS[th.bass];
     if (bassPat[st]) T(midi(root + (st === 6 ? 7 : st === 13 ? 5 : 0)), 0.18, { type: 'triangle', vol: 0.3 });
     if (bassPat[st] && lvl >= 1) T(midi(root + 12), 0.08, { type: 'square', vol: 0.035 });
     // soft hats
     if (st % 4 === 2) N(0.03, { vol: 0.07, freq: 7000, type: 'highpass' });
     // pads
-    if (st === 0) this.pad(chords[ci], 16 * (60 / ([104, 110, 128, 140][lvl] || 104) / 4), delay, lvl >= 2 ? 0.012 : 0.018);
+    if (st === 0) this.pad(chords[ci], 16 * (60 / (([104, 110, 128, 140][lvl] || 104) * th.k) / 4), delay, lvl >= 2 ? 0.012 : 0.018);
     // level 1: plucky arpeggio + finger snaps
     if (lvl >= 1) {
       const arp = chords[ci], k = st % 3;
