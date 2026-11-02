@@ -149,6 +149,10 @@ export class Audio {
       case 'smoke': T(160, 0.12, { type: 'sine', slide: 60, vol: 0.4 }); N(1.4, { freq: 4000, slide: 900, vol: 0.22, q: 0.6 }); N(0.5, { freq: 900, vol: 0.12, type: 'lowpass', delay: 0.05 }); break;
       case 'pin': T(2400 + p * 300, 0.05, { type: 'square', vol: 0.08 }); T(1600 + p * 200, 0.08, { type: 'triangle', vol: 0.1, delay: 0.03 }); N(0.03, { freq: 6000, vol: 0.1, type: 'highpass' }); break;
       case 'slip': N(0.18, { freq: 2200, vol: 0.22, q: 3 }); T(320, 0.15, { type: 'square', slide: 180, vol: 0.08 }); N(0.12, { freq: 1500, vol: 0.15, q: 4, delay: 0.08 }); break;
+      case 'glass':
+        N(0.5, { freq: 5000, vol: 0.35, type: 'highpass' }); N(0.25, { freq: 2500, vol: 0.25, q: 0.8, delay: 0.02 });
+        for (let i = 0; i < 8; i++) T(2500 + Math.random() * 3500, 0.12, { type: 'triangle', vol: 0.06, delay: 0.03 + i * 0.035 });
+        T(140, 0.2, { type: 'sine', slide: 60, vol: 0.3 }); break;
       case 'nope': T(220, 0.12, { vol: 0.08 }); T(180, 0.15, { vol: 0.08, delay: 0.1 }); break;
       case 'combo': T(1320 + p * 80, 0.12, { type: 'triangle', vol: 0.1 }); break;
     }

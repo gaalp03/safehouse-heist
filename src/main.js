@@ -26,6 +26,7 @@ const HINTS = {
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
   dog: ['A guard dog! It follows your scent and barks. Coins distract it.', 'A guard dog! It follows your scent and barks. Coins distract it.'],
   clerk: ['The clerk is running for the alarm button! Knock them out first!', 'The clerk is running for the alarm button! Knock them out first!'],
+  case: ['Hold E to smash a display case. Loud! Guards who see a broken case raise the alarm', 'Hold ✋ to smash a display case. Loud! Guards who see a broken case raise the alarm'],
   pick: ['Locked! Press E when the pin is in the green zone. Slips are noisy!', 'Locked! Tap the hand when the pin is in the green zone. Slips are noisy!'],
   laser: ['Laser grid! Time your run, or cut the power at the breaker in the security room', 'Laser grid! Time your run, or cut the power at the breaker in the security room'],
   key: ['The vault door needs a keycard. Search the offices!', 'The vault door needs a keycard. Search the offices!'],
@@ -75,8 +76,9 @@ class App {
     this.camera = new PerspectiveCamera(42, 1, 0.05, 120);
     this.camera.rotation.order = 'YXZ';
     this.vm = new ViewModel();
-    this.scene.add(new HemisphereLight(0xffe6c8, 0x7a6888, 1.8));
-    const sun = new DirectionalLight(0xffe0b8, 1.4);
+    this.hemi = new HemisphereLight(0xffe6c8, 0x7a6888, 1.8);
+    this.scene.add(this.hemi);
+    const sun = (this.sun = new DirectionalLight(0xffe0b8, 1.4));
     sun.position.set(-4, 10, 6);
     this.scene.add(sun);
 
@@ -121,7 +123,12 @@ class App {
     click('bRestart', () => this.start());
     click('bPMenu', () => this.showMenu());
     click('bRetry', () => this.retry());
-    click('bNext', () => { if (this.levelIdx === 0 && this.mode !== 'daily' && this.bankUnlocked()) this.start('classic', 1); else this.showSoon(); });
+    click('bNext', () => {
+      if (this.levelIdx === 0 && this.mode !== 'daily' && this.bankUnlocked()) this.start('classic', 1);
+      else if (this.levelIdx === 1 && this.jewelryUnlocked()) this.start('classic', 2);
+      else this.showSoon();
+    });
+    click('lvl3', () => { if (this.jewelryUnlocked()) this.start('classic', 2); else { this.audio.play('nope'); const c = $('lvl3'); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); } });
     click('bRMenu', () => this.showMenu());
     click('bBRetry', () => this.retry());
     click('bBMenu', () => this.showMenu());
@@ -182,6 +189,11 @@ class App {
     $('lvl2art').textContent = bu ? '🏦' : '🔒';
     $('lvl2stars').innerHTML = bu ? this.starsHTML(bb ? bb.stars : 0) : '';
     $('lvl2best').textContent = bu ? (bb ? 'Best ' + fmtMoney(bb.score) : 'New!') : 'Escape Safe House to unlock';
+    const ju = this.jewelryUnlocked(), jb = this.save.best[diffKey('jewelry', this.diff)];
+    $('lvl3').classList.toggle('lock', !ju);
+    $('lvl3art').textContent = ju ? '💎' : '🔒';
+    $('lvl3stars').innerHTML = ju ? this.starsHTML(jb ? jb.stars : 0) : '';
+    $('lvl3best').textContent = ju ? (jb ? 'Best ' + fmtMoney(jb.score) : 'New!') : 'Escape the Bank to unlock';
     for (const el of document.querySelectorAll('#diff button')) el.classList.toggle('on', el.dataset.d === this.diff);
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
     $('lvl1best').textContent = b ? 'Best ' + fmtMoney(b.score) : 'New!';
@@ -254,6 +266,10 @@ class App {
     $('soonList').innerHTML = ['Downtown jewelry store', 'Penthouse with laser grids', 'Night train job'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
   }
+  jewelryUnlocked() {
+    const b = this.save.best;
+    return !!(b.bank || b.bank_easy || b.bank_hard || this.save.jewelryOpen);
+  }
   bankUnlocked() {
     const b = this.save.best;
     return !!(b.safehouse || b.safehouse_easy || b.safehouse_hard || this.save.bankOpen);
@@ -264,6 +280,15 @@ class App {
     this.game.load(this.level);
     this.buildMinimap();
     this.loadedIdx = i;
+    // per-level environment (day / night)
+    const n = !!this.level.night;
+    this.scene.background.setHex(n ? 0x141a33 : 0xf4b98a);
+    this.scene.fog.color.setHex(n ? 0x1a2240 : 0xf0c49a);
+    this.scene.fog.near = n ? 10 : 16; this.scene.fog.far = n ? 48 : 70;
+    this.sky.material.color.setHex(n ? 0x26305a : 0xffffff);
+    this.hemi.intensity = n ? 1.1 : 1.8; this.hemi.color.setHex(n ? 0xb8c4ff : 0xffe6c8);
+    this.sun.intensity = n ? 0.5 : 1.4; this.sun.color.setHex(n ? 0x9fb0ff : 0xffe0b8);
+    this.vm.hemi.intensity = n ? 1.6 : 2.4;
     this.renderer.compile(this.scene, this.camera);
   }
   starsHTML(n) {
@@ -391,16 +416,16 @@ class App {
   setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
     const sn = (this.level && this.level.safeName ? this.level.safeName : 'safe').toUpperCase();
-    const txt = kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
+    const txt = kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.textContent = txt;
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind);
-      this.els.bAct.lastChild.textContent = kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
+      this.els.bAct.lastChild.textContent = kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
-    if ((kind === 'safe' || kind === 'panel' || kind === 'breaker') && prog > 0) {
+    if ((kind === 'safe' || kind === 'panel' || kind === 'breaker' || kind === 'case') && prog > 0) {
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));
       ring.classList.remove('hidden');
     } else ring.classList.add('hidden');
@@ -486,7 +511,7 @@ class App {
     const f = $('flash');
     f.className = ''; void f.offsetWidth; f.className = kind;
   }
-  onEscapeStart() { $('touch').classList.add('hidden'); $('fp').classList.add('hidden'); this.input.exitLock(); }
+  onEscapeStart() { $('touch').classList.add('hidden'); $('fp').classList.add('hidden'); $('hud').classList.add('hidden'); $('alarm').classList.add('hidden'); this.audio.siren(false); this.input.exitLock(); }
   onBusted() {
     this.state = 'busted';
     this.audio.siren(false);

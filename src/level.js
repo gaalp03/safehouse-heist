@@ -2,7 +2,7 @@
 export const FLOOR = { '.': 'wood', _: 'carpet', ',': 'tile', g: 'grass', p: 'road' };
 export const FURN = {
   h: 'shelf', f: 'fridge', b: 'bed', t: 'desk', k: 'counter', c: 'couch', e: 'tv', i: 'table', u: 'tub',
-  q: 'plant', n: 'night', r: 'stove', y: 'chair', o: 'toilet', w: 'sink', x: 'wardrobe', z: 'teller',
+  q: 'plant', n: 'night', r: 'stove', y: 'chair', o: 'toilet', w: 'sink', x: 'wardrobe', z: 'teller', v: 'case',
 };
 const TALL = new Set(['h', 'f', 'x']);
 export const LOOT = { $: 'cash', G: 'gold', J: 'jewel', A: 'art' };
@@ -17,7 +17,7 @@ export function parseLevel(def) {
   const walk = new Uint8Array(N), opaque = new Uint8Array(N), outdoor = new Uint8Array(N);
   const floor = new Array(N);
   const loot = [], furn = [];
-  let start = { x: 1, y: 1 }, safe = null, van = null;
+  let start = { x: 1, y: 1 }, safe = null, van = null, roof = null;
   const doors = [], keys = [];
 
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -31,6 +31,7 @@ export function parseLevel(def) {
     if (LOOT[c]) loot.push({ type: LOOT[c], x, y });
     if (c === 'P') start = { x, y };
     if (c === 'V') van = { x, y };
+    if (c === 'R') roof = { x, y };
   }
   // infer floor type for non-floor symbols from nearest floor char
   for (let i = 0; i < N; i++) {
@@ -59,7 +60,7 @@ export function parseLevel(def) {
       if (x >= 0 && y >= 0 && x < W && y < H) walk[y * W + x] = 0;
     }
     exit = { x: van.x + 0.5, z: van.y - 0.5 };
-  }
+  } else if (roof) exit = { x: roof.x + 0.5, z: roof.y + 0.5 };
 
   // group contiguous furniture of the same char into rectangles
   const seen = new Uint8Array(N);
@@ -81,5 +82,5 @@ export function parseLevel(def) {
     furn.push({ c, type: FURN[c], x0, y0, w: x1 - x0 + 1, d: y1 - y0 + 1 });
   }
 
-  return { W, H, ch, walk, opaque, outdoor, floor, loot, furn, start, safe, van, exit, def, doors, keys };
+  return { W, H, ch, walk, opaque, outdoor, floor, loot, furn, start, safe, van, roof, exit, def, doors, keys };
 }

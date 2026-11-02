@@ -8,6 +8,7 @@ export const ACH = [
   { id: 'contracts', icon: '📋', name: 'Overachiever', desc: 'Complete all 3 contracts in one run', check: (s, r) => r.win && r.contractsDone >= 3 },
   { id: 'bank', icon: '🏦', name: 'Bank Job', desc: 'Escape from the Bank', check: (s, r) => r.win && r.level === 'bank' },
   { id: 'phantom', icon: '🎭', name: 'Phantom of the Vault', desc: 'Ghost the Bank', check: (s, r) => r.win && r.level === 'bank' && r.ghost },
+  { id: 'jewelry', icon: '💎', name: 'Night Owl', desc: 'Escape from the Jewelry Store', check: (s, r) => r.win && r.level === 'jewelry' },
   { id: 'hard', icon: '💀', name: 'Hardened', desc: 'Escape on Hard', check: (s, r) => r.win && r.diff === 'hard' },
   { id: 'ko10', icon: '🥊', name: 'Lights Out', desc: 'Knock out 10 guards (total)', check: (s) => s.kos >= 10 },
   { id: 'loot50', icon: '💵', name: 'Big Spender', desc: 'Steal $50,000 in total', check: (s) => s.loot >= 50000 },

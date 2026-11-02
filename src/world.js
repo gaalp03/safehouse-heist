@@ -254,6 +254,17 @@ function furniture(L, f, B, rng, lights) {
       for (let k = 0; k < 3; k++) b(P, -W / 2 + 0.15 + k * 0.2, 0.6, D / 2 - 0.06, 0.04, 1.15, 0.035, 0xf6f0e6);
       break;
     }
+    case 'case': {
+      const wd = 0x2a1a22, brass = 0xd9b45a;
+      b(WD, 0, 0, 0, W - 0.1, 0.78, D - 0.1, wd, { top: shade(wd, 1.3) });
+      b(P, 0, 0.1, D / 2 - 0.06, W - 0.2, 0.55, 0.01, shade(wd, 1.4), { faces: PZ });
+      b(P, 0, 0.78, 0, W - 0.06, 0.04, D - 0.06, brass);
+      b(U, 0, 0.82, 0, W - 0.2, 0.012, D - 0.2, 0x3a2a5a, { faces: PY });
+      for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) b(P, sx * (W / 2 - 0.06), 0.82, sz * (D / 2 - 0.06), 0.04, 0.46, 0.04, brass);
+      b(P, 0, 1.28, 0, W - 0.06, 0.03, D - 0.06, brass);
+      light(0, 1.05, 0, [0.75, 0.85, 1.0], 0.9, 2.4);
+      break;
+    }
     case 'wardrobe': {
       const wd = 0x8a5a3c, lt = shade(wd, 1.18), dk = shade(wd, 0.7);
       b(WD, 0, 0, -0.06, 0.92, 1.72, 0.74, wd, { top: dk });
@@ -349,9 +360,20 @@ function makeLighting(L, lights) {
       const ndl = Math.max(0, nx * SUN[0] + ny * SUN[1] + nz * SUN[2]);
       const sky = 0.55 + 0.45 * ny;
       r = 0.5 * sky + 0.95 * ndl; g = 0.5 * sky + 0.8 * ndl; b = 0.62 * sky + 0.62 * ndl;
+      if (L.def.night) {
+        r *= 0.14; g *= 0.18; b *= 0.38;
+        for (const l of lights) {
+          if (!l.street) continue;
+          const dx = l.x - px, dy = l.y - py, dz = l.z - pz, d = Math.hypot(dx, dy, dz);
+          if (d > l.R) continue;
+          const k = 1 - d / l.R, att = l.I * k * k, nd = Math.max(0, (nx * dx + ny * dy + nz * dz) / (d || 1)) * 0.7 + 0.3;
+          r += l.col[0] * att * nd; g += l.col[1] * att * nd; b += l.col[2] * att * nd;
+        }
+      }
     } else {
       const a = 0.85 + 0.15 * ny;
       r = 0.2 * a; g = 0.19 * a; b = 0.27 * a;
+      if (L.def.night) { r *= 0.6; g *= 0.65; b *= 0.85; }
       for (const l of lights) {
         const dx = l.x - px, dy = l.y - py, dz = l.z - pz, d = Math.hypot(dx, dy, dz);
         if (d > l.R) continue;
@@ -395,7 +417,8 @@ export function buildWorld(L) {
   const rr = (a, b) => a + rng() * (b - a);
   const isWall = (x, y) => x >= 0 && y >= 0 && x < W && y < H && ch[y * W + x] === '#';
   const isOut = (x, y) => x < 0 || y < 0 || x >= W || y >= H || L.outdoor[y * W + x] === 1;
-  const roadTop = L.van ? L.van.y - 1 : H;
+  const roadTop = L.van ? L.van.y - 1 : (L.def.roadTop ?? H);
+  const NIGHT = !!L.def.night, LS = L.def.lampScale || 1;
   const lights = [], glows = [], rays = [];
 
   // ---- rooms (flood fill, doorways split rooms) ----
@@ -432,7 +455,7 @@ export function buildWorld(L) {
     for (let k = 0; k < n; k++) {
       const t = (k + 0.5) / n;
       const lx = lw >= lh ? x0 + lw * t : x0 + lw / 2, lz = lw >= lh ? y0 + lh / 2 : y0 + lh * t;
-      lights.push({ x: lx, y: WALL_H - 0.4, z: lz, col: [1, 0.74, 0.45], I: 1.75, R: 5.6, pendant: true });
+      lights.push({ x: lx, y: WALL_H - 0.4, z: lz, col: NIGHT ? [1, 0.7, 0.5] : [1, 0.74, 0.45], I: 1.75 * LS, R: 5.6, pendant: true });
     }
   }
 
@@ -515,8 +538,8 @@ export function buildWorld(L) {
         }
         if (win) {
           const wf = out ? 0xf6f0e6 : 0xffffff;
-          B.unlit.box(fx + dx * 0.006, 0.82, fz + dy * 0.006, dx ? 0.01 : 0.62, 0.62, dy ? 0.01 : 0.62, out ? 0x6f9ec2 : 0xffe2b0, { faces: bit });
-          B.unlit.box(fx + dx * 0.008, 1.14, fz + dy * 0.008, dx ? 0.01 : 0.62, 0.3, dy ? 0.01 : 0.62, out ? 0x8fb8d6 : 0xfff1d0, { faces: bit });
+          B.unlit.box(fx + dx * 0.006, 0.82, fz + dy * 0.006, dx ? 0.01 : 0.62, 0.62, dy ? 0.01 : 0.62, out ? (NIGHT ? 0x3a4a6a : 0x6f9ec2) : (NIGHT ? 0x4a5a8a : 0xffe2b0), { faces: bit });
+          B.unlit.box(fx + dx * 0.008, 1.14, fz + dy * 0.008, dx ? 0.01 : 0.62, 0.3, dy ? 0.01 : 0.62, out ? (NIGHT ? 0x4a5a7a : 0x8fb8d6) : (NIGHT ? 0x6a7aa8 : 0xfff1d0), { faces: bit });
           B.plain.box(fx + dx * 0.02, 0.76, fz + dy * 0.02, dx ? 0.06 : 0.78, 0.06, dy ? 0.06 : 0.78, wf, { faces: 63 & ~NY });
           B.plain.box(fx + dx * 0.02, 1.44, fz + dy * 0.02, dx ? 0.05 : 0.74, 0.05, dy ? 0.05 : 0.74, wf);
           for (const s of [-1, 1]) B.plain.box(fx + dx * 0.02 + (dy ? s * 0.345 : 0), 0.8, fz + dy * 0.02 + (dx ? s * 0.345 : 0), dx ? 0.05 : 0.05, 0.66, dy ? 0.05 : 0.05, wf);
@@ -532,7 +555,7 @@ export function buildWorld(L) {
             // window light: sun pool on the floor + light source + soft ray
             const px = fx + dx * 0.9, pz = fz + dy * 0.9;
             B.patch.box(px + (dy ? 0.25 : 0), 0.015, pz + (dx ? 0.25 : 0), dx ? 1.0 : 0.8, 0, dy ? 1.0 : 0.8, 0xffd9a0, { faces: PY, fit: true });
-            lights.push({ x: fx + dx * 0.6, y: 1.1, z: fz + dy * 0.6, col: [1, 0.8, 0.55], I: 0.95, R: 3.6 });
+            lights.push({ x: fx + dx * 0.6, y: 1.1, z: fz + dy * 0.6, col: NIGHT ? [0.45, 0.55, 1.0] : [1, 0.8, 0.55], I: NIGHT ? 0.6 : 0.95, R: 3.6 });
             rays.push([fx + dx * 0.03, fz + dy * 0.03, dx, dy]);
           }
         } else if (!out && (x * 5 + y * 3) % 7 === 0) {
@@ -604,6 +627,25 @@ export function buildWorld(L) {
     glows.push(l.x, l.y - 0.02, l.z);
   }
   for (const l of lights) if (!l.pendant && l.I > 0.8 && l.y < 1.2 && l.col[2] < 0.5) glows.push(l.x, l.y - 0.05, l.z);
+  if (NIGHT) {
+    // street lamps along the sidewalk
+    for (let x = -10; x < W + 12; x += 6) {
+      const z = roadTop + 0.15;
+      B.plain.box(x, 0, z, 0.12, 2.6, 0.12, 0x2a2b36);
+      B.plain.box(x, 2.55, z + 0.35, 0.1, 0.08, 0.7, 0x2a2b36);
+      B.unlit.box(x, 2.45, z + 0.65, 0.3, 0.1, 0.3, 0xffe2a0, { faces: 63 });
+      lights.push({ x, y: 2.3, z: z + 0.7, col: [1, 0.78, 0.45], I: 1.6, R: 5.5, street: true });
+      glows.push(x, 2.42, z + 0.65);
+    }
+  }
+  if (L.roof) {
+    // roof hatch: ladder + dark opening in the ceiling
+    const x = L.roof.x + 0.5, z = L.roof.y + 0.5;
+    for (const s of [-1, 1]) B.plain.box(x + s * 0.22, 0, z - 0.3, 0.05, WALL_H, 0.05, 0x8a94a4);
+    for (let k = 0; k < 6; k++) B.plain.box(x, 0.25 + k * 0.28, z - 0.3, 0.44, 0.04, 0.04, 0xb8c2d0);
+    B.unlit.box(x, WALL_H - 0.005, z - 0.1, 0.7, 0.01, 0.7, 0x0a0c18, { faces: NY });
+    B.plain.box(x, WALL_H - 0.08, z - 0.1, 0.8, 0.08, 0.8, 0x6a7484, { faces: 63 & ~PY & ~NY });
+  }
 
   // ---- bake lighting ----
   const lightAt = makeLighting(L, lights);

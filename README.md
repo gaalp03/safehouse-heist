@@ -36,6 +36,8 @@ Outfits (menu): 8 colour-only robber looks (hoodie, gloves, crowbar) unlocked by
 
 Trophies (menu): lifetime stats (heists, escapes, busts, total loot, KOs, contracts, best times per level) and 16 achievements (Ghost, Speed Demon, Pacifist, Clean Sweep, Phantom of the Vault, Wardrobe Ninja...), unlocks announced on the results screen.
 
+Level 3 — The Jewelry Store (unlocks after escaping the Bank): a night heist with moonlit/street-lamp lighting. Hold E to smash glowing display cases (loud, jewels burst out; guards who spot a broken case raise the alarm), laser gates into the back rooms, a breaker, a locked office with the safe, and a rooftop escape through the roof hatch instead of the van.
+
 Daily Challenge: one seeded run per day (Normal rules) with a mutator of the day (Paranoid Guards, Insomniac Owner, Gold Rush, Butterfingers, Rapid Response, Hungry Hound) and fixed contracts; separate daily best and a day streak.
 
 Difficulty: Easy / Normal / Hard (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.

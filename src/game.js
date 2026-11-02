@@ -230,7 +230,25 @@ export class Game {
 
     // totals
     const v = def.values;
-    this.baseLootTotal = v.stash + v.bundle * v.bundles + L.loot.reduce((s, l) => s + v[l.type], 0);
+    // display cases (dynamic glass + jewels so they can be smashed)
+    this.cases = L.furn.filter((f) => f.type === 'case').map((f) => {
+      const cx = f.x0 + f.w / 2, cz = f.y0 + f.d / 2;
+      const glass = new Mesh(new BoxGeometry(f.w - 0.12, 0.46, f.d - 0.12), new MeshBasicMaterial({ color: 0xbfe6ff, transparent: true, opacity: 0.28, depthWrite: false }));
+      glass.position.set(cx, 1.05, cz); glass.renderOrder = 5;
+      const gems = new Group();
+      const gcols = [0x4cdcff, 0xff4f7a, 0x7cff9a, 0xffd75a, 0xc77dff];
+      for (let k = 0; k < 5; k++) {
+        const m = new Mesh(new BoxGeometry(0.09, 0.09, 0.09), new MeshBasicMaterial({ color: gcols[(k + f.x0) % 5] }));
+        m.position.set(cx + (k % 3 - 1) * (f.w * 0.25), 0.88, cz + ((k / 3 | 0) - 0.5) * (f.d * 0.3));
+        m.rotation.set(0.6, k, 0.6);
+        gems.add(m);
+      }
+      this.root.add(glass, gems);
+      return { f, cx, cz, glass, gems, smashed: false, prog: 0 };
+    });
+    this.caseLoot = def.caseLoot || 0;
+    this.policeLane = L.van ? { x: L.exit.x, z: L.exit.z + 2.5 } : { x: L.start.x + 0.5, z: L.start.y + 1.5 };
+    this.baseLootTotal = v.stash + v.bundle * v.bundles + L.loot.reduce((s, l) => s + v[l.type], 0) + this.cases.length * this.caseLoot * v.jewel;
     this.lootTotal = this.baseLootTotal;
     this.reset();
   }
@@ -305,7 +323,10 @@ export class Game {
       value: def.values[l.type], ph: i * 1.7, ms: 0, s: 1, rot: i,
     }));
     this.safe.door.rotation.y = 0;
-    this.van.group.position.set(L.van.x + 0.5, 0, L.van.y + 1);
+    this.van.group.visible = !!L.van;
+    if (L.van) this.van.group.position.set(L.van.x + 0.5, 0, L.van.y + 1);
+    this.casesSmashed = 0;
+    for (const c of this.cases || []) { c.smashed = false; c.prog = 0; c.glass.visible = true; c.gems.visible = true; }
     this.van.group.rotation.set(0, 0, 0);
     this.van.vx = 0;
     this.exitRing.visible = this.exitBeam.visible = false;
@@ -322,7 +343,7 @@ export class Game {
       susp: 0, lastX: 0, lastZ: 0, lostT: 99, koT: 0, t: 0, wp: 0, dir: 1, nav: [], navGoal: -1, navT: 0,
       tx: 0, tz: 0, hurry: 0, baseFace: 0, fallT: 0, zz: 0.5, prevBadge: '',
       speed: (d.speed || 1.8) * this.D.speed, range: (g.kind === 'owner' ? 4.6 : 5.6) * this.D.range, fov: g.kind === 'owner' ? 1.2 : 1.35,
-      reviveT: null, sawSafe: false, safeRun: false,
+      reviveT: null, sawSafe: false, safeRun: false, sawCase: false,
       ...(g.kind === 'clerk' ? { range: 4.6 * this.D.range, fov: 1.5 } : {}),
     });
     g.c.root.rotation.set(0, 0, 0);
@@ -599,6 +620,21 @@ export class Game {
       const dx = d.x + 0.5, dz = d.y + 0.5;
       if (Math.hypot(p.x - dx, p.z - dz) < 1.5 && Math.abs(angDiff(p.face, Math.atan2(dx - p.x, dz - p.z))) < 1.0) nearDoor = d;
     }
+    // display cases: hold E to smash
+    let nearCase = null;
+    for (const c of this.cases) {
+      if (c.smashed) continue;
+      const d = Math.hypot(p.x - c.cx, p.z - c.cz);
+      if (d < 1.3 + Math.max(c.f.w, c.f.d) * 0.35 && Math.abs(angDiff(p.face, Math.atan2(c.cx - p.x, c.cz - p.z))) < 1.0) nearCase = c;
+    }
+    for (const c of this.cases) if (c !== nearCase) c.prog = Math.max(0, c.prog - dt * 2);
+    if (nearCase) {
+      app.hint('case');
+      if (inp.act) {
+        nearCase.prog += dt / 0.55; p.crack = true;
+        if (nearCase.prog >= 1) this.smashCase(nearCase);
+      }
+    }
     // breaker box (cuts the lasers)
     let nearBreaker = false;
     if (this.breaker && !this.powerOff) {
@@ -644,6 +680,7 @@ export class Game {
       app.hint('ko');
       if (pressed && !nearSafe) this.knockout(ko);
     }
+    if (nearCase && !nearSafe && !ko) { app.setPrompt('case', nearCase.prog); this.updateObjective(); return; }
     if (nearDoor && !nearSafe && !ko && nearDoor.type === 'lock') {
       app.hint('pick');
       if (pressed) this.startPick(nearDoor); else app.setPrompt('pick');
@@ -1039,6 +1076,16 @@ export class Game {
       app.audio.play('huh');
       app.floaters.spawn('Man down!', g.x, 2.0, g.z, 'warn', 1.3);
       return;
+    }
+    if (this.casesSmashed && g.kind === 'guard' && !g.sawCase) {
+      const c = this.cases.find((c) => c.smashed && this.seesPoint(g, c.cx, c.cz, g.range));
+      if (c) {
+        g.sawCase = true; g.safeRun = true;
+        g.state = 'investigate'; g.tx = c.cx; g.tz = c.cz + 1.2; g.hurry = g.speed * 1.6; g.susp = Math.max(g.susp, 0.7); g.navGoal = -1;
+        app.audio.play('huh');
+        app.floaters.spawn('The display case!?', g.x, 2.0, g.z, 'warn', 1.3);
+        return;
+      }
     }
     if (this.safeOpen && !g.sawSafe && g.kind === 'guard') {
       const sx = this.L.safe.x + 0.5, sz = this.L.safe.y + 0.5;
@@ -1491,6 +1538,14 @@ export class Game {
   // first-person camera (plus escape cinematic)
   applyCamera(cam, dt) {
     const p = this.player, app = this.app;
+    if (this.state === 'escape' && !this.L.van) {
+      // rooftop escape: climb the hatch and rise above the store
+      const ex = this.L.exit, t = this.endT, k = Math.min(1, Math.max(0, (t - 0.3) / 2.0)), e = k * k * (3 - 2 * k);
+      cam.position.set(ex.x, EYE + e * 9, ex.z + e * 3.5);
+      cam.rotation.set(-0.1 - e * 1.0, Math.PI + e * 0.5, 0);
+      this.fovKick = 0;
+      return;
+    }
     if (this.state === 'escape') {
       const v = this.van.group.position, ex = this.L.exit;
       if (!this.cineInit) { this.cineInit = true; cam.position.set(ex.x - 2.5, 1.6, ex.z + 5); }
@@ -1537,7 +1592,7 @@ export class Game {
   escape() {
     const app = this.app;
     this.checkContracts(true);
-    this.state = 'escape'; this.endT = 0; this.endSent = false; this.cineInit = false;
+    this.state = 'escape'; this.endT = 0; this.endSent = false; this.cineInit = false; this.whooshed = false;
     const p = this.player;
     p.sx = p.x; p.sz = p.z;
     app.setPrompt('');
@@ -1547,6 +1602,13 @@ export class Game {
   }
   updateEscape(dt) {
     const p = this.player, van = this.van.group, app = this.app;
+    if (!this.L.van) {
+      this.endT += dt;
+      if (!p.hidden) { p.hidden = true; p.c.root.visible = false; app.audio.play('creak'); }
+      if (this.endT > 0.5 && !this.whooshed) { this.whooshed = true; app.audio.play('dash'); }
+      if (this.endT > 2.8 && !this.endSent) { this.endSent = true; app.onWin(this.results()); }
+      return;
+    }
     this.endT += dt;
     const t = this.endT;
     if (t < 0.4) {
@@ -1578,7 +1640,7 @@ export class Game {
     const app = this.app, ex = this.L.exit;
     this.alarm = true; this.alarmT = this.alarmTotal; this.alarms++; this.spotted = true;
     this.police.group.visible = true;
-    this.police.group.position.set(ex.x + 40, 0, ex.z + 2.5);
+    this.police.group.position.set(this.policeLane.x + 40, 0, this.policeLane.z);
     this.police.group.rotation.y = Math.PI;
     app.audio.play('alarm');
     app.audio.siren(true);
@@ -1605,7 +1667,7 @@ export class Game {
     const pc = this.police;
     if (!this.alarm) {
       // police drive away after disarm
-      if (pc.group.visible && this.state === 'play') { pc.group.position.x += dt * 10; if (pc.group.position.x > this.L.exit.x + 45) pc.group.visible = false; }
+      if (pc.group.visible && this.state === 'play') { pc.group.position.x += dt * 10; if (pc.group.position.x > this.policeLane.x + 45) pc.group.visible = false; }
       return;
     }
     const k = Math.sin(this.t * 16) > 0;
@@ -1614,7 +1676,7 @@ export class Game {
     if (!playing) return;
     this.alarmT -= dt;
     const ex = this.L.exit, f = Math.max(0, this.alarmT / this.alarmTotal);
-    pc.group.position.x = ex.x + 2.5 + f * 37;
+    pc.group.position.x = this.policeLane.x + 2.5 + f * 37;
     this.app.onAlarmTime(Math.max(0, this.alarmT));
     if (this.alarmT <= 0) this.policeBust();
   }
@@ -1685,6 +1747,24 @@ export class Game {
       }
     }
   }
+  smashCase(c) {
+    const app = this.app, v = this.def.values;
+    c.smashed = true; c.prog = 0; this.casesSmashed++;
+    c.glass.visible = false; c.gems.visible = false;
+    app.audio.play('glass');
+    app.shake.add(0.28);
+    this.hitstop = 0.06;
+    app.particles.burst(c.cx, 1.05, c.cz, { count: 26, colors: [0xdff4ff, 0xbfe6ff, 0xffffff], speed: 3.2, up: 3, size: 0.07, life: 0.9, spin: 2 });
+    app.particles.burst(c.cx, 0.95, c.cz, { count: 8, colors: [0x4cdcff, 0xff4f7a, 0xffd75a], speed: 1.5, up: 2.5, size: 0.05, life: 0.7 });
+    this.makeNoise(c.cx, c.cz, 3.6, null);
+    for (let i = 0; i < this.caseLoot; i++) {
+      const a = Math.atan2(this.player.x - c.cx, this.player.z - c.cz) + (i - 0.5) * 0.9;
+      this.loot.push({ type: 'jewel', x: c.cx, y: 1.0, z: c.cz, vx: Math.sin(a) * rand(1.5, 2.4), vy: rand(3.5, 5), vz: Math.cos(a) * rand(1.5, 2.4),
+        st: 'fly', t: 0, value: v.jewel, ph: i, ms: 0, s: 1, rot: i });
+    }
+    app.floaters.spawn('SMASH!', c.cx, 1.6, c.cz, 'ko', 0.8);
+  }
+
   // ---------- lockpicking minigame ----------
   startPick(d) {
     this.picking = { d, pin: 0, t: Math.random() * 6, speed: 2.2, w: 0.26, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
@@ -1750,7 +1830,7 @@ export class Game {
   }
   objectiveTarget() {
     const L = this.L;
-    if (this.hasStash) return { x: L.exit.x, z: L.exit.z, label: 'VAN' };
+    if (this.hasStash) return { x: L.exit.x, z: L.exit.z, label: L.van ? 'VAN' : 'ROOF HATCH' };
     const closed = this.doors.find((d) => !d.open && d.type !== 'lock');
     if (closed && !this.hasKey) { const k = this.keyMeshes.find((k) => k.m.visible); if (k) return { x: k.x + 0.5, z: k.y + 0.5, label: 'KEYCARD' }; }
     if (closed) return { x: closed.x + 0.5, z: closed.y + 0.5, label: 'DOOR' };
@@ -1760,7 +1840,7 @@ export class Game {
   }
   updateObjective() {
     const closed = this.doors.find((d) => !d.open && d.type !== 'lock'), lock = this.doors.find((d) => !d.open && d.type === 'lock');
-    const t = this.hasStash ? 'Escape to the van!' : closed && !this.hasKey ? 'Find the keycard!' : closed ? 'Open the vault door!' : lock ? 'Pick the lock!' : `Crack the ${this.def.safeName || 'safe'}!`;
+    const t = this.hasStash ? (this.L.van ? 'Escape to the van!' : 'Escape through the roof hatch!') : closed && !this.hasKey ? 'Find the keycard!' : closed ? 'Open the vault door!' : lock ? 'Pick the lock!' : `Crack the ${this.def.safeName || 'safe'}!`;
     if (t !== this.objText) { this.objText = t; this.app.setObjective(t); }
   }
 
