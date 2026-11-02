@@ -16,6 +16,7 @@ export const ACH = [
   { id: 'vent5', icon: '🕳️', name: 'Duct Rat', desc: 'Crawl through 5 air vents (total)', check: (s) => (s.vents || 0) >= 5 },
   { id: 'inside', icon: '🕴', name: 'Inside Man', desc: 'Escape while wearing a guard uniform', check: (s, r) => r.win && r.disguised },
   { id: 'train', icon: '🚂', name: 'Great Train Robbery', desc: 'Escape from the Night Train', check: (s, r) => r.win && r.level === 'train' },
+  { id: 'warehouse', icon: '📦', name: 'Dock Rat', desc: 'Escape from the Warehouse', check: (s, r) => r.win && r.level === 'warehouse' },
   { id: 'casino', icon: '🎰', name: 'High Roller', desc: 'Escape from the Casino', check: (s, r) => r.win && r.level === 'casino' },
   { id: 'pick10', icon: '👛', name: 'Sticky Fingers', desc: 'Pickpocket 10 guards (total)', check: (s) => (s.picks || 0) >= 10 },
   { id: 'iron', icon: '🛡️', name: 'Iron Will', desc: 'Escape on Ironman', check: (s, r) => r.win && r.diff === 'ironman' },

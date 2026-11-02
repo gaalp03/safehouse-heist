@@ -73,6 +73,22 @@ function furniture(L, f, B, rng, lights) {
   b(B.shadow, 0, 0.012, 0, W + 0.35, 0.001, D + 0.35, 0xffffff, { faces: PY, fit: true });
 
   switch (f.type) {
+    case 'crate': {
+      // stacked shipping crates (two high, the top one nudged/rotated), stencil band + corner posts
+      const CR = [0xa8794a, 0x8f6a44, 0xb98a55, 0x7d6a52];
+      for (let i = 0; i < W; i++) for (let j = 0; j < D; j++) {
+        const lx = -W / 2 + i + 0.5, lz = -D / 2 + j + 0.5;
+        for (let k = 0; k < 2; k++) {
+          const col = CR[(rng() * CR.length) | 0], s = k ? rr(0.72, 0.86) : 0.9, ry = k ? rr(-0.25, 0.25) : 0, ox = k ? rr(-0.06, 0.06) : 0;
+          const y = k * 0.86;
+          b(WD, lx + ox, y, lz + ox, s, 0.86, s, col, { ry, top: shade(col, 1.12) });
+          b(WD, lx + ox, y + 0.38, lz + ox, s + 0.02, 0.1, s + 0.02, shade(col, 0.72), { ry, faces: 63 & ~4 & ~8 });
+          for (const cx of [-1, 1]) for (const cz of [-1, 1]) b(WD, lx + ox + cx * (s / 2 - 0.03), y, lz + ox + cz * (s / 2 - 0.03), 0.07, 0.86, 0.07, shade(col, 0.6), { ry });
+        }
+        if (rng() < 0.3) b(P, lx, 0.38, lz + 0.46, 0.4, 0.12, 0.01, 0x22242f, { faces: 16 });
+      }
+      break;
+    }
     case 'shelf': {
       const wal = 0x7a4e33, h = 1.6;
       for (const s of [-1, 1]) b(WD, s * (W / 2 - 0.04), 0, 0, 0.07, h, D - 0.12, wal);
