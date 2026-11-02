@@ -601,7 +601,7 @@ class App {
     } else if (fresh && this.mode === 'classic' && this.save.tutDone) this.showIntel();
     else $('ctoast').classList.add('hidden');
     if (!(fresh && this.mode === 'classic' && this.save.tutDone) && this.mode !== 'daily') {
-      const gs = $('gostamp'); gs.querySelector('small').textContent = this.level.name.toUpperCase();
+      const gs = $('gostamp'); gs.querySelector('small').textContent = this.level.name.toUpperCase() + ((this.save.hot || 0) >= 1 && this.mode === 'classic' ? `  ·  🔥 STREAK ${this.save.hot}` : '');
       gs.classList.remove('hidden'); gs.style.animation = 'none'; void gs.offsetWidth; gs.style.animation = '';
       clearTimeout(this.goT); this.goT = setTimeout(() => gs.classList.add('hidden'), 1200);
       this.audio.play('dash');
