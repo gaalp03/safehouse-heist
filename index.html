@@ -198,6 +198,8 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 #result .rcol{gap:12px}
 @media (max-height:700px){#result .rcol{gap:5px}#rMap{width:220px}#bMap{width:200px}#rCtrTotal,#rMult{display:none}#result .stats{font-size:14px}#result .goals,#result .ctrs{font-size:12px;gap:1px}#result .big{font-size:36px}#rStars span{font-size:38px}}
 @media (max-width:720px){.panel.rp{flex-direction:column;gap:8px}.rmapcol{order:2}#rMap{width:220px}}
+#ghostp{font-size:15px;color:#d9b8ff;padding:6px 10px}
+@media (max-width:640px){#ghostp{display:none}}
 .keys{font-size:13px;opacity:.75;max-width:520px}body.touch .kb{display:none}body:not(.touch) .tc{display:none}
 #loading{background:radial-gradient(ellipse at center,#3d2c62,#1c1330);z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
@@ -234,6 +236,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div id="key" class="pill o hidden">🔑 KEYCARD</div>
   <div id="coins" class="pill o"><i class="coin"></i><span>×3</span></div>
   <div id="tr">
+    <div id="ghostp" class="pill o hidden" title="Your best escape">👻<span>0:00</span></div>
     <div id="time" class="pill o">0:00</div>
     <button id="bMute" class="ib" aria-label="Sound"><svg viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3z"/><path class="w" d="M15 8.5a5 5 0 0 1 0 7l1.4 1.4a7 7 0 0 0 0-9.8zM17.8 5.7a9 9 0 0 1 0 12.6l1.4 1.4a11 11 0 0 0 0-15.4z"/><path class="x" d="M15 9.4l1.4-1.4 2.1 2.1 2.1-2.1 1.4 1.4-2.1 2.1 2.1 2.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg></button>
     <button id="bPause" class="ib" aria-label="Pause"><svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>

@@ -408,6 +408,10 @@ class App {
     this.lastLoot = -1; this.lastSec = -1;
     this.onLoot(false, true);
     this.onCoins(this.game.coinsLeft);
+    // ghost of your best escape on this level + difficulty (classic runs only)
+    this.ghost = this.mode === 'classic' ? (this.save.ghost || {})[diffKey(this.level.id, this.diff)] || null : null;
+    $('ghostp').classList.toggle('hidden', !this.ghost);
+    if (this.ghost) $('ghostp').lastChild.textContent = fmtTime(this.ghost.t);
     this.onSmoke(this.game.smokesLeft);
     this.renderContracts(this.game.contracts);
     this.tutStep = this.game.tut ? 0 : TUT_STEPS.length; $('tut').dataset.k = '';
@@ -643,6 +647,13 @@ class App {
       newBest = res.score > prev.score;
       this.save.best[bk] = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
       bestScore = this.save.best[bk].score;
+      const gh = this.ghost, faster = !gh || res.time < gh.t;
+      this.ghostMsg = gh ? (faster ? `👻 Beat your ghost by ${(gh.t - res.time).toFixed(1)}s!` : `👻 Ghost was ${(res.time - gh.t).toFixed(1)}s faster`) : '';
+      if (this.mode === 'classic' && (newBest || faster)) {
+        const tr = this.game.trail, pts = [];
+        for (let i = 0; i < tr.length; i += 2) pts.push(Math.round(tr[i][0] * 10), Math.round(tr[i][1] * 10));
+        (this.save.ghost = this.save.ghost || {})[bk] = { t: res.time, dt: 0.7, pts };
+      }
     }
     this.save.contracts = (this.save.contracts || 0) + res.contracts.filter((c) => c.st === 'ok').length;
     SDK.store(this.save);
@@ -658,6 +669,7 @@ class App {
     $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day streak` : '');
     $('rMult').textContent = res.mult === 1 ? '' : `${res.diff} ×${res.mult}`;
     $('rBest').classList.toggle('new', newBest);
+    if (!res.daily && this.ghostMsg) $('rBest').textContent += '  ·  ' + this.ghostMsg;
     const tutJustDone = this.game.tut && !this.save.tutDone;
     if (this.game.tut) this.save.tutDone = true;
     const freshA = recordRun(this.save, this.runRecord(true, res));
@@ -829,6 +841,19 @@ class App {
     for (const d of g.doors) { x.fillStyle = d.open ? '#3ddc84' : '#ff3b4e'; x.fillRect(d.x * S, d.y * S, S, S); }
     for (const k of g.keyMeshes) if (k.m.visible) { x.fillStyle = '#2f7ae8'; x.fillRect(k.x * S + 0.5, k.y * S + 0.5, S - 1, S - 1); }
     for (const d of g.dogs) { x.fillStyle = d.state === 'bark' || d.state === 'barkHide' ? '#ff3b4e' : '#c98a4a'; x.fillRect(d.x * S - 2, d.z * S - 2, 4, 4); }
+    // ghost run: faint best route + where your best run was right now
+    const gh = this.ghost;
+    if (gh && gh.pts.length > 3) {
+      const P = gh.pts, n = P.length / 2;
+      x.strokeStyle = 'rgba(199,125,255,.45)'; x.lineWidth = 1.5; x.setLineDash([3, 3]);
+      x.beginPath(); x.moveTo(P[0] / 10 * S, P[1] / 10 * S);
+      for (let i = 1; i < n; i++) x.lineTo(P[i * 2] / 10 * S, P[i * 2 + 1] / 10 * S);
+      x.stroke(); x.setLineDash([]);
+      const f = Math.min(n - 1, g.time / gh.dt), i0 = Math.floor(f), i1 = Math.min(n - 1, i0 + 1), k = f - i0;
+      const gx = (P[i0 * 2] + (P[i1 * 2] - P[i0 * 2]) * k) / 10 * S, gz = (P[i0 * 2 + 1] + (P[i1 * 2 + 1] - P[i0 * 2 + 1]) * k) / 10 * S;
+      x.fillStyle = 'rgba(199,125,255,.95)'; x.beginPath(); x.arc(gx, gz, 3.4, 0, 6.3); x.fill();
+      x.strokeStyle = '#fff'; x.lineWidth = 1; x.stroke();
+    }
     // player arrow
     const a = -p.face + Math.PI / 2, px = p.x * S, pz = p.z * S;
     x.fillStyle = '#fff'; x.strokeStyle = '#17c3a2'; x.lineWidth = 1.5;
