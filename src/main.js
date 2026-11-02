@@ -163,6 +163,7 @@ class App {
     click('bRMenu', () => this.showMenu());
     click('bBRetry', () => this.retry());
     click('bBMenu', () => this.showMenu());
+    click('bEasy', () => { this.diff = 'easy'; this.bustStreak = 0; this.start('classic', this.levelIdx); });
     click('bRevive', () => this.reviveAd());
     click('bSoonBack', () => this.showMenu());
     click('bTrophy', () => this.showTrophies());
@@ -816,6 +817,9 @@ class App {
     $('bustTip').textContent = this.bustTip();
     const fresh = recordRun(this.save, this.runRecord(false));
     this.awardXP(false, 0, this.game.lootGot, 'bXP');
+    // repeated busts on the same heist: offer Easy instead of letting frustration build
+    this.bustStreak = this.bustKey === this.level.id ? (this.bustStreak || 0) + 1 : 1; this.bustKey = this.level.id;
+    $('bEasy').classList.toggle('hidden', !(this.mode === 'classic' && this.bustStreak >= 3 && (this.diff === 'normal' || this.diff === 'hard')));
     SDK.store(this.save);
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).join('<br>');
     this.screen('busted');
@@ -823,6 +827,7 @@ class App {
   }
   onWin(res) {
     this.state = 'result';
+    this.bustStreak = 0;
     this.audio.siren(false);
     $('alarm').classList.add('hidden'); $('siren').classList.remove('on');
     SDK.gameplayStop();
