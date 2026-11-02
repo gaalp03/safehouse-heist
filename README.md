@@ -34,6 +34,8 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 
 Level 2 — The Bank (unlocks after escaping Safe House): find the keycard in the manager's office, swipe it at the security door, crack the big vault (slow and loud: guards hear the drilling), then escape. Teller counters, offices, security room, 4 guards, 2 cameras. Bank clerks stand behind the teller counters: if one spots you they scream and sprint for a silent alarm button; knock them out before they reach it. Pulsing laser grids in the corridor and across the vault trip the alarm; time your run or hold E at the breaker in the security room to cut the power.
 
+Hot streak: each escape in a row without a bust adds +10% stash cash (up to +50%); a bust resets it (the busted screen says how long a streak you lost).
+
 Locker (menu): a daily login bonus (+$500 per consecutive day, up to $3,500) and every escape add cash to your stash (a bust keeps 25% of the loot you grabbed). Spend it on gear upgrades: Coin Pouch (+1 coin), Smoke Belt (+1 smoke), Soft Shoes (faster sneaking), Lockpick Kit (wider pick zone, faster safe cracking), Tailor (longer disguise). Gear is off on Daily and Ironman so those stay fair. The menu nudges you when you can afford something.
 
 Outfits (Locker): 13 colour-only robber looks (hoodie, gloves, crowbar) unlocked by trophy count or specific achievements, with a live first-person preview.

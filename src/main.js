@@ -410,6 +410,7 @@ class App {
       if (n === 0) goals.push('Escape to earn your first ★');
       else if (n < 3) goals.push('Next ★: grab 70% loot · or never get spotted');
     }
+    if (this.save.tutDone && (this.save.hot || 0) >= 1) goals.unshift(`🔥 Hot streak ${this.save.hot}: next escape +${Math.min(50, 10 * this.save.hot)}% cash`);
     if (this.save.tutDone && this.canAffordGear()) goals.unshift('🧰 You can afford new gear in the Locker!');
     if (this.save.tutDone) { const J = todaysJobs(this.save), id = J.ids.find((x) => !J.done[x]); if (id) { const d = jobDef(id), p = J.prog[id] || 0; goals.push(`📋 Job: ${d.text} (${d.money ? fmtMoney(p) : p}/${d.money ? fmtMoney(d.n) : d.n})`); } }
     const sk = this.save.streak;
@@ -915,12 +916,15 @@ class App {
     $('bustTip').textContent = this.bustTip();
     const fresh = recordRun(this.save, this.runRecord(false));
     this.awardXP(false, 0, this.game.lootGot, 'bXP');
+    if ((this.save.hot || 0) >= 2) this.lostStreak = this.save.hot;
+    this.save.hot = 0;
     { const c = Math.round(this.game.lootGot * 0.25); this.save.cash = (this.save.cash || 0) + c; $('bCash').textContent = c ? `💰 Kept ${fmtMoney(c)} of the loot you grabbed` : ''; }
     // repeated busts on the same heist: offer Easy instead of letting frustration build
     this.bustStreak = this.bustKey === this.level.id ? (this.bustStreak || 0) + 1 : 1; this.bustKey = this.level.id;
     $('bEasy').classList.toggle('hidden', !(this.mode === 'classic' && this.bustStreak >= 3 && (this.diff === 'normal' || this.diff === 'hard')));
     SDK.store(this.save);
     const jt = this.mode === 'tutorial' ? '' : this.jobsToast(recordJobs(this.save, this.runRecord(false)));
+    if (this.lostStreak) { $('bCash').textContent += ` · 🔥 ${this.lostStreak}-escape streak lost`; this.lostStreak = 0; }
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).concat(jt ? [jt] : []).join('<br>');
     this.chipify('bAch');
     this.screen('busted');
@@ -984,8 +988,9 @@ class App {
     const freshA = recordRun(this.save, this.runRecord(true, res));
     this.awardXP(true, res.score, res.loot, 'rXP');
     const jt = this.jobsToast(recordJobs(this.save, this.runRecord(true, res)));
-    this.save.cash = (this.save.cash || 0) + res.score;
-    $('rCash').textContent = `💰 +${fmtMoney(res.score)} to your stash (${fmtMoney(this.save.cash)})${this.canAffordGear() ? ' · 🧰 new gear affordable!' : ''}`;
+    const hs = this.mode === 'tutorial' ? 0 : (this.save.hot = (this.save.hot || 0) + 1), hb = Math.min(0.5, 0.1 * Math.max(0, hs - 1)), extra = Math.round(res.score * hb);
+    this.save.cash = (this.save.cash || 0) + res.score + extra;
+    $('rCash').textContent = `💰 +${fmtMoney(res.score + extra)} to your stash${extra ? ` (🔥 streak ${hs}: +${Math.round(hb * 100)}%)` : ''} · ${fmtMoney(this.save.cash)}${this.canAffordGear() ? ' · 🧰 new gear!' : ''}`;
     const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
     this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
     this.showAchToast(freshA);
