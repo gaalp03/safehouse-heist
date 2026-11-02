@@ -1051,31 +1051,48 @@ export function buildWorld(L) {
 
 // ---------------------------------------------------------------- dynamic props
 export function buildSafe() {
-  const mat = new MeshLambertMaterial({ vertexColors: true });
+  // chunky cartoon safe: bevelled steel body on feet, gold trim + maker plate, round dial, wheel handle, big hinges
+  const mat = new MeshLambertMaterial({ vertexColors: true, emissive: 0x161a26 });
   const group = new Group();
   const b = new GeoBuilder();
-  const steel = 0x3e4560, dark = 0x262a3a, gold = 0xe8b33a;
-  b.box(0, 0, 0, 0.94, 1.04, 0.84, steel, { top: 0x4b5373 });
-  b.box(0, 0, 0, 0.98, 0.06, 0.88, dark);
-  b.box(0, 0.98, 0, 0.98, 0.06, 0.88, dark);
-  for (const s of [-1, 1]) b.box(s * 0.47, 0.06, 0, 0.04, 0.92, 0.86, dark);
-  b.box(0, 0.12, 0.38, 0.74, 0.8, 0.05, 0x0f1016, { faces: PZ });
-  b.box(0, 0.14, 0.2, 0.66, 0.02, 0.3, 0x2a2e3e, { faces: PY });
-  b.box(0, 0.5, 0.2, 0.66, 0.02, 0.3, 0x2a2e3e, { faces: PY });
-  for (let k = 0; k < 3; k++) { b.box(-0.18 + k * 0.18, 0.16, 0.24, 0.16, 0.08, 0.1, gold, { top: 0xffe27a, faces: 63 }); b.box(-0.09 + k * 0.18, 0.24, 0.24, 0.16, 0.08, 0.1, gold, { top: 0xffe27a, faces: 63 }); }
-  for (let k = 0; k < 4; k++) b.box(-0.2 + k * 0.13, 0.52, 0.24, 0.11, 0.07 + (k % 2) * 0.03, 0.18, 0x3fb950, { top: 0x6fdc7a, faces: 63 });
+  const steel = 0x5a6488, steel2 = 0x6e78a0, dark = 0x2a2f44, gold = 0xe8b33a, gold2 = 0xffd75a;
+  for (const [x, z] of [[-0.38, -0.32], [0.38, -0.32], [-0.38, 0.32], [0.38, 0.32]]) b.box(x, 0, z, 0.14, 0.08, 0.14, dark, { faces: 63 });
+  b.box(0, 0.08, 0, 0.96, 1.0, 0.86, steel, { top: steel2 });                     // body
+  b.box(0, 1.06, 0, 0.9, 0.04, 0.8, steel2, { top: 0x8089b0 });                  // top bevel
+  b.box(0, 0.08, 0, 1.0, 0.06, 0.9, dark);                                        // base band
+  for (const s of [-1, 1]) b.box(s * 0.485, 0.14, 0.02, 0.03, 0.9, 0.84, steel2, { faces: s > 0 ? PX : NX }); // side panels
+  for (const s of [-1, 1]) for (const y of [0.24, 0.94]) b.box(s * 0.502, y, 0.3, 0.01, 0.05, 0.05, gold, { faces: s > 0 ? PX : NX }); // rivets
+  b.box(0, 0.16, 0.425, 0.86, 0.06, 0.02, gold, { faces: PZ | PY });              // gold sill
+  b.box(0, 1.0, 0.425, 0.86, 0.04, 0.02, gold, { faces: PZ });                    // gold lintel
+  b.box(0, 0.2, 0.38, 0.74, 0.8, 0.05, 0x0f1016, { faces: PZ });                  // interior
+  b.box(0, 0.22, 0.2, 0.66, 0.02, 0.3, 0x2a2e3e, { faces: PY });
+  b.box(0, 0.58, 0.2, 0.66, 0.02, 0.3, 0x2a2e3e, { faces: PY });
+  for (let k = 0; k < 3; k++) { b.box(-0.18 + k * 0.18, 0.24, 0.24, 0.16, 0.08, 0.1, gold, { top: 0xffe27a, faces: 63 }); b.box(-0.09 + k * 0.18, 0.32, 0.24, 0.16, 0.08, 0.1, gold, { top: 0xffe27a, faces: 63 }); }
+  for (let k = 0; k < 4; k++) b.box(-0.2 + k * 0.13, 0.6, 0.24, 0.11, 0.07 + (k % 2) * 0.03, 0.18, 0x3fb950, { top: 0x6fdc7a, faces: 63 });
   group.add(new Mesh(b.build(), mat));
   const d = new GeoBuilder();
-  d.box(0.37, 0.1, 0.035, 0.74, 0.84, 0.07, 0x59618a, { faces: 63 });
-  d.box(0.37, 0.16, 0.075, 0.62, 0.72, 0.02, 0x4b5373, { faces: 63 });
-  d.box(0.37, 0.46, 0.09, 0.24, 0.24, 0.04, gold, { faces: 63 });
-  d.box(0.37, 0.5, 0.115, 0.16, 0.16, 0.03, 0x22242f, { faces: 63 });
-  for (let k = 0; k < 8; k++) { const a = (k * Math.PI) / 4; d.box(0.37 + Math.cos(a) * 0.105, 0.574 + Math.sin(a) * 0.105, 0.1, 0.02, 0.02, 0.03, 0xfff1c0, { faces: 63 }); }
-  for (const a of [0, 2.1, 4.2]) d.box(0.62 + Math.cos(a) * 0.05, 0.45 + Math.sin(a) * 0.05, 0.12, 0.03, 0.03, 0.1, 0xd8deea, { faces: 63 });
-  d.box(0.62, 0.45, 0.1, 0.06, 0.06, 0.06, 0xd8deea, { faces: 63 });
-  for (const y of [0.2, 0.8]) d.box(0.03, y, 0.04, 0.06, 0.12, 0.09, dark, { faces: 63 });
+  d.box(0.37, 0.18, 0.035, 0.76, 0.84, 0.08, steel2, { faces: 63, top: 0x8089b0 }); // door slab
+  d.box(0.37, 0.24, 0.08, 0.64, 0.72, 0.02, steel, { faces: 63 });               // recessed panel
+  d.box(0.37, 0.84, 0.095, 0.3, 0.07, 0.012, gold2, { faces: PZ | PY });         // maker plate
+  d.box(0.37, 0.86, 0.103, 0.22, 0.025, 0.004, 0x5a3a12, { faces: PZ });
+  // combination dial: gold ring, dark face, tick marks, knob
+  const ring = new CylinderGeometry(0.15, 0.15, 0.04, 20); ring.rotateX(Math.PI / 2);
+  const face = new CylinderGeometry(0.115, 0.115, 0.05, 20); face.rotateX(Math.PI / 2);
+  const knob = new CylinderGeometry(0.05, 0.06, 0.07, 12); knob.rotateX(Math.PI / 2);
+  d.add(ring, gold, 0.3, 0.6, 0.1); d.add(face, 0x22242f, 0.3, 0.6, 0.105); d.add(knob, 0xd8deea, 0.3, 0.6, 0.14);
+  for (let k = 0; k < 12; k++) { const a = (k * Math.PI) / 6; d.box(0.3 + Math.cos(a) * 0.095, 0.6 + Math.sin(a) * 0.095 - 0.008, 0.131, k % 3 ? 0.012 : 0.02, 0.016, 0.004, 0xfff1c0, { faces: PZ }); }
+  d.box(0.3, 0.745, 0.12, 0.02, 0.03, 0.02, 0xff3b4e, { faces: 63 });             // dial marker
+  // 4-spoke wheel handle
+  const hub = new CylinderGeometry(0.035, 0.035, 0.08, 10); hub.rotateX(Math.PI / 2);
+  d.add(hub, 0xd8deea, 0.56, 0.42, 0.13);
+  d.box(0.56, 0.405, 0.13, 0.26, 0.03, 0.03, 0xd8deea, { faces: 63 }); d.box(0.56, 0.29, 0.13, 0.03, 0.26, 0.03, 0xd8deea, { faces: 63 });
+  for (const [x, y] of [[0.69, 0.42], [0.43, 0.42], [0.56, 0.55], [0.56, 0.29]]) d.box(x, y - 0.025, 0.13, 0.05, 0.05, 0.05, 0xe8303e, { faces: 63, top: 0xff6a74 });
+  // keyhole + hinges + locking bolts on the open edge
+  d.box(0.56, 0.24, 0.095, 0.05, 0.08, 0.01, gold, { faces: PZ }); d.box(0.56, 0.25, 0.1, 0.015, 0.04, 0.006, 0x1c1330, { faces: PZ });
+  for (const y of [0.26, 0.84]) { d.box(0.0, y, 0.04, 0.08, 0.16, 0.12, dark, { faces: 63 }); d.box(0.0, y + 0.04, 0.1, 0.05, 0.08, 0.02, gold, { faces: PZ }); }
+  for (const y of [0.32, 0.6, 0.88]) d.box(0.77, y, 0.03, 0.06, 0.06, 0.06, 0xd8deea, { faces: 63 });
   const door = new Mesh(d.build(), mat);
-  door.position.set(-0.37, 0, 0.42);
+  door.position.set(-0.37, -0.08, 0.42);
   group.add(door);
   return { group, door, mat };
 }
