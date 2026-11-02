@@ -976,6 +976,7 @@ class App {
     const ni = this.levelIdx + 1, nextOk = !res.daily && ni < LEVELS.length && this.levelUnlocked(ni);
     $('bNext').textContent = res.daily ? 'MAP ▶' : nextOk ? 'NEXT: ' + LEVELS[ni].name.toUpperCase() + ' ▶' : 'NEXT ▶';
     if (!res.daily && this.nextWasLocked && nextOk) {
+      this.sel = this.save.sel = 'lvl' + (ni + 1);
       $('rAch').innerHTML = `<span class="unlock">🔓 New heist unlocked: <b>${LEVELS[ni].name}</b></span>` + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : '');
       $('rAch').classList.remove('hidden');
       setTimeout(() => { if (this.state === 'result') { this.audio.play('contract'); this.shake.add(0.15); } }, 1500);
