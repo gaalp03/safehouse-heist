@@ -52,13 +52,19 @@ export class Input {
     addEventListener('mousemove', (e) => {
       if (!this.active) return;
       // pointer lock = free look; fallback (lock unavailable) = drag to look
-      if (this.locked || (this.lockFailed && this.dragLook)) { this.lx += e.movementX || 0; this.ly += e.movementY || 0; }
+      if (this.locked || (this.lockFailed && this.dragLook)) {
+        // browsers often report one huge bogus delta right after pointer lock (or a cursor warp): drop those
+        const mx = e.movementX || 0, my = e.movementY || 0;
+        if (performance.now() - (this.lockT || 0) < 150 || Math.abs(mx) > 260 || Math.abs(my) > 260) return;
+        this.lx += mx; this.ly += my;
+      }
     });
     addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse' && (e.movementX || e.movementY)) this.setTouch(false); });
     addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') this.setTouch(true); }, true);
     document.addEventListener('pointerlockchange', () => {
       const was = this.locked;
       this.locked = document.pointerLockElement === cv;
+      if (this.locked && !was) { this.lockT = performance.now(); this.lx = 0; this.ly = 0; }
       if (was && !this.locked) this.emit('unlock');
     });
     document.addEventListener('pointerlockerror', () => { this.lockFailed = true; });

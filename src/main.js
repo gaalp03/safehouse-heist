@@ -386,6 +386,9 @@ class App {
     $('soonList').innerHTML = ['Harbor container yard', 'Mayor\'s mansion gala', 'Armored truck ambush'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
   }
+  levelUnlocked(i) {
+    return [() => true, () => this.bankUnlocked(), () => this.jewelryUnlocked(), () => this.museumUnlocked(), () => this.casinoUnlocked(), () => this.penthouseUnlocked(), () => this.trainUnlocked()][i]?.() || false;
+  }
   trainUnlocked() {
     const b = this.save.best;
     return !!(b.penthouse || b.penthouse_easy || b.penthouse_hard || b.penthouse_ironman || this.save.trainOpen);
@@ -585,7 +588,8 @@ class App {
   // ---- called by Game ----
   hint(id) {
     if (!this.level || !this.level.tutorial || this.hShown.has(id) || this.hDone.has(id)) return;
-    if (this.game && this.game.tut && ['move', 'loot', 'safe', 'pick', 'cone', 'stash'].includes(id)) return;
+    // during the guided tutorial the step card is the only instruction on screen
+    if (this.game && this.game.tut && (this.tutStep < TUT_STEPS.length || ['move', 'loot', 'safe', 'pick', 'cone', 'stash'].includes(id))) { this.hShown.delete(id); return; }
     if (this.hCur === id || this.hQ.includes(id)) return;
     this.hShown.add(id);
     this.hQ.push(id);
@@ -775,6 +779,7 @@ class App {
       for (const key of Object.keys(dd).sort().slice(0, -14)) delete dd[key];
     } else {
       const bk = diffKey(this.level.id, this.diff);
+      this.nextWasLocked = this.mode === 'classic' && this.levelIdx + 1 < LEVELS.length && !this.levelUnlocked(this.levelIdx + 1);
       prev = this.save.best[bk] || { score: 0, stars: 0 };
       newBest = res.score > prev.score;
       this.save.best[bk] = { score: Math.max(prev.score, res.score), stars: Math.max(prev.stars, nStars) };
@@ -809,6 +814,15 @@ class App {
     this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
     this.showAchToast(freshA);
     if (tutJustDone) { $('rAch').innerHTML = '🎓 <b>Tutorial complete!</b> Contracts, difficulty and the Daily are yours now.' + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); }
+    // next heist: label the button, and celebrate a fresh unlock
+    const ni = this.levelIdx + 1, nextOk = !res.daily && ni < LEVELS.length && this.levelUnlocked(ni);
+    $('bNext').textContent = nextOk ? 'NEXT: ' + LEVELS[ni].name.toUpperCase() + ' ▶' : 'NEXT ▶';
+    if (!res.daily && this.nextWasLocked && nextOk) {
+      $('rAch').innerHTML = `<span class="unlock">🔓 New heist unlocked: <b>${LEVELS[ni].name}</b></span>` + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : '');
+      $('rAch').classList.remove('hidden');
+      setTimeout(() => { if (this.state === 'result') { this.audio.play('contract'); this.shake.add(0.15); } }, 1500);
+    }
+    this.nextWasLocked = false;
     if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
     this.screen('result');
@@ -891,7 +905,7 @@ class App {
   }
   updateTutorial() {
     const el = $('tut'), g = this.game;
-    if (!g.tut || this.tutStep >= TUT_STEPS.length) { el.classList.add('hidden'); return; }
+    if (!g.tut || this.tutStep >= TUT_STEPS.length) { el.classList.add('hidden'); document.body.classList.remove('tutcard'); return; }
     if (this.tutStep == null) this.tutStep = 0;
     const step = TUT_STEPS[this.tutStep];
     if (step.done(g)) {
@@ -909,6 +923,7 @@ class App {
       el.querySelector('i').style.width = (this.tutStep / TUT_STEPS.length * 100) + '%';
     }
     el.classList.toggle('hidden', g.alarm || g.state !== 'play');
+    document.body.classList.toggle('tutcard', !el.classList.contains('hidden'));
   }
   updateHud() {
     this.updateTutorial();

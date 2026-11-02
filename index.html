@@ -139,6 +139,7 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
 #ctr li.fail{opacity:.45;text-decoration:line-through}#ctr li.fail i{border-color:#ff5a6a;background:#ff5a6a}
 #ctoast{position:fixed;left:50%;top:34%;transform:translateX(-50%);text-align:center;font-size:24px;color:#fff6e8;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;animation:objp .45s cubic-bezier(.2,1.8,.4,1)}
 #wet{position:fixed;inset:0;pointer-events:none;z-index:2;background-image:radial-gradient(circle at 12% 18%,rgba(220,235,255,.35) 0 6px,transparent 7px),radial-gradient(circle at 78% 30%,rgba(220,235,255,.3) 0 4px,transparent 5px),radial-gradient(circle at 40% 70%,rgba(220,235,255,.28) 0 8px,transparent 9px),radial-gradient(circle at 88% 82%,rgba(220,235,255,.3) 0 5px,transparent 6px),radial-gradient(circle at 25% 52%,rgba(220,235,255,.25) 0 3px,transparent 4px),radial-gradient(circle at 62% 12%,rgba(220,235,255,.3) 0 5px,transparent 6px),linear-gradient(180deg,rgba(120,150,200,.12),rgba(40,50,80,.18));background-size:340px 300px,260px 280px,380px 360px,300px 320px,220px 240px,280px 260px,100% 100%;animation:wetrun 2.2s linear infinite}@keyframes wetrun{from{background-position:0 0,0 0,0 0,0 0,0 0,0 0,0 0}to{background-position:0 300px,0 280px,0 360px,0 320px,0 240px,0 260px,0 0}}
+body.tutcard #obj{visibility:hidden}#rAch .unlock{display:inline-block;font-size:19px;color:#ffd75a;animation:unl 1s ease-in-out infinite alternate;margin-bottom:4px}@keyframes unl{from{transform:scale(1)}to{transform:scale(1.06)}}#bNext{white-space:nowrap;max-width:46vw;overflow:hidden;text-overflow:ellipsis}@media (max-width:640px){#bNext{font-size:15px;padding-left:12px;padding-right:12px}}
 #ventfx{position:fixed;inset:0;z-index:6;pointer-events:none;background:radial-gradient(ellipse at 50% 55%,#1a1712 0%,#07060a 70%);display:flex;align-items:flex-end;justify-content:center;padding-bottom:22vh}#ventfx span{font-weight:900;font-size:18px;letter-spacing:2px;color:rgba(255,214,160,.7);animation:ventb .45s ease-in-out infinite alternate}@keyframes ventb{from{transform:translateY(0)}to{transform:translateY(-4px)}}
 #ctoast small{font-size:13px;color:#4fe0a0;letter-spacing:2px}#ctoast .intel{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;width:min(520px,88vw);margin-top:4px}#ctoast small{white-space:nowrap}body.touch #ctoast{top:39%}body.touch #ctoast .intel i{font-size:12px;padding:2px 8px}#ctoast .intel i{font-style:normal;font-size:14px;font-weight:800;background:rgba(28,19,48,.82);border:2px solid rgba(255,214,160,.25);border-radius:999px;padding:3px 10px;white-space:nowrap}#ctoast b{color:#ffc94a;font-size:20px}
 .ctrs{list-style:none;font-size:14px;text-align:left;display:flex;flex-direction:column;gap:3px;width:100%;border-top:2px dashed rgba(255,214,160,.2);padding-top:8px}
@@ -203,9 +204,9 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
 #rMap,#bMap{width:260px;max-width:80vw;border-radius:10px;border:3px solid rgba(255,214,160,.25);image-rendering:pixelated}
 #bMap{width:240px}
 .mlg{font-size:11px;opacity:.85;display:flex;align-items:center;gap:4px;flex-wrap:wrap;justify-content:center}.mlg i{display:inline-block;width:12px;height:4px;border-radius:2px}
-#result .rcol{gap:12px}
+#result .rcol{gap:12px}#result .panel.rp{max-height:calc(100dvh - 16px)}#result .rcol{min-height:0;max-height:calc(100dvh - 48px);display:flex;flex-direction:column;align-items:center}#result .rscroll{flex:1 1 auto;min-height:56px;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;align-items:center;gap:inherit;width:100%;-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 14px),transparent);padding-bottom:10px}#result .rcol>.big,#result #rStars,#result #rScore,#result #rBest,#result .rcol>.row{flex:none}
 @media (max-height:700px){#result .rcol{gap:5px}#rMap{width:220px}#bMap{width:200px}#rCtrTotal,#rMult{display:none}#result .stats{font-size:14px}#result .goals,#result .ctrs{font-size:12px;gap:1px}#result .big{font-size:36px}#rStars span{font-size:38px}}
-@media (max-width:720px){.panel.rp{flex-direction:column;gap:8px}.rmapcol{order:2}#rMap{width:220px}}
+@media (max-width:720px){.panel.rp{flex-direction:column;gap:8px;overflow-y:auto;justify-content:flex-start}.rmapcol{order:2}#rMap{width:220px}}
 #ghostp{font-size:15px;color:#d9b8ff;padding:6px 10px}
 @media (max-width:640px){#ghostp{display:none}}
 .setp{min-width:min(92vw,420px);gap:10px}
@@ -318,10 +319,11 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
 <div id="result" class="screen solid hidden"><div class="panel rp"><div class="rmapcol"><small class="o">YOUR ROUTE</small><canvas id="rMap"></canvas><div id="rMapLg" class="mlg"></div></div><div class="rcol">
   <div class="big win o">ESCAPED!</div>
   <div id="rStars"></div>
+  <div class="rscroll"><div id="rAch" class="hidden"></div>
   <ul class="goals" id="rGoals"></ul>
   <div class="stats"><span>Loot</span><b id="rLoot"></b><span>Time</span><b id="rTime"></b><span>Ghost bonus</span><b id="rGhost"></b></div>
-  <ul class="ctrs" id="rCtr"></ul><div id="rAch" class="hidden"></div><div id="rCtrTotal" class="sub" style="font-size:12px;opacity:.6"></div>
-  <div id="rMult" class="sub" style="font-size:13px;color:#ff9fd0"></div>
+  <ul class="ctrs" id="rCtr"></ul><div id="rCtrTotal" class="sub" style="font-size:12px;opacity:.6"></div>
+  <div id="rMult" class="sub" style="font-size:13px;color:#ff9fd0"></div></div>
   <div id="rScore">$0</div><div id="rBest"></div>
   <div class="row"><button class="btn s" id="bRMenu">MENU</button><button class="btn" id="bRetry">RETRY</button><button class="btn g" id="bNext">NEXT</button></div>
 </div></div></div>
