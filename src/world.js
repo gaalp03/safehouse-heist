@@ -1155,21 +1155,44 @@ export function buildHeli() {
 }
 
 export function buildPolice() {
+  // cartoon police cruiser: black/white panels, POLICE lettering, light bar; nose +x
   const g = new GeoBuilder();
-  const white = 0xf4f6f8, black = 0x22242f, glass = 0x24304f;
-  g.box(0, 0.22, 0, 2.5, 0.45, 1.2, white, { top: 0xffffff });
-  g.box(-0.1, 0.67, 0, 1.3, 0.38, 1.1, white);
-  g.box(-0.1, 0.72, 0, 1.32, 0.28, 1.12, glass, { faces: PX | NX | PZ | NZ });
-  g.box(0, 0.3, 0, 2.52, 0.16, 1.22, black, { faces: PX | NX | PZ | NZ });
-  g.box(1.26, 0.32, 0.38, 0.03, 0.1, 0.22, 0xfff3b0, { faces: PX });
-  g.box(1.26, 0.32, -0.38, 0.03, 0.1, 0.22, 0xfff3b0, { faces: PX });
-  for (const wx of [-0.8, 0.8]) for (const wz of [-0.56, 0.56]) g.box(wx, 0, wz, 0.46, 0.46, 0.2, 0x1c1e28, { faces: 63 });
-  const body = new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true }));
+  const white = 0xf4f6f8, black = 0x1c1e28, glass = 0x26304f, chrome = 0xd5dce4;
+  g.box(0, 0.2, 0, 2.6, 0.42, 1.22, white, { top: 0xffffff });              // body
+  g.box(1.05, 0.2, 0, 0.5, 0.42, 1.24, black, { top: 0x2a2c38 });           // black hood
+  g.box(-1.1, 0.2, 0, 0.4, 0.42, 1.24, black, { top: 0x2a2c38 });           // black trunk
+  g.box(-0.1, 0.62, 0, 1.4, 0.36, 1.12, white, { top: 0xffffff });          // cabin
+  g.box(0.61, 0.66, 0, 0.02, 0.28, 1.0, glass, { faces: PX });              // windshield
+  g.box(-0.81, 0.66, 0, 0.02, 0.28, 1.0, glass, { faces: NX });             // rear window
+  for (const s of [-1, 1]) {
+    g.box(0.15, 0.66, s * 0.565, 0.52, 0.26, 0.01, glass, { faces: s > 0 ? PZ : NZ });
+    g.box(-0.45, 0.66, s * 0.565, 0.48, 0.26, 0.01, glass, { faces: s > 0 ? PZ : NZ });
+    g.box(-0.15, 0.62, s * 0.565, 0.04, 0.32, 0.012, white, { faces: s > 0 ? PZ : NZ });  // B pillar
+    g.box(0, 0.3, s * 0.616, 1.9, 0.08, 0.008, 0x2f6ae8, { faces: s > 0 ? PZ : NZ });     // blue stripe
+    g.box(0.66, 0.66, s * 0.62, 0.06, 0.1, 0.1, black);                                    // mirror
+  }
+  g.box(1.31, 0.26, 0, 0.03, 0.14, 0.7, black, { faces: PX });              // grille
+  for (const s of [-1, 1]) { g.box(1.31, 0.32, s * 0.42, 0.03, 0.1, 0.2, 0xfff3b0, { faces: PX }); g.box(-1.31, 0.32, s * 0.42, 0.03, 0.1, 0.2, 0xff4d5e, { faces: NX }); }
+  g.box(1.36, 0.1, 0, 0.12, 0.12, 1.26, 0x2a2c38);                          // push bumper
+  for (let k = 0; k < 2; k++) g.box(1.43, 0.22, (k - 0.5) * 0.6, 0.04, 0.3, 0.06, 0x2a2c38);
+  g.box(-1.33, 0.12, 0, 0.08, 0.1, 1.24, chrome);
+  for (const wx of [-0.8, 0.8]) for (const wz of [-0.56, 0.56]) {
+    g.box(wx, 0, wz, 0.48, 0.48, 0.2, 0x14161e, { faces: 63 });
+    g.box(wx, 0.12, wz + Math.sign(wz) * 0.105, 0.24, 0.24, 0.01, chrome, { faces: wz > 0 ? PZ : NZ });
+  }
+  g.box(-0.1, 0.98, 0, 0.5, 0.06, 0.9, 0x2a2c38);                           // light bar base
+  const body = new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true, emissive: 0x141420 }));
   const grp = new Group();
   grp.add(body);
-  const red = new Mesh(new BoxGeometry(0.3, 0.12, 0.5), new MeshBasicMaterial({ color: 0xff2a3a }));
-  const blue = new Mesh(new BoxGeometry(0.3, 0.12, 0.5), new MeshBasicMaterial({ color: 0x2a6aff }));
-  red.position.set(-0.1, 1.11, 0.26); blue.position.set(-0.1, 1.11, -0.26);
+  const c = document.createElement('canvas'); c.width = 128; c.height = 32;
+  const x = c.getContext('2d'); x.fillStyle = '#f4f6f8'; x.fillRect(0, 0, 128, 32);
+  x.fillStyle = '#1c1e28'; x.font = 'bold 24px Arial Black, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('POLICE', 64, 17);
+  const tex = new CanvasTexture(c); tex.colorSpace = SRGBColorSpace;
+  const lm = new MeshBasicMaterial({ map: tex });
+  for (const s of [-1, 1]) { const pl = new Mesh(new PlaneGeometry(0.8, 0.2), lm); pl.position.set(0.1, 0.48, s * 0.618); if (s < 0) pl.rotation.y = Math.PI; grp.add(pl); }
+  const red = new Mesh(new BoxGeometry(0.4, 0.12, 0.4), new MeshBasicMaterial({ color: 0xff2a3a }));
+  const blue = new Mesh(new BoxGeometry(0.4, 0.12, 0.4), new MeshBasicMaterial({ color: 0x2a6aff }));
+  red.position.set(-0.1, 1.07, 0.22); blue.position.set(-0.1, 1.07, -0.22);
   grp.add(red, blue);
   return { group: grp, red, blue };
 }
