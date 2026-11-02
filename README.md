@@ -68,6 +68,8 @@ Lockpicking: the safe room door in Safe House is locked. Press E to start pickin
 
 Hiding: press E at a wardrobe to climb in and peek out through the slats (heartbeat when guards are close). Alerted guards lose you, unless one saw you get in: then he comes and drags you out. Contract: hide from an alerted guard.
 
+Air vents: low wall grates (marked on the minimap) linked in pairs across the Safe House, Bank, Museum, Casino and Penthouse. Press E to crawl through to the other room, unseen; the grate clanks when you pop out, so nearby guards come to check. Guards who watch you climb in raise the alarm on you. Contract: crawl through an air vent.
+
 Heavy loot: gold bars (−6%) and paintings (−10%) slow you down while carried (max −35%, shown as a 🏋 badge); walk back near the van / exit to stash them and get your speed back. Contract: stash heavy loot before cracking the safe.
 
 Pickpocketing: guards carry a visible wallet (and on keycard levels one carries a spare keycard). Behind an unaware guard, tap E to knock him out or HOLD E to lift the wallet / keycard (he gets slightly suspicious while you lift). Contract: pickpocket 2 guards; achievement: Sticky Fingers.

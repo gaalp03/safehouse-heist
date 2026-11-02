@@ -129,6 +129,12 @@ export class Audio {
       case 'alarm':
         for (let i = 0; i < 6; i++) T(i % 2 ? 700 : 950, 0.15, { vol: 0.09, delay: i * 0.15 }); break;
       case 'wake': T(300, 0.25, { type: 'sawtooth', slide: 520, vol: 0.1 }); T(520, 0.2, { type: 'sawtooth', slide: 700, vol: 0.08, delay: 0.22 }); break;
+      case 'vent':
+        T(140, 0.12, { type: 'square', vol: 0.12 }); N(0.12, { vol: 0.3, freq: 2200, q: 3 });
+        for (let i = 0; i < 9; i++) N(0.11, { vol: 0.16, freq: 600 + (i % 3) * 250, q: 4, delay: 0.25 + i * 0.14 });
+        break;
+      case 'clank':
+        T(180, 0.1, { type: 'square', vol: 0.13 }); T(95, 0.18, { type: 'triangle', vol: 0.14, delay: 0.03 }); N(0.16, { vol: 0.3, freq: 2600, q: 3 }); break;
       case 'chopper':
         // rotor thump: ~11 Hz low noise pulses that swell then fade as it flies off
         for (let i = 0; i < 34; i++) { const a = i < 8 ? i / 8 : 1 - (i - 8) / 30; N(0.07, { vol: 0.08 + a * 0.32, freq: 160 + a * 120, type: 'lowpass', delay: i * 0.09 }); }

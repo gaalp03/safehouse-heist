@@ -5,7 +5,7 @@ import {
 } from 'three';
 import { textures } from './textures.js';
 import { parseLevel } from './level.js';
-import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, buildHeli, WALL_H } from './world.js';
+import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, buildHeli, buildVent, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
 import { clamp, damp, angDiff, rand } from './util.js';
 import { pickContracts } from './contracts.js';
@@ -109,6 +109,19 @@ export class Game {
       this.panel.group.rotation.y = Math.atan2(pd.dx, pd.dy);
       this.panel.at = { x: pd.x + 0.5 + pd.dx * 1.1, z: pd.y + 0.5 + pd.dy * 1.1 };
       this.root.add(this.panel.group);
+    }
+    // air vents: linked wall grates you can crawl between
+    this.vents = [];
+    for (const vd of def.vents || []) {
+      const ends = [vd.a, vd.b].map(([x, y, dx, dy]) => {
+        const m = buildVent();
+        m.group.position.set(x + 0.5 + dx * 0.47, 0.06, y + 0.5 + dy * 0.47);
+        m.group.rotation.y = Math.atan2(-dx, -dy);
+        this.root.add(m.group);
+        return { ...m, cx: x + 0.5, cz: y + 0.5, gx: x + 0.5 + dx * 0.5, gz: y + 0.5 + dy * 0.5, out: Math.atan2(-dx, -dy) };
+      });
+      ends[0].other = ends[1]; ends[1].other = ends[0];
+      this.vents.push(...ends);
     }
     this.heli = def.heli ? buildHeli() : null;
     if (this.heli) this.root.add(this.heli.group);
@@ -370,6 +383,8 @@ export class Game {
     }
     this.shiftN = 0; this.shiftWarn = 0;
     if (this.heli) this.heli.group.visible = false;
+    for (const v of this.vents || []) v.flap.rotation.x = 0;
+    this.ventsUsed = 0; this.player.venting = null;
     for (const g of this.guards) this.resetGuard(g);
     // pickpocket targets: every guard carries a wallet; one patrol guard carries a spare keycard
     this.picks = 0; this.pocketProg = 0; this.koHold = 0; this.koTarget = null;
@@ -627,6 +642,7 @@ export class Game {
     p.pitch = clamp(p.pitch - _lk.y * sens * (app.invertY ? -1 : 1), -1.25, 1.2);
     p.face = p.yaw + Math.PI;
     if (p.hiding) { this.updateHiding(dt, inp); return; }
+    if (p.venting) { this.updateVent(dt, inp); return; }
     if (this.picking) { this.updatePicking(dt, inp); return; }
     const fx = Math.sin(p.face), fz = Math.cos(p.face), rx = -fz, rz = fx;
     const wx = rx * _mv.x - fx * _mv.y, wz = rz * _mv.x - fz * _mv.y;
@@ -834,6 +850,8 @@ export class Game {
       return;
     }
     if (nearBreaker && !nearSafe && !ko) { app.setPrompt('breaker', this.breakProg); this.updateObjective(); return; }
+    const vent = !nearPanel && !nearSafe && !ko && !this.heavy.length ? this.nearVent() : null;
+    if (vent) { app.hint('vent'); if (pressed) { this.enterVent(vent); return; } app.setPrompt('vent'); this.updateObjective(); return; }
     const hideOk = hide && !nearPanel && !nearSafe && !ko;
     if (hideOk) { app.hint('hide'); if (pressed) { this.enterHide(hide); return; } }
     app.setPrompt(nearPanel ? 'panel' : nearSafe ? 'safe' : ko ? (canPocket ? 'pocket' : 'ko') : hideOk ? 'hide' : '', nearPanel ? this.disarmProg : ko && canPocket ? this.pocketProg : this.safeProg);
@@ -960,6 +978,53 @@ export class Game {
     inp.move(_mv);
     app.setPrompt('leave');
     if (p.hideT > 0.35 && (inp.consumeAct() || Math.hypot(_mv.x, _mv.y) > 0.5)) this.leaveHide(false);
+  }
+
+  // ---------- air vents ----------
+  nearVent() {
+    const p = this.player;
+    for (const v of this.vents) {
+      if (Math.hypot(p.x - v.cx, p.z - v.cz) < 0.85 && Math.abs(angDiff(p.face, Math.atan2(v.gx - p.x, v.gz - p.z))) < 1.0) return v;
+    }
+    return null;
+  }
+  enterVent(v) {
+    const p = this.player, app = this.app;
+    for (const g of this.guards) {
+      if (g.state !== 'ko' && g.state !== 'sleep' && g.state !== 'getup' && this.canSee(g)) {
+        if (g.state !== 'alert') this.alert(g);
+        app.floaters.spawn('Hey! The vent!', g.x, 2.0, g.z, 'alert', 1.2);
+      }
+    }
+    this.ventsUsed++;
+    p.venting = { t: 0, from: v, to: v.other, dur: 1.7, moved: false };
+    p.vx = p.vz = 0; p.crouch = true; app.onCrouch(true);
+    app.audio.play('vent'); app.setPrompt('');
+    app.hintDone('vent');
+  }
+  updateVent(dt, inp) {
+    const p = this.player, v = p.venting, app = this.app;
+    v.t += dt;
+    p.inv = 0.5; p.moving = 0; p.crack = false; p.crouchK = 1;
+    inp.consumeDash(); inp.consumeThrow(); inp.consumeAct(); inp.consumeSmoke();
+    const k = v.t / v.dur;
+    v.from.flap.rotation.x = Math.min(1.3, v.t * 6) * (k < 0.5 ? 1 : Math.max(0, 1 - (k - 0.5) * 6));
+    v.to.flap.rotation.x = k > 0.55 ? Math.min(1.3, (k - 0.55) * 8) * Math.max(0, 1 - Math.max(0, k - 0.85) * 7) : 0;
+    if (!v.moved && k >= 0.5) {
+      v.moved = true;
+      p.x = v.to.cx; p.z = v.to.cz; p.yaw = v.to.out - Math.PI; p.pitch = -0.1;
+      if (this.trail) this.trail.push([p.x, p.z, 0]);
+    }
+    app.ventFx(k < 0.22 ? k / 0.22 : k > 0.78 ? (1 - k) / 0.22 : 1);
+    if (k >= 1) {
+      p.venting = null; p.inv = 0.4;
+      v.from.flap.rotation.x = 0; v.to.flap.rotation.x = 0;
+      app.ventFx(0);
+      app.audio.play('clank');
+      app.shake.add(0.12);
+      this.makeNoise(p.x, p.z, 2.4, null);
+      app.particles.burst(p.x, 0.3, p.z, { count: 10, colors: [0xb8b0a0, 0x8a8478], speed: 1.2, up: 1.2, size: 0.07, gravity: -0.5, life: 0.8 });
+    }
   }
 
   // ---------- smoke bomb ----------
@@ -1364,7 +1429,7 @@ export class Game {
   effRange(g) { return g.yawnT > 0 ? g.range * 0.35 : g.range; }
   canSee(g) {
     const p = this.player, dx = p.x - g.x, dz = p.z - g.z, d = Math.hypot(dx, dz);
-    if (p.hiding) return 0;
+    if (p.hiding || p.venting) return 0;
     if (d > this.effRange(g)) return 0;
     if (d > 0.35 && Math.abs(angDiff(g.face, Math.atan2(dx, dz))) > g.fov / 2) return 0;
     if (!this.los(g.x, g.z, p.x, p.z)) return 0;

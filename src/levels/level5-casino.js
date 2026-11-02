@@ -62,4 +62,5 @@ export default {
     { pos: [29.6, 8.4], face: -2.3, sweep: 0.6, sweepSpeed: 0.7 },
     { pos: [16, 15.6], face: Math.PI, sweep: 0.8, sweepSpeed: 0.5 },
   ],
+  vents: [{ a: [2, 18, -1, 0], b: [2, 3, -1, 0] }],
 };

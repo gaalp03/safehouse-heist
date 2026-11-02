@@ -888,6 +888,20 @@ export function buildSecDoor(alongX) {
   grp.add(led);
   return { group: grp, led };
 }
+// wall vent grate (faces +z, hinged at the bottom so it can flap open)
+export function buildVent() {
+  const g = new GeoBuilder();
+  g.box(0, 0, 0, 0.74, 0.46, 0.05, 0x8a94a4, { faces: 63, top: 0x9aa4b4 });
+  g.box(0, 0.05, 0.026, 0.62, 0.36, 0.01, 0x101218, { faces: 16 });
+  for (let k = 0; k < 5; k++) g.box(0, 0.08 + k * 0.07, 0.035, 0.62, 0.03, 0.03, 0xb0b8c4, { faces: 63 });
+  for (const sx of [-0.33, 0.33]) for (const sy of [0.03, 0.41]) g.box(sx, sy, 0.03, 0.03, 0.03, 0.01, 0x4a5262, { faces: 16 });
+  const flap = new Group();
+  flap.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
+  const grp = new Group();
+  grp.add(flap);
+  return { group: grp, flap };
+}
+
 export function buildBreaker() {
   const g = new GeoBuilder();
   g.box(0, 0, 0, 0.42, 0.56, 0.1, 0x6a7484, { faces: 63, top: 0x7a8494 });

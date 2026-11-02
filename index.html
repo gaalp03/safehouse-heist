@@ -138,6 +138,7 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
 #ctr li.ok{color:#9dffb8}#ctr li.ok i{background:#4fe0a0;border-color:#4fe0a0}
 #ctr li.fail{opacity:.45;text-decoration:line-through}#ctr li.fail i{border-color:#ff5a6a;background:#ff5a6a}
 #ctoast{position:fixed;left:50%;top:34%;transform:translateX(-50%);text-align:center;font-size:24px;color:#fff6e8;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:none;animation:objp .45s cubic-bezier(.2,1.8,.4,1)}
+#ventfx{position:fixed;inset:0;z-index:6;pointer-events:none;background:radial-gradient(ellipse at 50% 55%,#1a1712 0%,#07060a 70%);display:flex;align-items:flex-end;justify-content:center;padding-bottom:22vh}#ventfx span{font-weight:900;font-size:18px;letter-spacing:2px;color:rgba(255,214,160,.7);animation:ventb .45s ease-in-out infinite alternate}@keyframes ventb{from{transform:translateY(0)}to{transform:translateY(-4px)}}
 #ctoast small{font-size:13px;color:#4fe0a0;letter-spacing:2px}#ctoast .intel{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;width:min(520px,88vw);margin-top:4px}#ctoast small{white-space:nowrap}body.touch #ctoast{top:39%}body.touch #ctoast .intel i{font-size:12px;padding:2px 8px}#ctoast .intel i{font-style:normal;font-size:14px;font-weight:800;background:rgba(28,19,48,.82);border:2px solid rgba(255,214,160,.25);border-radius:999px;padding:3px 10px;white-space:nowrap}#ctoast b{color:#ffc94a;font-size:20px}
 .ctrs{list-style:none;font-size:14px;text-align:left;display:flex;flex-direction:column;gap:3px;width:100%;border-top:2px dashed rgba(255,214,160,.2);padding-top:8px}
 .ctrs li{display:flex;gap:6px}.ctrs li b{margin-left:auto;padding-left:14px;color:#ffc94a}.ctrs li.ok{color:#9dffb8}.ctrs li.no{opacity:.5}
@@ -230,7 +231,7 @@ body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transpa
 </head>
 <body>
 <canvas id="c" tabindex="-1"></canvas>
-<div id="vignette"></div>
+<div id="vignette"></div><div id="ventfx" class="hidden"><span>crawling through the vent…</span></div>
 <div id="smokeov"></div>
 <div id="slats" class="hidden"></div>
 <div id="siren"></div>

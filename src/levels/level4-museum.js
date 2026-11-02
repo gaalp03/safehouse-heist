@@ -66,4 +66,5 @@ export default {
     { pos: [2.4, 8.4], face: 2.3, sweep: 0.6, sweepSpeed: 0.6 },
     { pos: [29.6, 14.6], face: -0.8, sweep: 0.6, sweepSpeed: 0.7 },
   ],
+  vents: [{ a: [29, 17, 1, 0], b: [29, 3, 1, 0] }],
 };
