@@ -142,6 +142,14 @@ export class Game {
       badge.className = 'badge'; badge.innerHTML = '<i></i><b></b>';
       this.app.els.fxl.appendChild(badge);
       const g = { kind, def: gdef, c, cone, stars, badge, shadow: this.addShadow() };
+      if (kind === 'guard') {
+        // wallet in the back pocket + optional spare keycard on the belt (visible from behind)
+        g.walletMesh = new Mesh(new BoxGeometry(0.13, 0.09, 0.035), new MeshBasicMaterial({ color: 0x6a3f22 }));
+        g.walletMesh.position.set(0.12, 0.34, -0.17);
+        g.keyMesh = new Mesh(new BoxGeometry(0.1, 0.07, 0.02), new MeshBasicMaterial({ color: 0x2f7ae8 }));
+        g.keyMesh.position.set(-0.13, 0.36, -0.17);
+        c.body.add(g.walletMesh, g.keyMesh);
+      }
       this.guards.push(g);
       return g;
     };
@@ -337,6 +345,15 @@ export class Game {
     squash(p.c, 1);
 
     for (const g of this.guards) this.resetGuard(g);
+    // pickpocket targets: every guard carries a wallet; one patrol guard carries a spare keycard
+    this.picks = 0; this.pocketProg = 0; this.koHold = 0; this.koTarget = null;
+    let spare = !!(this.keyMeshes && this.keyMeshes.length);
+    for (const g of this.guards) {
+      g.wallet = g.kind === 'guard' ? 150 + ((Math.random() * 6) | 0) * 50 : 0; g.spareKey = false;
+      if (spare && g.kind === 'guard' && g.def.path && !g.def.roam) { g.spareKey = true; spare = false; }
+      if (g.walletMesh) { g.walletMesh.visible = g.wallet > 0; g.keyMesh.visible = g.spareKey; }
+      this.lootTotal += g.wallet;
+    }
     this.crumbs = []; this.crumbT = 0; this.barkedAt = false;
     for (const d of this.dogs) {
       const s = d.def.path[0];
@@ -728,10 +745,23 @@ export class Game {
         if (this.safeProg >= 1) this.openSafe();
       } else this.safeProg = Math.max(0, this.safeProg - dt * 0.5);
     } else this.safeProg = Math.max(0, this.safeProg - dt);
-    if (ko) {
-      app.hint('ko');
-      if (pressed && !nearSafe) this.knockout(ko);
-    }
+    // behind an unaware guard: tap E = knock out, hold E = pickpocket
+    const canPocket = ko && (ko.wallet > 0 || ko.spareKey);
+    if (ko && !nearSafe) {
+      app.hint(canPocket ? 'pocket' : 'ko');
+      if (inp.act) {
+        if (this.koTarget !== ko) { this.koTarget = ko; this.koHold = 0; this.pocketProg = 0; }
+        this.koHold += dt;
+        if (canPocket && this.koHold > 0.22) {
+          this.pocketProg += dt / 0.9; p.crack = true;
+          ko.susp = Math.min(0.9, ko.susp + dt * 0.12);
+          if (this.pocketProg >= 1) { this.pickpocket(ko); this.koHold = 99; }
+        }
+      } else if (this.koHold > 0) {
+        if (this.koHold < 0.22 && this.koTarget === ko) this.knockout(ko);
+        this.koHold = 0; this.pocketProg = 0;
+      }
+    } else { this.koHold = 0; this.pocketProg = 0; this.koTarget = null; }
     if (nearSlot && !nearSafe && !ko) { app.setPrompt('slot', nearSlot.prog); this.updateObjective(); return; }
     if (nearCase && !nearSafe && !ko) { app.setPrompt('case', nearCase.prog); this.updateObjective(); return; }
     // answer a knocked-out guard's radio
@@ -767,7 +797,7 @@ export class Game {
     if (nearBreaker && !nearSafe && !ko) { app.setPrompt('breaker', this.breakProg); this.updateObjective(); return; }
     const hideOk = hide && !nearPanel && !nearSafe && !ko;
     if (hideOk) { app.hint('hide'); if (pressed) { this.enterHide(hide); return; } }
-    app.setPrompt(nearPanel ? 'panel' : nearSafe ? 'safe' : ko ? 'ko' : hideOk ? 'hide' : '', nearPanel ? this.disarmProg : this.safeProg);
+    app.setPrompt(nearPanel ? 'panel' : nearSafe ? 'safe' : ko ? (canPocket ? 'pocket' : 'ko') : hideOk ? 'hide' : '', nearPanel ? this.disarmProg : ko && canPocket ? this.pocketProg : this.safeProg);
 
     // exit
     const ex = this.L.exit;
@@ -1917,6 +1947,33 @@ export class Game {
     for (let i = 0; i < 4; i++) setTimeout(() => app.particles.burst(sl.cx, 1.3, sl.cz + sl.face * 0.4, { count: 10, colors: [0xffd75a, 0xfff1a8, 0xffffff], speed: 2.2, up: 3.5, size: 0.06, life: 0.9 }), i * 250);
     this.makeNoise(sl.cx, sl.cz, 8, null, 'Jackpot!?');
     this.loot.push({ type: 'cash', x: sl.cx, y: 1.0, z: sl.cz + sl.face * 0.5, vx: (Math.random() - 0.5) * 2, vy: 4, vz: sl.face * 2.2, st: 'fly', t: 0, value: v.cash, ph: 0, ms: 0, s: 1, rot: 0 });
+  }
+
+  pickpocket(g) {
+    const app = this.app, p = this.player, fx = Math.sin(p.face), fz = Math.cos(p.face);
+    this.picks++; this.pocketProg = 0;
+    if (g.spareKey) {
+      g.spareKey = false; g.keyMesh.visible = false;
+      if (!this.hasKey) {
+        this.hasKey = true;
+        for (const k of this.keyMeshes) k.m.visible = false;
+        app.onKey(true); app.hint('door');
+      }
+      app.floaters.spawn('SPARE KEYCARD!', g.x, 1.6, g.z, 'big', 1.2);
+      app.audio.play('gold');
+    }
+    if (g.wallet > 0) {
+      const v = g.wallet;
+      g.wallet = 0; g.walletMesh.visible = false;
+      this.lootGot += v; this.got.cash++;
+      app.floaters.spawn('+$' + v + ' WALLET', p.x + fx * 1.2, 1.1, p.z + fz * 1.2, 'cash', 1.0);
+      app.particles.burst(p.x + fx * 0.9, 1.0, p.z + fz * 0.9, { count: 5, colors: [0x6fcf7a, 0x9be39a], speed: 1.2, up: 1.4, size: 0.09, life: 1.0, shape: 'bill', gravity: 3, drag: 2.5 });
+      app.audio.play('pick', 8);
+      app.onLoot(false);
+    }
+    p.grabT = 1;
+    app.floaters.spawn('?', g.x, 2.0, g.z, 'q', 0.7);
+    app.hintDone('pocket');
   }
 
   smashCase(c) {

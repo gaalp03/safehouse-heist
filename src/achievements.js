@@ -12,6 +12,7 @@ export const ACH = [
   { id: 'radio3', icon: '📻', name: 'Smooth Talker', desc: 'Fake 3 radio check-ins (total)', check: (s) => (s.radio || 0) >= 3 },
   { id: 'museum', icon: '🏛️', name: 'Night at the Museum', desc: 'Escape from the Museum', check: (s, r) => r.win && r.level === 'museum' },
   { id: 'casino', icon: '🎰', name: 'High Roller', desc: 'Escape from the Casino', check: (s, r) => r.win && r.level === 'casino' },
+  { id: 'pick10', icon: '👛', name: 'Sticky Fingers', desc: 'Pickpocket 10 guards (total)', check: (s) => (s.picks || 0) >= 10 },
   { id: 'hard', icon: '💀', name: 'Hardened', desc: 'Escape on Hard', check: (s, r) => r.win && r.diff === 'hard' },
   { id: 'ko10', icon: '🥊', name: 'Lights Out', desc: 'Knock out 10 guards (total)', check: (s) => s.kos >= 10 },
   { id: 'loot50', icon: '💵', name: 'Big Spender', desc: 'Steal $50,000 in total', check: (s) => s.loot >= 50000 },
@@ -34,6 +35,7 @@ export function recordRun(save, run) {
     if (!b || run.time < b) s.best[run.level] = run.time;
   } else s.busts++;
   s.radio = (s.radio || 0) + (run.radio || 0);
+  s.picks = (s.picks || 0) + (run.picks || 0);
   s.kos += run.kos; s.hides += run.hides; s.smokes += run.smokes; s.coins += run.coins;
   const got = (save.ach = save.ach || {}), fresh = [];
   for (const a of ACH) if (!got[a.id] && a.check(s, run, save)) { got[a.id] = Date.now(); fresh.push(a); }
