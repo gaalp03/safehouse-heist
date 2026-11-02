@@ -91,6 +91,10 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 #bSmoke{right:calc(max(22px,env(safe-area-inset-right)) + 122px);bottom:calc(max(26px,env(safe-area-inset-bottom)) + 90px);width:56px;height:56px;font-size:22px;background:#e2dcef}#bSmoke.empty{opacity:.45}
 #smokep{position:absolute;left:84px;top:206px;font-size:16px;padding:5px 10px;gap:4px}#smokep.punch{animation:punch .3s}#smokep.empty{opacity:.5}
 #smokeov{position:fixed;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;background:radial-gradient(ellipse at center,rgba(220,214,232,.35),rgba(200,194,214,.8))}#smokeov.on{opacity:1}
+#bSneak{left:auto;right:calc(max(22px,env(safe-area-inset-right)) + 200px);bottom:calc(max(26px,env(safe-area-inset-bottom)) + 20px);width:56px;height:56px;font-size:20px;background:#c9d6e8}#bSneak.on{background:#8ff0c4;box-shadow:0 0 0 4px #4fe0a0,0 6px 0 var(--ink)}
+#sneakp{position:absolute;left:50%;bottom:16%;transform:translateX(-50%);font-size:14px;color:#8ff0c4;padding:5px 12px}
+body.touch #sneakp{display:none!important}#bSneak span{font-size:9px}
+body.crouch #vigfp{background:radial-gradient(ellipse 70% 65% at 50% 48%,transparent 45%,rgba(20,10,30,.5) 85%,rgba(14,6,22,.75) 100%)}
 #bThrow{right:max(30px,env(safe-area-inset-right));bottom:calc(max(34px,env(safe-area-inset-bottom)) + 110px);width:62px;height:62px;background:#ffe08a}
 .coin{display:inline-block;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff3b0,#ffc83a 55%,#c98a1a);border:2px solid #8a5a10}
 #coins{position:absolute;left:12px;font-size:16px;padding:5px 10px;gap:6px}#coins.punch{animation:punch .3s}#coins.empty{opacity:.5}
@@ -232,6 +236,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <div id="hud" class="hidden">
   <div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootp">0%</span></div><div class="bar"><div id="lootbar"></div></div></div>
   <div id="obj" class="pill o">Crack the safe!</div>
+  <div id="sneakp" class="pill o hidden">🦶 SNEAKING</div>
   <div id="tut" class="hidden"><small></small><span></span><b><i></i></b><em></em></div>
   <div id="alarm" class="pill o hidden"><b>POLICE</b><span id="alarmt">0:45</span></div>
   <div id="alarmwhy" class="o hidden"></div>
@@ -255,6 +260,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <div id="touch" class="hidden">
   <div id="joyzone"></div><div id="lookzone"></div><div id="joy"><div id="knob"></div></div>
   <button id="bDash">⚡<span>DASH</span></button>
+  <button id="bSneak">🦶<span>SNEAK</span></button>
   <button id="bSmoke">💨<span>×1</span></button>
   <button id="bThrow"><i class="coin"></i><span>×3</span></button>
   <button id="bAct">✋<span>GRAB</span></button>
@@ -295,7 +301,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>
   <div class="row menurow"><button class="btn s" id="bTrophy">🏆 TROPHIES</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧤 OUTFITS</button></div>
   <button id="bTut" class="linkbtn o">🎓 Play the tutorial</button>
-  <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
+  <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Z sneak · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
 </div>
 
 <div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>

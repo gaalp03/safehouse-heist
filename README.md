@@ -26,6 +26,7 @@ Then open http://localhost:8080 (ES modules need http://, not file://).
 | Move | WASD / Arrows | Drag on the left half (joystick) |
 | Dash (noisy!) | Space / Shift / Right click | ⚡ |
 | (Coin tip) Hit a security camera with a thrown coin to knock it out for 12 s | | |
+| Crouch-sneak (half speed, quiet steps, slower detection; crouching behind low furniture hides you) | Z | 🦶 |
 | Smoke bomb (guards, cameras and the dog cannot see into or through the cloud; 1 per run, 2 on Easy) | C / X | 💨 |
 | Throw a coin (lures guards to where it lands; walk over it to pick it back up, 3 per run) | Q / G / Middle click | 🪙 |
 | Knock out (from behind) / crack safe (hold) | E / Left click | ✋ |

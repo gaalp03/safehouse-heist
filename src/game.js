@@ -336,7 +336,7 @@ export class Game {
     Object.assign(p, {
       x: L.start.x + 0.5, z: L.start.y + 0.5, vx: 0, vz: 0, face: Math.PI, dashT: 0, dashCd: 0, ddx: 0, ddz: 0,
       inv: 0, stepAcc: 0, bagS: 0.5, bagV: 0, punchT: 0, hidden: false, y: 0, moving: 0,
-      hiding: null, hideT: 0, beatT: 0, yaw: 0, pitch: -0.05, roll: 0, bob: 0, strafe: 0, lookX: 0, lookY: 0, grabT: 0, crack: false,
+      hiding: null, hideT: 0, beatT: 0, crouch: false, crouchK: 0, yaw: 0, pitch: -0.05, roll: 0, bob: 0, strafe: 0, lookX: 0, lookY: 0, grabT: 0, crack: false,
     });
     p.c.root.visible = true;
     p.c.root.rotation.set(0, Math.PI, 0);
@@ -597,7 +597,10 @@ export class Game {
     const wx = rx * _mv.x - fx * _mv.y, wz = rz * _mv.x - fz * _mv.y;
     p.strafe = _mv.x;
     const frac = this.lootGot / this.lootTotal;
-    const spd = P_SPEED * (1 - 0.1 * frac);
+    if (inp.consumeCrouch()) { p.crouch = !p.crouch; app.onCrouch(p.crouch); app.hintDone('sneak'); }
+    if (p.dashT > 0 && p.crouch) { p.crouch = false; app.onCrouch(false); }
+    p.crouchK = damp(p.crouchK || 0, p.crouch ? 1 : 0, 10, dt);
+    const spd = P_SPEED * (1 - 0.1 * frac) * (p.crouch ? 0.5 : 1);
     p.vx = damp(p.vx, wx * spd, 14, dt);
     p.vz = damp(p.vz, wz * spd, 14, dt);
     p.dashCd -= dt; p.inv -= dt; p.punchT -= dt;
@@ -643,7 +646,7 @@ export class Game {
     p.bob += Math.min(sp, P_SPEED) * dt * 2.6;
     if (Math.floor(p.bob / Math.PI) !== ph) {
       const L = this.L, cx = clamp(Math.floor(p.x), 0, L.W - 1), cz = clamp(Math.floor(p.z), 0, L.H - 1);
-      app.audio.stepSound(L.floor[cz * L.W + cx], p.dashT > 0 ? 1.6 : 1);
+      app.audio.stepSound(L.floor[cz * L.W + cx], p.dashT > 0 ? 1.6 : p.crouch ? 0.35 : 1);
     }
     if (sp > 0.5) app.hintDone('move');
 
@@ -824,7 +827,7 @@ export class Game {
       if (g.state === 'sleep' && d < 6) app.hint('owner');
       for (const dg of this.dogs) if (Math.hypot(p.x - dg.x, p.z - dg.z) < 7) app.hint('dog');
       if (!this.powerOff) for (const l of this.lasers) { const al = l.alongX ? p.x : p.z, ac = l.alongX ? p.z : p.x; if (al > l.lo - 1 && al < l.hi + 1 && Math.abs(ac - l.line) < 3.5) app.hint('laser'); }
-      else if (g.state !== 'sleep' && d < 6.5) { app.hint('cone'); if (this.time > 8) app.hint('coin'); }
+      else if (g.state !== 'sleep' && d < 6.5) { app.hint('cone'); if (this.time > 8) app.hint('coin'); if (this.time > 14) app.hint('sneak'); }
     }
     for (const it of this.loot) if (Math.hypot(p.x - it.x, p.z - it.z) < 4) { app.hint('loot'); break; }
   }
@@ -942,6 +945,19 @@ export class Game {
       const dx = x1 - x0, dz = z1 - z0, L2 = dx * dx + dz * dz || 1;
       const t = clamp(((c.x - x0) * dx + (c.z - z0) * dz) / L2, 0, 1);
       if (Math.hypot(x0 + dx * t - c.x, z0 + dz * t - c.z) < R) return true;
+    }
+    return false;
+  }
+  // crouching behind low furniture (counters, tables, cases...) hides you from that viewer
+  lowCover(x0, z0, x1, z1) {
+    const L = this.L, dx = x1 - x0, dz = z1 - z0, d = Math.hypot(dx, dz), n = Math.ceil(d / 0.2);
+    for (let i = 1; i < n; i++) {
+      const t = i / n;
+      if (t * d > d - 0.25 && t * d > 0) continue;
+      const cx = Math.floor(x0 + dx * t), cz = Math.floor(z0 + dz * t);
+      if (Math.hypot(x0 + dx * t - x1, z0 + dz * t - z1) > 1.6) continue;
+      const k = cz * L.W + cx;
+      if (k >= 0 && k < L.W * L.H && !L.walk[k] && !L.opaque[k] && !L.outdoor[k] && L.ch[k] !== 'D' && L.ch[k] !== 'L') return true;
     }
     return false;
   }
@@ -1281,6 +1297,7 @@ export class Game {
     if (d > this.effRange(g)) return 0;
     if (d > 0.35 && Math.abs(angDiff(g.face, Math.atan2(dx, dz))) > g.fov / 2) return 0;
     if (!this.los(g.x, g.z, p.x, p.z)) return 0;
+    if (p.crouch && this.lowCover(g.x, g.z, p.x, p.z)) return 0;
     if (this.smokeBlocks(g.x, g.z, p.x, p.z)) { if (g.susp > 0.2 || g.state === 'alert') this.smokeHid = true; return 0; }
     return d + 0.001;
   }
@@ -1324,7 +1341,7 @@ export class Game {
     const seen = perceive && p.inv <= 0 ? this.canSee(g) : 0;
     if (seen) {
       const close = 1 - clamp(seen / this.effRange(g), 0, 1);
-      const rate = (0.65 + 2.3 * close * close) * (p.dashT > 0 ? 1.6 : 1) * this.D.susp;
+      const rate = (0.65 + 2.3 * close * close) * (p.dashT > 0 ? 1.6 : p.crouch ? 0.55 : 1) * this.D.susp;
       g.susp = Math.min(1, g.susp + rate * dt);
       g.lastX = p.x; g.lastZ = p.z; g.lostT = 0;
       if (g.state !== 'alert') {
@@ -1719,7 +1736,7 @@ export class Game {
     p.roll = damp(p.roll, -p.strafe * 0.03 * m, 8, dt);
     this.fovKick = damp(this.fovKick, p.dashT > 0 ? 12 : 0, p.dashT > 0 ? 25 : 6, dt);
     const sh = app.shake, drop = this.state === 'caught' ? 0.3 * Math.min(1, this.endT * 3) : 0;
-    cam.position.set(p.x + rx * bobX, EYE + bobY - drop, p.z + rz * bobX);
+    cam.position.set(p.x + rx * bobX, EYE - (p.crouchK || 0) * 0.42 + bobY * (1 - (p.crouchK || 0) * 0.5) - drop, p.z + rz * bobX);
     cam.rotation.set(p.pitch + sh.y * 0.06, p.yaw + sh.x * 0.06, p.roll + sh.x * 0.02);
   }
 

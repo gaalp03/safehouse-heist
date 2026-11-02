@@ -38,6 +38,7 @@ const HINTS = {
   door: ['Got the keycard! Swipe it at the vault door', 'Got the keycard! Swipe it at the vault door'],
   drill: ['Cracking the vault is LOUD. Guards will hear it!', 'Cracking the vault is LOUD. Guards will hear it!'],
   hide: ['E at a wardrobe: hide inside. Guards lose you if they did not see you!', 'Tap the hand at a wardrobe to hide inside'],
+  sneak: ['Z: crouch-sneak. Slower and quieter, and crouching behind counters or tables hides you', 'Tap 🦶 to sneak. Slower and quieter, and crouching behind low cover hides you'],
   smoke: ['C: drop a smoke bomb. Guards cannot see into or through the cloud!', 'Tap 💨 to drop a smoke bomb. Guards cannot see through it!'],
   coin: ['Q: throw a coin to lure guards away', 'Tap the coin to lure guards away'],
   alarm: ['ALARM! Escape or hold E at the keypad by the front door', 'ALARM! Escape or hold the hand at the keypad by the front door'],
@@ -46,7 +47,7 @@ const HINTS = {
 class App {
   constructor() {
     this.els = {
-      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'), bThrow: $('bThrow'), bSmoke: $('bSmoke'),
+      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'), bThrow: $('bThrow'), bSmoke: $('bSmoke'), bSneak: $('bSneak'),
     };
     this.state = 'boot';
     this.hShown = new Set(); this.hDone = new Set(); this.hQ = []; this.hT = 0; this.hCur = null;
@@ -420,6 +421,7 @@ class App {
     $('ghostp').classList.toggle('hidden', !this.ghost);
     if (this.ghost) $('ghostp').lastChild.textContent = fmtTime(this.ghost.t);
     this.onSmoke(this.game.smokesLeft);
+    this.onCrouch(false);
     this.renderContracts(this.game.contracts);
     this.tutStep = this.game.tut ? 0 : TUT_STEPS.length; $('tut').dataset.k = '';
     clearTimeout(this.whyT); $('alarmwhy').classList.add('hidden');
@@ -613,6 +615,11 @@ class App {
   onHide(on) {
     $('slats').classList.toggle('hidden', !on);
     $('xh').classList.toggle('hidden', on);
+  }
+  onCrouch(on) {
+    $('sneakp').classList.toggle('hidden', !on);
+    this.els.bSneak.classList.toggle('on', on);
+    document.body.classList.toggle('crouch', on);
   }
   onSmoke(n) {
     const c = $('smokep');
