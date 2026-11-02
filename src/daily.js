@@ -8,7 +8,7 @@ export const dayLabel = (d = new Date()) => d.toLocaleDateString('en-US', { mont
 
 export const MUTATORS = [
   { id: 'paranoid', name: 'Paranoid Guards', desc: 'Guards see 30% further', apply: (g) => g.guards.forEach((x) => { x.range *= 1.3; }) },
-  { id: 'insomniac', name: 'Insomniac Owner', desc: 'The owner is awake and patrolling',
+  { id: 'insomniac', needs: 'owner', name: 'Insomniac Owner', desc: 'The owner is awake and patrolling',
     apply: (g) => g.guards.forEach((x) => {
       if (x.state !== 'sleep') return;
       const p = x.def.path[0];
@@ -19,14 +19,17 @@ export const MUTATORS = [
     apply: (g) => { for (const it of g.loot) if (it.type === 'gold' || it.type === 'jewel') { g.lootTotal += it.value * 2; it.value *= 3; } } },
   { id: 'butter', name: 'Butterfingers', desc: 'No coins this time', apply: (g) => { g.coinsLeft = 0; } },
   { id: 'rush', name: 'Rapid Response', desc: 'Police arrive in 20s', apply: (g) => { g.alarmTotal = 20; } },
-  { id: 'hound', name: 'Hungry Hound', desc: 'The dog is 50% faster', apply: (g) => g.dogs.forEach((d) => { d.mul = 1.5; }) },
+  { id: 'hound', needs: 'dog', name: 'Hungry Hound', desc: 'The dog is 50% faster', apply: (g) => g.dogs.forEach((d) => { d.mul = 1.5; }) },
 ];
 
-export function todaysDaily() {
+// levels: the heists this player has unlocked, as { idx, owner, dog } (the daily rotates through them)
+export function todaysDaily(levels = [{ idx: 0, owner: true, dog: true }]) {
   const key = dayKey();
   const rng = mulberry32(parseInt(key, 10) * 7919);
-  const mutator = MUTATORS[(rng() * MUTATORS.length) | 0];
-  return { key, label: dayLabel(), mutator, seed: (rng() * 1e9) | 0 };
+  const lv = levels[(rng() * levels.length) | 0] || levels[0];
+  const fit = MUTATORS.filter((m) => !m.needs || lv[m.needs]);
+  const mutator = fit[(rng() * fit.length) | 0];
+  return { key, label: dayLabel(), mutator, level: lv.idx, seed: (rng() * 1e9) | 0 };
 }
 
 // time until the next daily (local midnight), e.g. "5h 12m"

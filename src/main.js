@@ -11,7 +11,7 @@ import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
 import { DIFFS, diffKey } from './difficulty.js';
 import { rankOf, xpForRun } from './rank.js';
-import { todaysDaily, prevDayKey, nextDailyIn } from './daily.js';
+import { todaysDaily, prevDayKey, nextDailyIn, dayKey as dayKeyNow, MUTATORS } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
 import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
 import { TUT_STEPS } from './tutorial.js';
@@ -151,7 +151,8 @@ class App {
     click('bPMenu', () => this.showMenu());
     click('bRetry', () => this.retry());
     click('bNext', () => {
-      if (this.levelIdx === 0 && this.mode !== 'daily' && this.bankUnlocked()) this.start('classic', 1);
+      if (this.mode === 'daily') this.showMenu();
+      else if (this.levelIdx === 0 && this.bankUnlocked()) this.start('classic', 1);
       else if (this.levelIdx === 1 && this.jewelryUnlocked()) this.start('classic', 2);
       else if (this.levelIdx === 2 && this.museumUnlocked()) this.start('classic', 3);
       else if (this.levelIdx === 3 && this.casinoUnlocked()) this.start('classic', 4);
@@ -250,11 +251,11 @@ class App {
     for (const el of document.querySelectorAll('#diff button')) { el.classList.toggle('on', el.dataset.d === this.diff); if (el.dataset.d === 'ironman') { el.classList.toggle('lock', !this.ironUnlocked()); el.title = this.ironUnlocked() ? 'Ironman: x2.5 score, 1 coin, no smoke, 15s police' : 'Escape any heist on Hard to unlock'; } }
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
     $('lvl1best').textContent = b ? 'Best ' + fmtMoney(b.score) : 'New!';
-    this.daily = todaysDaily();
+    this.daily = this.todays();
     const db = (this.save.daily || {})[this.daily.key];
     $('dMut').textContent = this.daily.mutator.name;
     { const n = new Date(); $('dArt').innerHTML = `<span style="font-size:20px">${n.getDate()}</span>`; }
-    $('dDesc').textContent = this.daily.mutator.desc;
+    $('dDesc').textContent = this.daily.mutator.desc + ' · ' + LEVELS[this.daily.level].name;
     $('dBest').textContent = (db ? 'Today ' + fmtMoney(db.score) : this.daily.label) + ((this.save.streak && this.save.streak.n > 1 && (this.save.streak.last === this.daily.key || this.save.streak.last === prevDayKey())) ? ` · 🔥${this.save.streak.n}` : '');
     this.screen('menu');
   }
@@ -405,6 +406,13 @@ class App {
     $('soonList').innerHTML = ['Harbor container yard', 'Mayor\'s mansion gala', 'Armored truck ambush'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
   }
+  todays() {
+    const d = todaysDaily(LEVELS.map((l, idx) => ({ idx, owner: !!l.owner, dog: !!l.dog })).filter((l) => this.levelUnlocked(l.idx)));
+    // once today's daily has been played, keep the same heist + mutator even if more levels unlock later today
+    const pk = this.save.dailyPick;
+    if (pk && pk.key === d.key) { const m = MUTATORS.find((x) => x.id === pk.mut); if (m) { d.level = pk.level; d.mutator = m; } }
+    return d;
+  }
   levelUnlocked(i) {
     return [() => true, () => this.bankUnlocked(), () => this.jewelryUnlocked(), () => this.museumUnlocked(), () => this.casinoUnlocked(), () => this.penthouseUnlocked(), () => this.trainUnlocked()][i]?.() || false;
   }
@@ -466,11 +474,12 @@ class App {
     if (!this.mode) this.mode = 'classic';
     if (!mode && this.mode === 'tutorial' && this.save.tutDone) this.mode = 'classic';
     if (this.mode === 'classic' && (idx == null || idx === 0) && !this.save.tutDone && (this.levelIdx || 0) === 0) this.mode = 'tutorial';
-    if (this.mode === 'daily' || this.mode === 'tutorial') idx = 0;
+    if (this.mode === 'daily') { if (!this.daily || this.daily.key !== dayKeyNow()) this.daily = this.todays(); idx = this.daily.level; this.save.dailyPick = { key: this.daily.key, level: idx, mut: this.daily.mutator.id }; }
+    else if (this.mode === 'tutorial') idx = 0;
     if (idx != null) this.levelIdx = idx;
     const fresh = this.loadedIdx !== this.levelIdx;
     if (fresh) await this.useLevel(this.levelIdx);
-    if (this.mode === 'daily' && (!this.daily || this.daily.key !== todaysDaily().key)) this.daily = todaysDaily();
+    if (this.mode === 'daily' && (!this.daily || this.daily.key !== dayKeyNow())) this.daily = this.todays();
     this.audio.unlock();
     this.audio.siren(false);
     this.game.reset();
@@ -870,7 +879,7 @@ class App {
     if (tutJustDone) { $('rAch').innerHTML = '🎓 <b>Tutorial complete!</b> Contracts, difficulty and the Daily are yours now.' + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); }
     // next heist: label the button, and celebrate a fresh unlock
     const ni = this.levelIdx + 1, nextOk = !res.daily && ni < LEVELS.length && this.levelUnlocked(ni);
-    $('bNext').textContent = nextOk ? 'NEXT: ' + LEVELS[ni].name.toUpperCase() + ' ▶' : 'NEXT ▶';
+    $('bNext').textContent = res.daily ? 'MAP ▶' : nextOk ? 'NEXT: ' + LEVELS[ni].name.toUpperCase() + ' ▶' : 'NEXT ▶';
     if (!res.daily && this.nextWasLocked && nextOk) {
       $('rAch').innerHTML = `<span class="unlock">🔓 New heist unlocked: <b>${LEVELS[ni].name}</b></span>` + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : '');
       $('rAch').classList.remove('hidden');
