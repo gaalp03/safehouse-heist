@@ -166,6 +166,28 @@ function furniture(L, f, B, rng, lights) {
       break;
     }
     case 'counter': {
+      if (L.def.bar) {
+        // cocktail bar: tufted dark-wood front, brass foot rail, black marble top, bottles + glasses, stools
+        const wood = 0x4a2418, brass = 0xe0b04a;
+        b(WD, 0, 0, 0, W - 0.04, 0.95, D - 0.2, wood, { top: shade(wood, 1.2) });
+        for (let i = 0; i < W * 2; i++) b(WD, -W / 2 + 0.25 + i * 0.5, 0.12, D / 2 - 0.1, 0.4, 0.7, 0.012, shade(wood, 1.3), { faces: PZ });
+        b(P, 0, 0.14, D / 2 + 0.02, W - 0.1, 0.04, 0.04, brass);
+        b(P, 0, 0.95, 0.02, W + 0.04, 0.06, D - 0.04, 0x1c1b24, { top: 0x2a2836 });
+        b(P, 0, 1.01, D / 2 - 0.04, W + 0.04, 0.012, 0.03, brass, { faces: PY | PZ });
+        const bottles = [0x2f9a5a, 0x8a3a2a, 0xd9a03a, 0x3a6ac8, 0xe8e2d6, 0x7a2a5a];
+        for (let i = 0; i < W * 3; i++) {
+          const x = -W / 2 + 0.2 + i * (W - 0.4) / Math.max(1, W * 3 - 1), c = bottles[(i + f.x0) % bottles.length];
+          if (i % 3 === 1) { b(U, x, 1.01, -0.05, 0.07, 0.11, 0.07, 0xd8f0ff); b(U, x, 1.07, -0.05, 0.05, 0.03, 0.05, [0xff6a8a, 0xffd23f, 0x7cff9a][i % 3]); continue; }
+          b(P, x, 1.01, -0.12, 0.09, 0.22, 0.09, c, { top: shade(c, 1.3) }); b(P, x, 1.23, -0.12, 0.035, 0.08, 0.035, c); b(P, x, 1.31, -0.12, 0.04, 0.02, 0.04, 0x2a2b36);
+        }
+        for (let i = 0; i < W; i++) {
+          const x = -W / 2 + i + 0.5, z = D / 2 + 0.38;
+          b(P, x, 0, z, 0.26, 0.03, 0.26, 0x2a2b36); b(P, x, 0.03, z, 0.05, 0.56, 0.05, 0xc9d2dc);
+          b(P, x, 0.59, z, 0.34, 0.09, 0.34, 0xb3263a, { top: 0xd0384a });
+        }
+        light(0, 1.4, 0.3, [1, 0.6, 0.4], 0.9, 3.0);
+        break;
+      }
       const cab = 0xf1ece2, top = 0x3b3a48;
       b(P, 0, 0, 0.04, W - 0.02, 0.08, D - 0.2, 0x3a3a46);
       b(P, 0, 0.08, 0, W - 0.02, 0.72, D - 0.12, cab);

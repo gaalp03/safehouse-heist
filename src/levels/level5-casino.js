@@ -6,6 +6,7 @@ export default {
   parTime: 140,
   tutorial: true,
   night: true,
+  bar: true,
   lampScale: 1.25,
   carpet: 0xd04a5a,
   safeName: 'safe',
