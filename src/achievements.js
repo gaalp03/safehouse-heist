@@ -23,6 +23,7 @@ export const ACH = [
   { id: 'loyal', icon: '📅', name: 'Loyal Crew', desc: 'Log in 7 days in a row', check: (s, r, save) => !!(save.login && save.login.n >= 7) },
   { id: 'photo', icon: '🚨', name: 'Photo Finish', desc: 'Escape with under 10 s left on the police timer', check: (s, r) => r.win && r.photo },
   { id: 'mansion', icon: '🥂', name: 'Party Crasher', desc: 'Escape from the Mansion Gala', check: (s, r) => r.win && r.level === 'mansion' },
+  { id: 'courier', icon: '💼', name: 'Special Delivery', desc: 'Grab a golden briefcase', check: (s, r) => (r.briefs || 0) > 0 },
   { id: 'casino', icon: '🎰', name: 'High Roller', desc: 'Escape from the Casino', check: (s, r) => r.win && r.level === 'casino' },
   { id: 'pick10', icon: '👛', name: 'Sticky Fingers', desc: 'Pickpocket 10 guards (total)', check: (s) => (s.picks || 0) >= 10 },
   { id: 'iron', icon: '🛡️', name: 'Iron Will', desc: 'Escape on Ironman', check: (s, r) => r.win && r.diff === 'ironman' },

@@ -54,6 +54,7 @@ function makeStars() {
   return grp;
 }
 
+const fmt = (v) => '$' + Math.round(v).toLocaleString('en-US');
 const CALM = new Set(['patrol', 'wait', 'post']);
 const CHAT = [
   ['Quiet night, huh?', 'Too quiet.'],
@@ -159,6 +160,19 @@ export class Game {
       return { scr, glow, cx, cz, fx: cx - bk[0] * (D / 2 + 0.9), fz: cz - bk[1] * (D / 2 + 0.9), on: false, used: false, t: 0, flick: 0, babble: 0 };
     });
     this.heli = def.heli ? buildHeli() : null;
+    { // golden briefcase (timed bonus event)
+      const gb = new GeoBuilder(), gold = 0xf0b02a;
+      gb.box(0, 0, 0, 0.56, 0.4, 0.16, gold, { faces: 63, top: 0xffd75a });
+      gb.box(0, 0.19, 0, 0.58, 0.03, 0.17, 0xc8861a, { faces: 63 });
+      gb.box(0, 0.4, 0, 0.2, 0.05, 0.06, 0x3a2418, { faces: 63 }); for (const sx of [-1, 1]) gb.box(sx * 0.09, 0.36, 0, 0.04, 0.06, 0.06, 0x3a2418, { faces: 63 });
+      for (const sx of [-1, 1]) gb.box(sx * 0.17, 0.27, 0.081, 0.07, 0.06, 0.02, 0xd8deea, { faces: 63 });
+      gb.box(0, 0.1, 0.082, 0.14, 0.1, 0.01, 0xfff1c0, { faces: 16 });
+      const grp = new Group(); grp.add(new Mesh(gb.build(), new MeshBasicMaterial({ vertexColors: true })));
+      const halo = new Mesh(new PlaneGeometry(2.2, 2.2), new MeshBasicMaterial({ map: textures().glow, color: 0xffc23a, transparent: true, opacity: 0.9, depthWrite: false, blending: AdditiveBlending, fog: false }));
+      halo.rotation.x = -Math.PI / 2; halo.position.y = -0.6; halo.renderOrder = 4; grp.add(halo);
+      grp.visible = false; this.root.add(grp);
+      this.briefcase = { group: grp, halo };
+    }
     if (this.heli) this.root.add(this.heli.group);
     this.van = buildVan();
     this.root.add(this.van.group);
@@ -439,6 +453,8 @@ export class Game {
     this.chatT = 6 + Math.random() * 6; this.chatQ = null; this.chatI = Math.floor(Math.random() * 20);
     this.boltT = 8 + Math.random() * 8; this.thunderIn = 0; this.thunderT = 0;
     if (this.heli) this.heli.group.visible = false;
+    this.brief = null; this.briefsGot = 0; this.app.onBrief && this.app.onBrief(0); if (this.briefcase) this.briefcase.group.visible = false;
+    this.briefAt = this.app.mode === 'classic' && Math.random() < 0.55 ? 18 + Math.random() * 30 : Infinity;
     for (const v of this.vents || []) v.flap.rotation.x = 0;
     for (const tv of this.tvs || []) { tv.on = tv.used = false; tv.scr.visible = tv.glow.visible = false; }
     this.tvLures = 0; this.photoFinish = false; this.closeCalls = 0; this.koStreak = 0; this.maxKoStreak = 0; this.lastKo = -99;
@@ -652,6 +668,7 @@ export class Game {
       if (this.def.rain) this.updateStorm(rdt);
       if (this.disguiseT > 0) { this.disguiseT -= dt; this.app.onDisguise(Math.max(0, this.disguiseT)); if (this.disguiseT <= 0) { this.app.audio.play('lost'); this.app.floaters.spawn('Disguise worn off', this.player.x, 1.6, this.player.z, 'warn', 1.2); } }
       if (this.tvs.length) this.updateTVs(dt);
+      this.updateBriefcase(dt);
       if (this.shiftN < sched.length && this.time >= sched[this.shiftN] && this.reserve[this.shiftN]) this.callReinforcement(this.reserve[this.shiftN++]);
       // route recap: sample position + whether anyone is onto us
       this.trailT -= dt;
@@ -1079,6 +1096,55 @@ export class Game {
     app.floaters.spawn('Uniform on!', g.x, 1.4, g.z, 'big', 1.2);
     app.onDisguise(this.disguiseT);
     app.hintDone('uniform');
+  }
+
+  // ---------- golden briefcase: a timed bonus that appears somewhere in the building ----------
+  updateBriefcase(dt) {
+    const app = this.app, p = this.player, bc = this.briefcase;
+    if (!bc) return;
+    if (!this.brief) {
+      if (this.time < this.briefAt || this.hasStash || this.alarm) return;
+      this.briefAt = Infinity;
+      const L = this.L, cells = [];
+      for (let y = 1; y < L.H - 1; y++) for (let x = 1; x < L.W - 1; x++) {
+        const k = y * L.W + x;
+        if (!L.walk[k] || L.outdoor[k]) continue;
+        const d = Math.hypot(x + 0.5 - p.x, y + 0.5 - p.z);
+        if (d > 6 && d < 16) cells.push([x, y]);
+      }
+      const px = Math.floor(p.x), pz = Math.floor(p.z);
+      for (let tries = 0; tries < 12 && cells.length; tries++) {
+        const [x, y] = cells.splice((Math.random() * cells.length) | 0, 1)[0];
+        if (!this.path(px, pz, x, y).length) continue;
+        const value = Math.round((this.def.values.stash || 2000) * 0.3 / 50) * 50;
+        this.brief = { x: x + 0.5, z: y + 0.5, t: 30, value };
+        bc.group.position.set(x + 0.5, 0.7, y + 0.5); bc.group.visible = true;
+        app.announce(`💼 A courier dropped a golden briefcase! ${fmt(value)} · 30s`);
+        app.audio.play('jackpot');
+        break;
+      }
+      return;
+    }
+    const b = this.brief;
+    b.t -= dt;
+    app.onBrief(Math.max(0, b.t));
+    bc.group.rotation.y += dt * 2; bc.group.position.y = 0.7 + Math.sin(this.t * 3) * 0.08;
+    bc.halo.position.y = -0.6 - Math.sin(this.t * 3) * 0.08; bc.halo.material.opacity = 0.7 + Math.sin(this.t * 5) * 0.25;
+    bc.group.visible = b.t > 5 || Math.sin(this.t * 14) > -0.3;            // blinks in the last 5 s
+    if (Math.random() < dt * 3) app.particles.burst(b.x, 0.9, b.z, { count: 1, colors: [0xffe680, 0xffffff], speed: 0.3, up: 0.6, size: 0.05, gravity: 0, life: 0.6 });
+    if (this.state === 'play' && Math.hypot(p.x - b.x, p.z - b.z) < 0.85) {
+      this.lootGot += b.value; this.lootTotal += b.value; this.briefsGot++;
+      app.floaters.spawn('+' + fmt(b.value) + ' BRIEFCASE!', b.x, 1.6, b.z, 'big', 1.5);
+      app.audio.play('gold'); app.audio.play('combo', 10); app.flash('gold');
+      this.juice(0.35, 0.4, -8, 0.03, 0); app.shake.add(0.25);
+      app.particles.burst(b.x, 0.8, b.z, { count: 26, colors: [0xffd23f, 0xffffff, 0xffe680], speed: 4, up: 5, size: 0.09, life: 0.9 });
+      app.onLoot(true);
+      bc.group.visible = false; this.brief = null; app.onBrief(0);
+    } else if (b.t <= 0) {
+      app.onBrief(0);
+      app.floaters.spawn('The courier took it back...', b.x, 1.4, b.z, 'q', 1.4);
+      bc.group.visible = false; this.brief = null;
+    }
   }
 
   // ---------- TVs ----------

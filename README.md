@@ -88,6 +88,8 @@ Disguise: hold E over a knocked-out guard to put on his uniform (25 s, your slee
 
 Guard chatter: two calm guards passing each other trade a line ("Quiet night, huh?" / "Too quiet."), with storm, new-guy and missing-colleague variants.
 
+Golden briefcase: on about half of normal runs a courier drops a golden briefcase somewhere in the building (announced, blinking on the minimap, with a 30 s countdown pill). Grab it for a 30%-of-stash bonus, or skip the risky detour. Achievement: Special Delivery.
+
 Heist rank: every run earns XP (score/100 for an escape, a little for a bust), filling a bar from Rookie through Pickpocket, Burglar, Safecracker ... up to Legend. The results and busted screens animate the bar (with a RANK UP! moment), and the city map shows your rank. The menu also shows your next goal (missing stars on the selected heist, trophies to the next outfit, a streak-at-risk reminder for the Daily).
 
 Daily Jobs: three new tasks every day (knock out 5 guards, steal $8,000, survive 3 close calls, pickpocket 3 guards ...), progress carries across runs (busts count too), $1,500 per job and $2,500 for all three. The menu shows the next open job, the JOBS button shows x/3, and the Jobs & Trophies screen lists them.

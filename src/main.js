@@ -297,7 +297,7 @@ class App {
     return {
       win, level: this.level.id, diff: this.mode === 'daily' ? 'daily' : this.diff, ghost: win && res.ghost, time: g.time, kos: g.kos,
       frac: g.lootGot / g.lootTotal, loot: g.lootGot, contractsDone: win ? res.contracts.filter((c) => c.st === 'ok').length : 0,
-      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown, radio: g.radioFaked, picks: g.picks, vents: g.ventsUsed, close: g.closeCalls, photo: g.photoFinish, streak: g.maxKoStreak || 0, disguised: g.disguiseT > 0 && g.disguises > 0, lasers: g.lasersTripped, power: g.powerOff,
+      hides: g.hidesUsed, smokes: g.smokesUsed, coins: g.coinsThrown, radio: g.radioFaked, picks: g.picks, vents: g.ventsUsed, close: g.closeCalls, briefs: g.briefsGot, photo: g.photoFinish, streak: g.maxKoStreak || 0, disguised: g.disguiseT > 0 && g.disguises > 0, lasers: g.lasersTripped, power: g.powerOff,
     };
   }
   applyOutfit() {
@@ -851,6 +851,11 @@ class App {
     $('slats').classList.toggle('hidden', !on);
     $('xh').classList.toggle('hidden', on);
   }
+  onBrief(t) {
+    const el = $('briefp'), s = Math.ceil(t), k = String(s);
+    el.classList.toggle('hidden', t <= 0 || this.state !== 'play');
+    if (t > 0 && el.dataset.s !== k) { el.dataset.s = k; el.textContent = `💼 BRIEFCASE ${s}s`; el.classList.toggle('low', s <= 5); }
+  }
   onDisguise(t) {
     const el = $('disgp'), on = t > 0;
     el.classList.toggle('hidden', !on);
@@ -1208,6 +1213,7 @@ class App {
     if (!x) return;
     x.drawImage(this.mmBase, 0, 0);
     for (const it of g.loot) { x.fillStyle = it.type === 'cash' ? '#2fbf5a' : it.type === 'gold' ? '#f5b301' : it.type === 'jewel' ? '#20c8e8' : '#ff6b9a'; x.fillRect(it.x * S - 1.5, it.z * S - 1.5, 3, 3); }
+    if (g.brief && Math.sin(this.time * 10) > -0.2) { x.fillStyle = '#ffb000'; x.strokeStyle = '#fff'; x.lineWidth = 1.5; x.beginPath(); x.arc(g.brief.x * S, g.brief.z * S, 4.5, 0, 6.3); x.fill(); x.stroke(); }
     if (!g.safeOpen) { x.fillStyle = '#ffd23f'; x.fillRect((g.L.safe.x + 0.15) * S, (g.L.safe.y + 0.15) * S, S * 0.7, S * 0.7); }
     if (g.hasStash) { x.strokeStyle = '#3ddc84'; x.lineWidth = 2; x.beginPath(); x.arc(g.L.exit.x * S, g.L.exit.z * S, S, 0, 6.3); x.stroke(); }
     for (const gd of g.guards) {
