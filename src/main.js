@@ -357,7 +357,7 @@ class App {
     const s = Object.assign(blankStats(), this.save.stats || {}), got = this.save.ach || {};
     const bt = (id) => (s.best[id] != null ? fmtTime(s.best[id]) : '—');
     const rows = [['Heists', s.runs], ['Escapes', s.escapes], ['Busted', s.busts], ['Total loot', fmtMoney(s.loot)], ['Guards KO', s.kos],
-      ['Contracts', s.contracts], ['Best Safe House', bt('safehouse')], ['Best Bank', bt('bank')], ['Best Jewelry', bt('jewelry')],
+      ['Contracts', s.contracts], ['Lucky cats', Object.keys(this.save.cats || {}).length + '/' + LEVELS.length], ['Best Safe House', bt('safehouse')], ['Best Bank', bt('bank')], ['Best Jewelry', bt('jewelry')],
       ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')], ['Best Train', bt('train')], ['Best Warehouse', bt('warehouse')], ['Best Mansion', bt('mansion')]];
     $('trJobs').innerHTML = this.jobsHTML();
     $('jobsIn').textContent = `(new jobs in ${nextDailyIn()})`;
