@@ -275,21 +275,34 @@ function furniture(L, f, B, rng, lights) {
       break;
     }
     case 'slots': {
-      const scr = [0xff4f7a, 0x4cdcff, 0xffd75a, 0x7cff9a];
+      // a bank of proper casino slot cabinets, one per cell
+      const gold = 0xe0b04a, chrome = 0xc9d2dc, dark = 0x17161f, lit = [0xff4f7a, 0x4cdcff, 0xffd75a, 0x7cff9a];
       for (let k = 0; k < W; k++) {
-        const x = -W / 2 + k + 0.5, cab = [0x8a1f2a, 0x1f3a8a, 0x5a1f8a, 0x1f6a4a][(k + f.x0) % 4];
-        b(P, x, 0, 0, 0.78, 0.5, 0.7, shade(cab, 0.7));
-        b(P, x, 0.5, -0.05, 0.74, 0.95, 0.6, cab, { top: shade(cab, 1.2) });
-        b(P, x, 0.5, 0.26, 0.76, 0.1, 0.12, 0xd9b45a);
-        b(P, x, 0.85, 0.26, 0.6, 0.42, 0.01, 0x14141c, { faces: PZ });
-        for (let r = 0; r < 3; r++) b(U, x - 0.18 + r * 0.18, 0.9, 0.268, 0.14, 0.3, 0.005, 0xf6f0e6, { faces: PZ });
-        for (let r = 0; r < 3; r++) b(U, x - 0.18 + r * 0.18, 1.0, 0.272, 0.08, 0.08, 0.004, scr[(r + k) % 4], { faces: PZ });
-        b(U, x, 1.32, 0.1, 0.7, 0.16, 0.32, scr[(k + f.y0) % 4], { faces: 63 });
-        b(P, x + 0.42, 0.75, 0.1, 0.04, 0.35, 0.04, 0xc3ccd6);
-        b(P, x + 0.42, 1.1, 0.1, 0.1, 0.1, 0.1, 0xe8483f);
-        b(P, x, 0.62, 0.3, 0.3, 0.05, 0.08, 0x2a2b36);
+        const x = -W / 2 + k + 0.5, cab = [0xb3263a, 0x2a4ab3, 0x6a2ab3, 0x1f8a5a][(k + f.x0) % 4], cab2 = shade(cab, 0.62), glow = lit[(k + f.y0) % 4];
+        b(P, x, 0, 0, 0.82, 0.12, 0.74, dark);                                   // plinth
+        b(P, x, 0.02, 0.371, 0.8, 0.07, 0.008, gold, { faces: PZ });             // kick strip
+        b(P, x, 0.12, -0.02, 0.76, 0.58, 0.66, cab2, { top: cab });              // lower cabinet
+        b(P, x, 0.3, 0.315, 0.62, 0.3, 0.012, cab, { faces: PZ });               // lower panel
+        b(P, x, 0.34, 0.32, 0.5, 0.2, 0.008, shade(cab, 1.3), { faces: PZ });    // panel art
+        b(P, x, 0.17, 0.33, 0.36, 0.09, 0.09, chrome);                           // coin tray
+        b(P, x, 0.21, 0.37, 0.28, 0.04, 0.03, 0x0d0d12, { faces: PZ | PY });
+        b(P, x, 0.7, 0.1, 0.78, 0.07, 0.48, 0x24232e, { top: 0x2e2d3a });        // button deck
+        for (let i = 0; i < 3; i++) b(U, x - 0.2 + i * 0.2, 0.77, 0.25, 0.13, 0.035, 0.09, [0xff3b4e, 0xffd23f, 0x3ddc84][i]);
+        b(P, x, 0.77, -0.09, 0.76, 0.64, 0.52, cab);                             // upper cabinet
+        for (const s of [-1, 1]) { b(P, x + s * 0.385, 0.12, 0.3, 0.035, 1.3, 0.05, chrome); b(P, x + s * 0.385, 0.12, -0.34, 0.03, 1.3, 0.04, shade(cab, 0.5)); }  // front chrome edges, dark rear
+        b(P, x, 0.84, 0.172, 0.68, 0.48, 0.012, gold, { faces: PZ });            // screen bezel
+        b(P, x, 0.87, 0.18, 0.6, 0.42, 0.01, 0x0b0b10, { faces: PZ });
+        for (let r = 0; r < 3; r++) b(B.slotReel, x - 0.19 + r * 0.19, 0.89, 0.187, 0.17, 0.38, 0.004, [0xffffff, 0xfff4e0, 0xffffff][r], { faces: PZ, fit: true });
+        b(U, x, 1.075, 0.19, 0.58, 0.014, 0.004, 0xff3040, { faces: PZ });       // payline
+        b(P, x, 1.41, -0.06, 0.78, 0.26, 0.5, dark);                              // marquee box
+        b(B.slotSign, x, 1.43, 0.192, 0.74, 0.22, 0.004, 0xffffff, { faces: PZ, fit: true });
+        b(P, x, 1.67, -0.06, 0.46, 0.05, 0.3, chrome);                            // beacon base
+        b(U, x, 1.72, -0.06, 0.2, 0.13, 0.2, glow);                               // beacon dome
+        b(P, x + 0.43, 0.82, 0.02, 0.06, 0.14, 0.12, chrome);                     // lever housing
+        b(P, x + 0.45, 0.86, 0.02, 0.035, 0.42, 0.035, chrome);                   // lever arm
+        b(P, x + 0.45, 1.28, 0.02, 0.1, 0.1, 0.1, 0xe8303e, { top: 0xff6a74 });   // lever ball
       }
-      light(0, 1.3, 0.6, [1, 0.55, 0.75], 0.8, 3.2);
+      light(0, 1.5, 0.7, [1, 0.5, 0.8], 0.9, 3.4);
       break;
     }
     case 'poker': {
@@ -476,6 +489,33 @@ function bake(bld, lightAt) {
 }
 
 // ---------------------------------------------------------------- main build
+// slot machine art: a reel strip (3 symbols) and a bulb-framed LUCKY 7 marquee
+let _slotT = null;
+function slotTextures() {
+  if (_slotT) return _slotT;
+  const mk = (w, h, fn) => { const c = document.createElement('canvas'); c.width = w; c.height = h; fn(c.getContext('2d'), w, h); const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; return t; };
+  const reel = mk(64, 128, (g, w, h) => {
+    const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#b9b2a2'); bg.addColorStop(0.2, '#fffaf0'); bg.addColorStop(0.8, '#fffaf0'); bg.addColorStop(1, '#b9b2a2');
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    // top: cherry (partial), middle: 7, bottom: BAR (partial)
+    g.fillStyle = '#2f9a3a'; g.fillRect(30, -2, 4, 14); g.fillStyle = '#e8303e';
+    g.beginPath(); g.arc(24, 14, 9, 0, 6.3); g.arc(40, 16, 9, 0, 6.3); g.fill();
+    g.font = 'bold 54px Arial Black, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineWidth = 6; g.strokeStyle = '#1c1330'; g.strokeText('7', 32, 66); g.fillStyle = '#e8303e'; g.fillText('7', 32, 66);
+    g.fillStyle = '#1c1330'; g.fillRect(8, 104, 48, 22); g.fillStyle = '#ffd23f'; g.font = 'bold 15px Arial Black, Arial, sans-serif'; g.fillText('BAR', 32, 116);
+  });
+  const sign = mk(256, 72, (g, w, h) => {
+    const bg = g.createLinearGradient(0, 0, 0, h); bg.addColorStop(0, '#ff5fa2'); bg.addColorStop(1, '#a8207a');
+    g.fillStyle = '#1c1330'; g.fillRect(0, 0, w, h); g.fillStyle = bg; g.fillRect(6, 6, w - 12, h - 12);
+    for (let x = 12; x < w - 6; x += 16) for (const y of [11, h - 11]) { g.fillStyle = '#fff3b0'; g.beginPath(); g.arc(x, y, 3.4, 0, 6.3); g.fill(); }
+    g.font = 'bold 38px Arial Black, Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.lineWidth = 7; g.strokeStyle = '#1c1330'; g.strokeText('LUCKY 7', w / 2, h / 2 + 2);
+    const tg = g.createLinearGradient(0, 18, 0, 54); tg.addColorStop(0, '#fff6c0'); tg.addColorStop(1, '#ffb52e');
+    g.fillStyle = tg; g.fillText('LUCKY 7', w / 2, h / 2 + 2);
+  });
+  return (_slotT = { reel, sign });
+}
+
 // seamless night landscape strip for the train windows: sky, moonlit hills, tree line, poles, far house lights
 function landscapeTexture() {
   const c = document.createElement('canvas'); c.width = 1024; c.height = 128;
@@ -518,7 +558,7 @@ export function buildWorld(L) {
     panel: new GeoBuilder(1), brick: new GeoBuilder(0.9), plaster: new GeoBuilder(2), grass: new GeoBuilder(3),
     asphalt: new GeoBuilder(3), concrete: new GeoBuilder(1), plain: new GeoBuilder(1), woodfine: new GeoBuilder(0.8),
     rug: new GeoBuilder(1), unlit: new GeoBuilder(1), shadow: new GeoBuilder(1), patch: new GeoBuilder(1),
-    trainN: new GeoBuilder(8), trainS: new GeoBuilder(8),
+    trainN: new GeoBuilder(8), trainS: new GeoBuilder(8), slotReel: new GeoBuilder(1), slotSign: new GeoBuilder(1),
   };
   const TRAIN = !!L.def.train;
   const { W, H, ch, floor } = L;
@@ -799,6 +839,7 @@ export function buildWorld(L) {
   mk(B.concrete, lit(T.concrete)); mk(B.plain, lit(T.plain)); mk(B.woodfine, lit(T.woodfine));
   mk(B.rug, new MeshBasicMaterial({ vertexColors: true, map: T.rug, polygonOffset: true, polygonOffsetFactor: -1 }));
   mk(B.unlit, new MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+  if (!B.slotReel.empty) { const st = slotTextures(); mk(B.slotReel, new MeshBasicMaterial({ vertexColors: true, map: st.reel, toneMapped: false })); mk(B.slotSign, new MeshBasicMaterial({ vertexColors: true, map: st.sign, toneMapped: false })); }
   if (TRAIN) {
     // windows show a scrolling night landscape (north and south sides scroll in opposite uv directions)
     const tex = landscapeTexture(), mats = [];

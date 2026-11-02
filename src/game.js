@@ -317,7 +317,7 @@ export class Game {
     this.slots = L.furn.filter((f) => f.type === 'slots').map((f) => {
       const cx = f.x0 + f.w / 2, cz = f.y0 + f.d / 2, face = f.y0 < L.H / 2 ? 1 : -1;
       const top = new Mesh(new BoxGeometry(f.w - 0.2, 0.08, 0.08), new MeshBasicMaterial({ color: 0xffd75a, toneMapped: false }));
-      top.position.set(cx, 1.52, cz + face * 0.15);
+      top.position.set(cx, 1.66, cz + face * 0.22);
       top.visible = false;
       this.root.add(top);
       return { f, cx, cz, face, top, used: false, prog: 0, t: 0 };
