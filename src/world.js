@@ -597,6 +597,27 @@ function bake(bld, lightAt) {
 }
 
 // ---------------------------------------------------------------- main build
+// night city skyline for high-rise windows: towers with lit windows, a few blinking antenna lights
+function skylineTexture() {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 128;
+  const g = c.getContext('2d'), r = mulberry32(99), W = c.width, H = c.height;
+  const sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, '#0b1030'); sky.addColorStop(0.7, '#2a2f6a'); sky.addColorStop(1, '#6a4a8a');
+  g.fillStyle = sky; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(230,236,255,.8)'; for (let i = 0; i < 40; i++) g.fillRect(r() * W, r() * H * 0.35, 1.2, 1.2);
+  for (const [layer, col, lit] of [[0, '#1a1f45', 0.25], [1, '#10132e', 0.45]]) {
+    let x = -10;
+    while (x < W) {
+      const w = 18 + r() * 34, h = (layer ? 40 : 55) + r() * (layer ? 55 : 45);
+      g.fillStyle = col; g.fillRect(x, H - h, w, h);
+      for (let wy = H - h + 5; wy < H - 4; wy += 7) for (let wx = x + 3; wx < x + w - 4; wx += 6) if (r() < lit) { g.fillStyle = r() < 0.8 ? '#ffd38a' : '#9fd8ff'; g.fillRect(wx, wy, 3, 3); }
+      if (layer && r() < 0.3) { g.fillStyle = col; g.fillRect(x + w / 2 - 1, H - h - 12, 2, 12); g.fillStyle = '#ff4a5a'; g.fillRect(x + w / 2 - 2, H - h - 14, 4, 3); }
+      x += w + r() * 4;
+    }
+  }
+  const t = new CanvasTexture(c); t.colorSpace = SRGBColorSpace; t.wrapS = RepeatWrapping; t.wrapT = ClampToEdgeWrapping;
+  return t;
+}
+
 // four tiny cartoon wall pictures (landscape, portrait, sailboat, cat)
 let _picT = null;
 function picTextures() {
@@ -681,7 +702,7 @@ export function buildWorld(L) {
     panel: new GeoBuilder(1), brick: new GeoBuilder(0.9), plaster: new GeoBuilder(2), grass: new GeoBuilder(3),
     asphalt: new GeoBuilder(3), concrete: new GeoBuilder(1), plain: new GeoBuilder(1), woodfine: new GeoBuilder(0.8),
     rug: new GeoBuilder(1), unlit: new GeoBuilder(1), shadow: new GeoBuilder(1), patch: new GeoBuilder(1),
-    trainN: new GeoBuilder(8), trainS: new GeoBuilder(8), slotReel: new GeoBuilder(1), slotSign: new GeoBuilder(1), pics: [0, 1, 2, 3].map(() => new GeoBuilder(1)),
+    trainN: new GeoBuilder(8), trainS: new GeoBuilder(8), slotReel: new GeoBuilder(1), slotSign: new GeoBuilder(1), pics: [0, 1, 2, 3].map(() => new GeoBuilder(1)), skyline: new GeoBuilder(6),
   };
   const TRAIN = !!L.def.train;
   const { W, H, ch, floor } = L;
@@ -824,7 +845,8 @@ export function buildWorld(L) {
         }
         if (win) {
           const wf = out ? 0xf6f0e6 : 0xffffff;
-          if (TRAIN && !out) (dy > 0 ? B.trainN : B.trainS).box(fx + dx * 0.006, 0.82, fz + dy * 0.006, 0.62, 0.62, 0.01, 0xffffff, { faces: bit });
+          if (L.def.skyline && !out) B.skyline.box(fx + dx * 0.006, 0.82, fz + dy * 0.006, dx ? 0.01 : 0.62, 0.62, dy ? 0.01 : 0.62, 0xffffff, { faces: bit });
+          else if (TRAIN && !out) (dy > 0 ? B.trainN : B.trainS).box(fx + dx * 0.006, 0.82, fz + dy * 0.006, 0.62, 0.62, 0.01, 0xffffff, { faces: bit });
           else {
           B.unlit.box(fx + dx * 0.006, 0.82, fz + dy * 0.006, dx ? 0.01 : 0.62, 0.62, dy ? 0.01 : 0.62, out ? (NIGHT ? 0x3a4a6a : 0x6f9ec2) : (NIGHT ? 0x4a5a8a : 0xffe2b0), { faces: bit });
           B.unlit.box(fx + dx * 0.008, 1.14, fz + dy * 0.008, dx ? 0.01 : 0.62, 0.3, dy ? 0.01 : 0.62, out ? (NIGHT ? 0x4a5a7a : 0x8fb8d6) : (NIGHT ? 0x6a7aa8 : 0xfff1d0), { faces: bit });
@@ -961,6 +983,7 @@ export function buildWorld(L) {
   mk(B.concrete, lit(T.concrete)); mk(B.plain, lit(T.plain)); mk(B.woodfine, lit(T.woodfine));
   mk(B.rug, new MeshBasicMaterial({ vertexColors: true, map: T.rug, polygonOffset: true, polygonOffsetFactor: -1 }));
   mk(B.unlit, new MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+  if (!B.skyline.empty) { const t = skylineTexture(); t.repeat.set(1, 6 / 0.62); t.offset.set(0, -0.82 / 0.62); mk(B.skyline, new MeshBasicMaterial({ map: t, toneMapped: false })); }
   { const pt = picTextures(); B.pics.forEach((bld, k) => mk(bld, new MeshBasicMaterial({ vertexColors: true, map: pt[k] }))); }
   if (!B.slotReel.empty) { const st = slotTextures(); mk(B.slotReel, new MeshBasicMaterial({ vertexColors: true, map: st.reel, toneMapped: false })); mk(B.slotSign, new MeshBasicMaterial({ vertexColors: true, map: st.sign, toneMapped: false })); }
   if (TRAIN) {

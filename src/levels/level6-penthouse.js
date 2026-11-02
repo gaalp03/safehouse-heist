@@ -8,6 +8,7 @@ export default {
   parTime: 150,
   tutorial: true,
   night: true,
+  skyline: true,
   rain: true,
   heli: true,
   roadTop: 17,
