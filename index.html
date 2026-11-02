@@ -165,7 +165,9 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}#bEasy{color:#8ff0c4;font-w
 .gr .pips{display:flex;gap:3px}.gr .pips i{width:12px;height:12px;border-radius:3px;border:2px solid var(--ink);background:#fff}.gr .pips i.on{background:#22b573}
 .gr .pr{margin-top:2px;background:var(--y);border:2px solid var(--ink);border-radius:7px;padding:1px 8px;font-size:14px}
 .gr.cant .pr{background:#d9cdb8;opacity:.8}.gr.max .pr{background:#7ff0b9}.gr.buy{animation:stk .45s cubic-bezier(.2,1.8,.4,1)}
-.cashline{font-family:var(--disp);font-size:14px;color:var(--g);flex:none}.cashline:empty{display:none}#wchip{position:absolute;left:78px;top:8px;font-size:15px;color:var(--g)}
+.cashline{font-family:var(--disp);font-size:14px;color:var(--g);flex:none}.cashline:empty{display:none}.panel.tr{overflow-y:auto}.panel.tr #bTrBack{position:sticky;bottom:0;z-index:2}@media (min-width:700px){#trStats{grid-template-columns:repeat(6,1fr)!important}#trStats div{padding:4px 6px}#trStats small{font-size:10px}#trStats b{font-size:14px}}
+#trJobs{list-style:none;display:flex;flex-direction:column;gap:5px;width:100%;flex:none}#trJobs li{display:flex;align-items:center;gap:8px;background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:5px 9px 6px 10px;box-shadow:3px 3px 0 var(--ink);padding:5px 10px;font-family:var(--disp);font-size:16px;text-shadow:none}#trJobs li:nth-child(odd){rotate:-.6deg}#trJobs li:nth-child(even){rotate:.6deg}#trJobs li i{width:15px;height:15px;border:3px solid var(--ink);border-radius:4px;background:#fff;flex:none}#trJobs li em{margin-left:auto;font-style:normal;font-size:14px;opacity:.75}#trJobs li b{color:#b5651d;font-size:14px;min-width:58px;text-align:right}#trJobs li.ok{background:#c9f7df}#trJobs li.ok i{background:#22b573}#trJobs li.bonus{background:#ffe9a8}#trJobs li.bonus.ok{background:#c9f7df}#bTrophy small{font-size:13px;background:var(--ink);color:var(--y);border-radius:6px;padding:0 5px;margin-left:2px}@media (max-width:640px){#trJobs li{font-size:13px;padding:4px 8px}#trJobs li b{min-width:48px;font-size:12px}}
+#wchip{position:absolute;left:78px;top:8px;font-size:15px;color:var(--g)}
 #ofGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
 .of{font:inherit;color:#fff6e8;background:rgba(0,0,0,.28);border:3px solid transparent;border-radius:12px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer}
 .of.on{border-color:#ffc94a;background:linear-gradient(180deg,rgba(255,201,74,.22),rgba(0,0,0,.2))}.of.lock{opacity:.5}.of.shake{animation:shakeX .35s}
@@ -377,7 +379,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}#bEasy{color:#8ff0c4;font-w
   </div>
   <div id="selInfo"><b id="selName">Safe House</b><span id="selStars" class="stars"></span><small id="selSub"></small><small id="selGoal"></small></div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button><button data-d="ironman">🛡 IRON</button></div>
-  <div class="row menurow"><button class="btn s" id="bTrophy">🏆 TROPHIES</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧰 LOCKER</button></div>
+  <div class="row menurow"><button class="btn s" id="bTrophy">📋 JOBS</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧰 LOCKER</button></div>
   <button id="bTut" class="linkbtn o">🎓 Play the tutorial</button>
   <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Z sneak · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
 </div>
@@ -426,7 +428,9 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}#bEasy{color:#8ff0c4;font-w
   <button class="btn" id="bSetBack">DONE</button>
 </div></div>
 <div id="trophies" class="screen solid hidden"><div class="panel tr">
-  <div class="big o" style="font-size:40px">TROPHIES <small id="trCount" style="font-size:18px;color:var(--y)"></small></div>
+  <div class="big o" style="font-size:36px">JOBS &amp; TROPHIES <small id="trCount" style="font-size:18px;color:var(--y)"></small></div>
+  <small class="lk-h o">TODAY'S JOBS <span>(new jobs every day)</span></small>
+  <ul id="trJobs"></ul>
   <div id="trStats"></div>
   <div id="trAch"></div>
   <button class="btn" id="bTrBack">BACK</button>

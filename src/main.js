@@ -11,6 +11,7 @@ import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
 import { DIFFS, diffKey } from './difficulty.js';
 import { rankOf, xpForRun } from './rank.js';
+import { todaysJobs, recordJobs, jobDef, JOB_CASH, JOB_BONUS } from './jobs.js';
 import { GEAR, gearLv, nextPrice, gearMods } from './gear.js';
 import { todaysDaily, prevDayKey, nextDailyIn, dayKey as dayKeyNow, MUTATORS } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
@@ -348,10 +349,25 @@ class App {
     const rows = [['Heists', s.runs], ['Escapes', s.escapes], ['Busted', s.busts], ['Total loot', fmtMoney(s.loot)], ['Guards KO', s.kos],
       ['Contracts', s.contracts], ['Best Safe House', bt('safehouse')], ['Best Bank', bt('bank')], ['Best Jewelry', bt('jewelry')],
       ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')], ['Best Train', bt('train')], ['Best Warehouse', bt('warehouse')]];
+    $('trJobs').innerHTML = this.jobsHTML();
+    for (let i = rows.length - 1; i >= 0; i--) if (String(rows[i][0]).startsWith('Best ') && rows[i][1] === '—') rows.splice(i, 1);
     $('trStats').innerHTML = rows.map(([k, v]) => `<div><small>${k}</small><b>${v}</b></div>`).join('');
     $('trAch').innerHTML = ACH.map((a) => `<div class="ach ${got[a.id] ? 'on' : ''}"><i>${got[a.id] ? a.icon : '🔒'}</i><b>${a.name}</b><small>${a.desc}</small></div>`).join('');
     $('trCount').textContent = `${Object.keys(got).filter((k) => ACH.some((a) => a.id === k)).length} / ${ACH.length}`;
     this.screen('trophies');
+  }
+  jobsHTML() {
+    const J = todaysJobs(this.save), fm = (d, v) => (d.money ? fmtMoney(v) : v);
+    return J.ids.map((id) => { const d = jobDef(id), p = J.prog[id] || 0, ok = !!J.done[id];
+      return `<li class="${ok ? 'ok' : ''}"><i></i><span>${d.text}</span><em>${ok ? '✔' : fm(d, p) + '/' + fm(d, d.n)}</em><b>+${fmtMoney(JOB_CASH)}</b></li>`; }).join('')
+      + `<li class="bonus ${J.bonus ? 'ok' : ''}"><i></i><span>All 3 done</span><em>${J.bonus ? '✔' : ''}</em><b>+${fmtMoney(JOB_BONUS)}</b></li>`;
+  }
+  jobsToast(res) {
+    if (!this.save.tutDone) return '';
+    const out = res.fresh.map((d) => `📋 Job done: <b>${d.text}</b> +${fmtMoney(JOB_CASH)}`);
+    if (res.bonus) out.push(`📋 <b>All daily jobs done!</b> +${fmtMoney(JOB_BONUS)}`);
+    if (out.length) setTimeout(() => { if (this.state === 'result' || this.state === 'busted') { this.audio.play('contract'); this.shake.add(0.12); } }, 2000);
+    return out.join('<br>');
   }
   showAchToast(list) {
     $('rAch').innerHTML = list.length ? '🏆 Unlocked: ' + list.map((a) => `<b>${a.icon} ${a.name}</b>`).join(' · ') : '';
@@ -383,6 +399,7 @@ class App {
       else if (n < 3) goals.push('Next ★: grab 70% loot · or never get spotted');
     }
     if (this.save.tutDone && this.canAffordGear()) goals.unshift('🧰 You can afford new gear in the Locker!');
+    if (this.save.tutDone) { const J = todaysJobs(this.save), id = J.ids.find((x) => !J.done[x]); if (id) { const d = jobDef(id), p = J.prog[id] || 0; goals.push(`📋 Job: ${d.text} (${d.money ? fmtMoney(p) : p}/${d.money ? fmtMoney(d.n) : d.n})`); } }
     const sk = this.save.streak;
     if (sk && sk.n >= 1 && sk.last === prevDayKey()) goals.unshift(`🔥 Play today's Daily to keep your ${sk.n}-day streak`);
     const nT = Object.keys(this.save.ach || {}).length, nxt = OUTFITS.filter((o) => o.need && o.need > nT).sort((a, b) => a.need - b.need)[0];
@@ -398,6 +415,7 @@ class App {
     $('starTotal').textContent = `★ ${tot}/24`;
     LEVELS.forEach((l, i) => { const el = $('lvl' + (i + 1)); if (el) el.classList.toggle('gold', !!(this.save.mastered || {})[l.id]); });
     $('wchip').textContent = this.save.cash ? '💰 ' + fmtMoney(this.save.cash) : '';
+    { const J = todaysJobs(this.save), n = J.ids.filter((x) => J.done[x]).length; $('bTrophy').innerHTML = `📋 JOBS <small>${n}/3</small>`; }
     $('bOutfit').classList.toggle('pulse', this.save.tutDone && this.canAffordGear());
     { const r = rankOf(this.save.xp || 0); $('rankChip').innerHTML = `🎖 ${r.name}<i style="width:${(r.frac * 100).toFixed(0)}%"></i>`; $('rankChip').title = r.next ? `${r.toNext} XP to ${r.next}` : 'Max rank'; }
   }
@@ -880,7 +898,8 @@ class App {
     this.bustStreak = this.bustKey === this.level.id ? (this.bustStreak || 0) + 1 : 1; this.bustKey = this.level.id;
     $('bEasy').classList.toggle('hidden', !(this.mode === 'classic' && this.bustStreak >= 3 && (this.diff === 'normal' || this.diff === 'hard')));
     SDK.store(this.save);
-    $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).join('<br>');
+    const jt = this.mode === 'tutorial' ? '' : this.jobsToast(recordJobs(this.save, this.runRecord(false)));
+    $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).concat(jt ? [jt] : []).join('<br>');
     this.screen('busted');
     this.drawRecap('bMap', false);
   }
@@ -941,6 +960,7 @@ class App {
     if (this.game.tut) this.save.tutDone = true;
     const freshA = recordRun(this.save, this.runRecord(true, res));
     this.awardXP(true, res.score, res.loot, 'rXP');
+    const jt = this.jobsToast(recordJobs(this.save, this.runRecord(true, res)));
     this.save.cash = (this.save.cash || 0) + res.score;
     $('rCash').textContent = `💰 +${fmtMoney(res.score)} to your stash (${fmtMoney(this.save.cash)})${this.canAffordGear() ? ' · 🧰 new gear affordable!' : ''}`;
     const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
@@ -957,6 +977,7 @@ class App {
     }
     this.nextWasLocked = false;
     if (this.justMastered) { $('rAch').innerHTML = `<span class="unlock">🏅 Heist mastered! +$2,000 bonus</span><br>` + $('rAch').innerHTML; $('rAch').classList.remove('hidden'); this.justMastered = false; }
+    if (jt) { $('rAch').innerHTML += ($('rAch').innerHTML ? '<br>' : '') + jt; $('rAch').classList.remove('hidden'); }
     if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
     this.screen('result');
