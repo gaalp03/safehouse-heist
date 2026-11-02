@@ -78,6 +78,13 @@ export class Game {
 
   // ---------- setup ----------
   load(def) {
+    // free the previous level's GPU resources (geometries, materials, canvas textures) before building the next
+    const shared = new Set([lootMat && this.lootMeshes ? Object.values(this.lootMeshes).map((m) => m.material) : []].flat());
+    this.root.traverse((o) => {
+      if (o.geometry) o.geometry.dispose();
+      const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+      for (const m of mats) { if (shared.has(m)) continue; if (m.map && !m.map.userData.keep) m.map.dispose(); m.dispose(); }
+    });
     this.root.clear();
     for (const g of this.guards || []) g.badge.remove();
     this.def = def;
