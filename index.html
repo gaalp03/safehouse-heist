@@ -273,6 +273,13 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}#bEasy{color:#8ff0c4;font-w
 /* panels get a tilted headline */
 .big{rotate:-2deg;letter-spacing:1px}
 #sneakp,#disgp{border:3px solid var(--ink);box-shadow:3px 4px 0 var(--ink);rotate:-2deg}
+
+.panel{border:5px solid var(--ink);border-radius:20px 26px 18px 28px;background:radial-gradient(rgba(255,255,255,.06) 1.3px,transparent 1.6px) 0 0/11px 11px,linear-gradient(180deg,#43306c,#261a40);box-shadow:8px 9px 0 var(--ink),0 22px 40px rgba(0,0,0,.35),inset 0 3px 0 rgba(255,255,255,.12);position:relative}
+.panel::before{content:"";position:absolute;right:26px;top:-13px;width:70px;height:20px;background:var(--tape);rotate:-5deg;border-left:2px dashed rgba(28,19,48,.18);border-right:2px dashed rgba(28,19,48,.18);pointer-events:none}
+.big.win,.big.bust{border:5px solid currentColor;border-radius:12px;padding:0 16px 2px;rotate:-5deg;box-shadow:inset 0 0 0 3px rgba(28,19,48,.35),3px 4px 0 var(--ink);animation:stamp .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes stamp{0%{scale:2.2;opacity:0}60%{scale:.92;opacity:1}100%{scale:1}}
+.big.bust{animation:stamp .45s cubic-bezier(.2,1.6,.4,1),shakeX .4s .45s}
+#rScore{font-family:var(--disp);rotate:-2deg}
 @media (max-width:640px){#obj{font-size:15px;padding:5px 12px 4px 28px}#obj::after{font-size:14px;left:7px}#prompt{font-size:15px;padding:6px 12px}#prompt kbd{padding:0 5px;border-width:2px}#hint{font-size:13px}#hint::before{font-size:11px;left:-6px;top:-12px}#tut span{font-size:13px}#ctr li{font-size:11px}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
