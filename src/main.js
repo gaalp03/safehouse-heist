@@ -421,7 +421,8 @@ class App {
     if (this.mode === 'classic' && (idx == null || idx === 0) && !this.save.tutDone && (this.levelIdx || 0) === 0) this.mode = 'tutorial';
     if (this.mode === 'daily' || this.mode === 'tutorial') idx = 0;
     if (idx != null) this.levelIdx = idx;
-    if (this.loadedIdx !== this.levelIdx) await this.useLevel(this.levelIdx);
+    const fresh = this.loadedIdx !== this.levelIdx;
+    if (fresh) await this.useLevel(this.levelIdx);
     if (this.mode === 'daily' && (!this.daily || this.daily.key !== todaysDaily().key)) this.daily = todaysDaily();
     this.audio.unlock();
     this.audio.siren(false);
@@ -450,9 +451,28 @@ class App {
       t.innerHTML = `<small>DAILY CHALLENGE · ${this.daily.label}</small>${this.daily.mutator.name}<b>${this.daily.mutator.desc}</b>`;
       t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 3200);
-    } else $('ctoast').classList.add('hidden');
+    } else if (fresh && this.mode === 'classic' && this.save.tutDone) this.showIntel();
+    else $('ctoast').classList.add('hidden');
     this.hint('move');
     SDK.gameplayStart();
+  }
+  // first time you load a level this session: a quick intel card of what's waiting inside
+  showIntel() {
+    const g = this.game, d = this.level, L = g.L, it = [];
+    if (L.keys.length) it.push('🔑 Keycard door');
+    if (L.doors.some((x) => x.type === 'lock')) it.push('🔒 Locked door');
+    if (g.lasers.length) it.push('🔴 Lasers');
+    if (d.owner) it.push('😴 Sleeping owner');
+    if ((d.dogs || []).length) it.push('🐕 Guard dog');
+    if ((d.spots || []).length) it.push('🔦 Searchlights');
+    if (g.cases.length) it.push('💎 Display cases');
+    if (g.slots.length) it.push('🎰 Slot machines');
+    if ((d.cameras || []).length) it.push(`📹 ${d.cameras.length} camera${d.cameras.length > 1 ? 's' : ''}`);
+    it.push(d.heli ? '🚁 Roof extraction' : L.van ? '🚐 Van out front' : '🪜 Roof hatch exit');
+    const t = $('ctoast');
+    t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small><span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span>`;
+    t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
+    clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 4200);
   }
   async retry() {
     await this.maybeMidgame();
