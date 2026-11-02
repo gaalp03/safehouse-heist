@@ -327,6 +327,17 @@ class App {
     const st = el.querySelector('.stars');
     $('selStars').innerHTML = st ? st.innerHTML : '';
     $('selSub').textContent = k === 'daily' ? $('dDesc').textContent + ' · ' + $('dBest').textContent : el.querySelector('.best').textContent;
+    // next goal: missing stars on this heist + the next outfit unlock
+    const goals = [];
+    if (!locked && k !== 'daily' && this.save.tutDone) {
+      const id = LEVELS[{ lvl1: 0, lvl2: 1, lvl3: 2, lvl4: 3, lvl5: 4, lvl6: 5, lvl7: 6 }[k]].id, n = (this.save.best[diffKey(id, this.diff)] || { stars: 0 }).stars;
+      if (n === 0) goals.push('Escape to earn your first ★');
+      else if (n < 3) goals.push('Next ★: grab 70% loot · or never get spotted');
+    }
+    const nT = Object.keys(this.save.ach || {}).length, nxt = OUTFITS.filter((o) => o.need && o.need > nT).sort((a, b) => a.need - b.need)[0];
+    if (nxt && this.save.tutDone) goals.push(`🧤 ${nxt.need - nT} more troph${nxt.need - nT === 1 ? 'y' : 'ies'} → ${nxt.name} outfit`);
+    $('selGoal').textContent = goals.join('  ·  ');
+    $('selGoal').classList.toggle('hidden', !goals.length);
     $('bPlay').textContent = locked ? '🔒 LOCKED' : 'PLAY';
     $('bPlay').classList.toggle('dis', locked);
     let tot = 0;
