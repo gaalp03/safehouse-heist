@@ -23,6 +23,7 @@ const HINTS = {
   move: ['WASD to move · Mouse to look', 'Left side: move · Right side: look'],
   thunder: ['⚡ Thunder covers your noise for a moment. Dash now!', '⚡ Thunder covers your noise for a moment. Dash now!'],
   uniform: ['Hold E on a knocked-out guard to wear his uniform: guards & cameras ignore you from afar', 'Hold ✋ on a knocked-out guard to wear his uniform: guards & cameras ignore you from afar'],
+  ctr: ['📋 The slips on the left are bonus contracts: optional side jobs worth extra cash', '📋 The slips on the left are bonus contracts: optional side jobs worth extra cash'],
   vent: ['Air vent! E to crawl through to another room, unseen', 'Air vent! Tap the hand to crawl through, unseen'],
   dash: ['SPACE / SHIFT to dash. Careful, it\'s noisy!', 'Tap DASH to dash. Careful, it\'s noisy!'],
   cone: ['Stay out of the vision cones!', 'Stay out of the vision cones!'],
@@ -603,6 +604,7 @@ class App {
       clearTimeout(this.goT); this.goT = setTimeout(() => gs.classList.add('hidden'), 1200);
       this.audio.play('dash');
     }
+    if (this.mode === 'classic' && this.game.contracts.length && !this.save.seenCtr) { this.save.seenCtr = true; SDK.store(this.save); this.hint('ctr'); }
     this.hint('move');
     SDK.gameplayStart();
   }
