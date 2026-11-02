@@ -93,6 +93,7 @@ class App {
     this.shake = new Shake();
     this.floaters = new Floaters(this.els.fxl);
     this.dust = new Dust(this.scene);
+    this.applySettings();
     this.game = new Game(this);
     this.levelIdx = 0;
     await this.useLevel(0);
@@ -122,6 +123,10 @@ class App {
       });
     }
     click('bResume', () => this.resume());
+    click('bSet', () => this.showSettings());
+    click('bPSet', () => this.showSettings());
+    click('bSetBack', () => { if (this.setFrom === 'pause') { this.state = 'pause'; this.screen('pause'); } else this.showMenu(); });
+    for (const el of document.querySelectorAll('#settings input')) el.addEventListener('input', () => this.readSettings());
     click('bRestart', () => this.start());
     click('bPMenu', () => this.showMenu());
     click('bRetry', () => this.retry());
@@ -429,6 +434,33 @@ class App {
   async retry() {
     await this.maybeMidgame();
     this.start();
+  }
+  settings() {
+    return Object.assign({ sens: 1, fov: 70, music: 0.8, sfx: 1, invert: false, shake: true }, this.save.settings || {});
+  }
+  applySettings() {
+    const s = this.settings();
+    this.sens = 0.0024 * s.sens; this.invertY = s.invert; this.fovBase = s.fov;
+    this.audio.setVolumes(s.music, s.sfx);
+    this.shake.scale = s.shake ? 1 : 0;
+  }
+  showSettings() {
+    this.setFrom = this.state === 'pause' ? 'pause' : 'menu';
+    this.state = 'settings';
+    const s = this.settings();
+    $('sSens').value = s.sens; $('sFov').value = s.fov; $('sMus').value = s.music; $('sSfx').value = s.sfx;
+    $('sInv').checked = s.invert; $('sShake').checked = s.shake;
+    this.readSettings(true);
+    this.screen('settings');
+  }
+  readSettings(noSave) {
+    const s = { sens: +$('sSens').value, fov: +$('sFov').value, music: +$('sMus').value, sfx: +$('sSfx').value, invert: $('sInv').checked, shake: $('sShake').checked };
+    $('vSens').textContent = s.sens.toFixed(1) + '×'; $('vFov').textContent = s.fov + '°';
+    $('vMus').textContent = Math.round(s.music * 100) + '%'; $('vSfx').textContent = Math.round(s.sfx * 100) + '%';
+    if (noSave) return;
+    this.save.settings = s; SDK.store(this.save);
+    this.applySettings();
+    this.audio.play('click');
   }
   pause() {
     if (this.state !== 'play') return;
@@ -877,7 +909,7 @@ class App {
       fov = 42;
     } else {
       g.applyCamera(cam, dt);
-      fov = (this.aspect < 1 ? 84 : 70) + g.fovKick;
+      fov = (this.aspect < 1 ? this.fovBase + 14 : this.fovBase) + g.fovKick;
       const sp = $('speed'), so = Math.min(1, g.fovKick / 9).toFixed(2);
       if (sp.dataset.o !== so) { sp.dataset.o = so; sp.style.opacity = so; }
     }

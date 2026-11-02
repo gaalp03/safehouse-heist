@@ -14,8 +14,8 @@ export class Audio {
       this.master = ctx.createGain();
       const comp = ctx.createDynamicsCompressor();
       this.master.connect(comp).connect(ctx.destination);
-      this.sfx = ctx.createGain(); this.sfx.gain.value = 0.8; this.sfx.connect(this.master);
-      this.mus = ctx.createGain(); this.mus.gain.value = 0.32; this.mus.connect(this.master);
+      this.sfx = ctx.createGain(); this.sfx.gain.value = 0.8 * (this.sfxVol ?? 1); this.sfx.connect(this.master);
+      this.mus = ctx.createGain(); this.mus.gain.value = 0.32 * (this.musVol ?? 1); this.mus.connect(this.master);
       const len = ctx.sampleRate;
       this.noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
       const d = this.noiseBuf.getChannelData(0);
@@ -29,6 +29,10 @@ export class Audio {
     if (!this.ctx) return;
     const v = this.muted || this.adMuted ? 0 : 1;
     this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.03);
+  }
+  setVolumes(music, sfx) {
+    this.musVol = music; this.sfxVol = sfx;
+    if (this.mus) { this.mus.gain.value = 0.32 * music; this.sfx.gain.value = 0.8 * sfx; }
   }
   setMuted(m) { this.muted = m; this.apply(); }
   setAdMuted(m) {

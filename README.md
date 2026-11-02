@@ -50,6 +50,8 @@ Route recap: the results and busted screens animate a minimap of your run — yo
 
 Ghost runs: your fastest/best escape per level and difficulty is saved as a route; on the next classic run the minimap shows it as a dashed purple line with a 👻 marker where your best run was at the same moment, the HUD shows its time, and the results screen says whether you beat it.
 
+Settings (⚙ on the menu, or from pause): look sensitivity, field of view, music and SFX volume, invert look Y, screen shake on/off — saved with your progress.
+
 Daily Challenge: one seeded run per day (Normal rules) with a mutator of the day (Paranoid Guards, Insomniac Owner, Gold Rush, Butterfingers, Rapid Response, Hungry Hound) and fixed contracts; separate daily best and a day streak.
 
 Difficulty: Easy / Normal / Hard (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.

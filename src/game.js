@@ -588,7 +588,7 @@ export class Game {
     p.lookX = _lk.x; p.lookY = _lk.y;
     p.yaw -= _lk.x * sens;
     this.lookTotal += Math.abs(_lk.x * sens) + Math.abs(_lk.y * sens);
-    p.pitch = clamp(p.pitch - _lk.y * sens, -1.25, 1.2);
+    p.pitch = clamp(p.pitch - _lk.y * sens * (app.invertY ? -1 : 1), -1.25, 1.2);
     p.face = p.yaw + Math.PI;
     if (p.hiding) { this.updateHiding(dt, inp); return; }
     if (this.picking) { this.updatePicking(dt, inp); return; }

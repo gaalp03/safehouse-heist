@@ -200,6 +200,11 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 @media (max-width:720px){.panel.rp{flex-direction:column;gap:8px}.rmapcol{order:2}#rMap{width:220px}}
 #ghostp{font-size:15px;color:#d9b8ff;padding:6px 10px}
 @media (max-width:640px){#ghostp{display:none}}
+.setp{min-width:min(92vw,420px);gap:10px}
+.setp label{display:flex;flex-wrap:wrap;justify-content:space-between;width:100%;font-size:15px;gap:4px}
+.setp label b{color:var(--y)}.setp input[type=range]{width:100%;accent-color:#ffc94a;height:22px}
+.setp .chk{gap:18px}.setp .chk label{width:auto;align-items:center;gap:6px}.setp input[type=checkbox]{width:20px;height:20px;accent-color:#ffc94a}
+.setbtn{position:fixed;right:max(12px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));font-size:22px;z-index:2}
 .keys{font-size:13px;opacity:.75;max-width:520px}body.touch .kb{display:none}body:not(.touch) .tc{display:none}
 #loading{background:radial-gradient(ellipse at center,#3d2c62,#1c1330);z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
@@ -260,6 +265,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <div id="menu" class="screen hidden">
   <div class="logo o">SAFEHOUSE<small>HEIST</small></div>
   <p class="sub o">Sneak in. Crack the safe. Grab the loot. Get to the van.</p>
+  <button id="bSet" class="ib setbtn" aria-label="Settings">⚙</button>
   <div id="city">
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       <rect width="100" height="100" fill="#1b2340"/>
@@ -293,7 +299,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 </div>
 
 <div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>
-  <button class="btn" id="bResume">RESUME</button><div class="row"><button class="btn s" id="bRestart">RESTART</button><button class="btn s" id="bPMenu">MENU</button></div></div></div>
+  <button class="btn" id="bResume">RESUME</button><div class="row"><button class="btn s" id="bRestart">RESTART</button><button class="btn s" id="bPSet">⚙ SETTINGS</button><button class="btn s" id="bPMenu">MENU</button></div></div></div>
 
 <div id="result" class="screen solid hidden"><div class="panel rp"><div class="rmapcol"><small class="o">YOUR ROUTE</small><canvas id="rMap"></canvas><div id="rMapLg" class="mlg"></div></div><div class="rcol">
   <div class="big win o">ESCAPED!</div>
@@ -320,6 +326,15 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   <div class="big o" style="font-size:36px">OUTFITS</div>
   <div id="ofGrid"></div>
   <button class="btn" id="bOfBack">DONE</button>
+</div></div>
+<div id="settings" class="screen solid hidden"><div class="panel setp">
+  <div class="big o" style="font-size:36px">SETTINGS</div>
+  <label>Look sensitivity <b id="vSens"></b><input id="sSens" type="range" min="0.3" max="2.5" step="0.1"></label>
+  <label>Field of view <b id="vFov"></b><input id="sFov" type="range" min="60" max="90" step="1"></label>
+  <label>Music volume <b id="vMus"></b><input id="sMus" type="range" min="0" max="1" step="0.05"></label>
+  <label>Sound effects <b id="vSfx"></b><input id="sSfx" type="range" min="0" max="1" step="0.05"></label>
+  <div class="row chk"><label><input id="sInv" type="checkbox"> Invert look Y</label><label><input id="sShake" type="checkbox"> Screen shake</label></div>
+  <button class="btn" id="bSetBack">DONE</button>
 </div></div>
 <div id="trophies" class="screen solid hidden"><div class="panel tr">
   <div class="big o" style="font-size:40px">TROPHIES <small id="trCount" style="font-size:18px;color:var(--y)"></small></div>

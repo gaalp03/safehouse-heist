@@ -63,7 +63,7 @@ export class Particles {
 
 export class Shake {
   constructor() { this.trauma = 0; this.x = 0; this.y = 0; this.t = 0; }
-  add(a) { this.trauma = Math.min(1, this.trauma + a); }
+  add(a) { this.trauma = Math.min(1, this.trauma + a * (this.scale ?? 1)); }
   update(dt) {
     this.t += dt;
     this.trauma = Math.max(0, this.trauma - dt * 1.6);
