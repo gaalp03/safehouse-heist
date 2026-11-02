@@ -57,4 +57,5 @@ export default {
     { pos: [44.6, 2.4], face: -2.3, sweep: 0.6, sweepSpeed: 0.7 },
   ],
   vents: [{ a: [5, 6, 0, 1], b: [31, 6, 0, 1] }],
+  tips: ['the baggage-car vent comes out in the dining car.', 'the barman runs for the alarm button. Stop him or stay unseen.', 'the breaker in the baggage car kills the mail-car laser.'],
 };

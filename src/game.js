@@ -696,7 +696,7 @@ export class Game {
       let dx = wx, dz = wz;
       if (Math.abs(dx) + Math.abs(dz) < 0.01) { dx = fx; dz = fz; }
       const l = Math.hypot(dx, dz); dx /= l; dz /= l;
-      p.dashT = DASH_T; p.dashCd = DASH_CD; p.ddx = dx; p.ddz = dz; this.dashes++;
+      p.dashT = DASH_T; p.dashCd = DASH_CD; p.ddx = dx; p.ddz = dz; this.dashes++; this.lastDash = this.time;
       app.audio.play('dash');
       app.shake.add(0.18);
       squash(p.c, 0.7);
@@ -1360,6 +1360,7 @@ export class Game {
         d.face = turnTo(d.face, Math.atan2(p.x - d.x, p.z - d.z), 8 * dt);
         this.dogBark(d, dt, d.x, d.z);
         if (d.lostT > 2.5 || hide) { d.state = 'sniff'; d.ci = Math.max(0, this.crumbs.length - 6); d.sniffT = 0; }
+        if (playing && sees) this.lastBark = this.time;
         if (playing && sees && !this.barkedAt) { this.barkedAt = true; this.spotted = true; }
         break;
       }
@@ -1496,7 +1497,7 @@ export class Game {
       this.app.hint('clerk');
       return;
     }
-    g.state = 'alert'; g.susp = 1; g.lostT = 0; g.radioT = 0; g.radioSaid = false;
+    g.state = 'alert'; g.susp = 1; g.lostT = 0; g.radioT = 0; g.radioSaid = false; g.alertAt = this.time;
     if (this.disguiseT > 0) { this.disguiseT = 0; this.app.onDisguise(0); this.app.floaters.spawn("You're not Dave!", g.x, 2.3, g.z, 'alert', 1.3); }
     if (!this.spotted) this.app.hintDone('cone');
     this.spotted = true;
@@ -2211,6 +2212,10 @@ export class Game {
 
   bust(g) {
     this.mark('caught', this.player.x, this.player.z);
+    // remember why, so the busted screen can give a tip that actually helps
+    const t = this.time;
+    this.bustCause = this.player.hiding ? 'hide' : g.kind === 'owner' ? 'owner' : t - (this.lastDash ?? -99) < 2.5 ? 'dash'
+      : t - (this.lastBark ?? -99) < 6 ? 'dog' : t - (g.alertAt ?? t) > 3 ? 'los' : 'cone';
     const app = this.app;
     if (this.picking) this.stopPick();
     this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = g;

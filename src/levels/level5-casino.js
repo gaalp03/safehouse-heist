@@ -63,4 +63,5 @@ export default {
     { pos: [16, 15.6], face: Math.PI, sweep: 0.8, sweepSpeed: 0.5 },
   ],
   vents: [{ a: [2, 18, -1, 0], b: [2, 3, -1, 0] }],
+  tips: ['pull a slot machine to lure the roaming guards.', 'the keycard is in the security office (top left).', 'a vent links the VIP lounge and the security office.'],
 };

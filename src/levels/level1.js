@@ -53,4 +53,5 @@ export default {
   alarmTime: 45,
   cameras: [{ pos: [8.75, 2.25], face: -0.8, sweep: 0.75, sweepSpeed: 0.8 }],
   vents: [{ a: [2, 15, -1, 0], b: [2, 5, -1, 0] }],
+  tips: ['the side door on the east of the house avoids the front hallway.', 'the camera in the office sweeps: time your move.', 'the sleeping owner wakes to noise. Tiptoe past the bedroom.'],
 };

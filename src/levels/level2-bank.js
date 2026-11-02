@@ -68,4 +68,5 @@ export default {
     { pos: [2.3, 8.3], face: 1.57, sweep: 0.5, sweepSpeed: 0.7 },
   ],
   vents: [{ a: [2, 16, -1, 0], b: [2, 3, -1, 0] }],
+  tips: ['lift the spare keycard from a guard instead of the office.', 'clerks run for the silent alarm. Knock them out first.', 'cut the lasers at the breaker box in the middle office.'],
 };

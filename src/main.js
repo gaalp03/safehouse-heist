@@ -208,6 +208,7 @@ class App {
     this.input.joyEnd();
   }
   showMenu() {
+    this.lastTutLevel = null;
     SDK.gameplayStop();
     this.audio.siren(false);
     this.state = 'menu';
@@ -484,7 +485,8 @@ class App {
     this.onSmoke(this.game.smokesLeft);
     this.onCrouch(false);
     this.renderContracts(this.game.contracts);
-    this.tutStep = this.game.tut ? 0 : TUT_STEPS.length; $('tut').dataset.k = '';
+    this.tutStep = this.game.tut ? (this.lastTutLevel === this.level.id ? Math.min(this.tutStep || 0, 3) : 0) : TUT_STEPS.length; $('tut').dataset.k = '';
+    this.lastTutLevel = this.game.tut ? this.level.id : null;
     clearTimeout(this.whyT); $('alarmwhy').classList.add('hidden');
     if (this.mode === 'daily') {
       const t = $('ctoast');
@@ -753,18 +755,29 @@ class App {
     f.className = ''; void f.offsetWidth; f.className = kind;
   }
   onEscapeStart() { $('touch').classList.add('hidden'); $('fp').classList.add('hidden'); $('hud').classList.add('hidden'); $('alarm').classList.add('hidden'); this.audio.siren(false); this.input.exitLock(); }
+  bustTip() {
+    const g = this.game, t = this.input.touch, Z = t ? 'the 🦶 button' : 'Z', E = t ? '✋' : 'E';
+    if (g.policeBusted) return 'The police arrived! Knock out alerted guards before they radio in, or disarm the alarm keypad.';
+    const C = {
+      hide: 'Tip: a guard saw you climb in. Only hide when nobody is looking.',
+      owner: 'Tip: the owner wakes up to noise. Sneak past slowly and never dash near him.',
+      dash: `Tip: dashing is loud and gets you noticed. Walk, or sneak with ${Z}.`,
+      dog: 'Tip: the dog follows your scent. Throw a coin and it runs off to sniff it.',
+      los: 'Tip: once spotted, break line of sight: duck round a corner, hide in a wardrobe or drop smoke.',
+      cone: `Tip: stay out of the yellow vision cones. Sneak with ${Z} behind low furniture, and hit guards from behind with ${E}.`,
+    };
+    const lv = this.level.tips || [];
+    const cause = g.bustCause || 'cone';
+    if (g.tut) return C[cause] || C.cone;
+    if ((cause === 'cone' || cause === 'los') && lv.length && Math.random() < 0.5) return 'Tip: ' + lv[(Math.random() * lv.length) | 0];
+    return C[cause] || C.cone;
+  }
   onBusted() {
     this.state = 'busted';
     this.audio.siren(false);
     SDK.gameplayStop();
     $('bRevive').classList.toggle('hidden', !ADS_ENABLED || !SDK.available || this.game.revived);
-    $('bustTip').textContent = this.game.policeBusted ? 'The police arrived! Knock out alerted guards before they radio in, or disarm the keypad by the front door.' : [
-      'Tip: guards can\'t see behind them. Sneak up and knock them out!',
-      'Tip: dashing is loud. Walk near guards and the sleeping owner.',
-      'Tip: break line of sight and alerted guards will lose you.',
-      'Tip: the camera in the office sweeps. Time your move!',
-      'Tip: try the side door on the east of the house.',
-    ][(Math.random() * 5) | 0];
+    $('bustTip').textContent = this.bustTip();
     const fresh = recordRun(this.save, this.runRecord(false));
     SDK.store(this.save);
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).join('<br>');

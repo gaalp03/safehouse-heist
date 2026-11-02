@@ -75,4 +75,5 @@ export default {
     { pos: [11.4, 2.4], face: 2.3, sweep: 0.5, sweepSpeed: 0.5 },
   ],
   vents: [{ a: [29, 12, 1, 0], b: [29, 3, 1, 0] }],
+  tips: ['the hallway lasers blink in a rhythm. Watch one cycle first.', 'the breaker in the kitchen kills every laser.', 'the kitchen vent comes out in the gallery, right by the roof hatch.'],
 };

@@ -61,4 +61,5 @@ export default {
     { pos: [2.4, 8.4], face: 2.2, sweep: 0.7, sweepSpeed: 0.6 },
     { pos: [27.6, 8.4], face: -2.2, sweep: 0.7, sweepSpeed: 0.7 },
   ],
+  tips: ['smashing cases is loud. Wait for thunder to cover it.', 'the roof hatch is your exit. No need to go back outside.', 'the breaker in the east office kills the lasers.'],
 };

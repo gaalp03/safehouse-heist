@@ -67,4 +67,5 @@ export default {
     { pos: [29.6, 14.6], face: -0.8, sweep: 0.6, sweepSpeed: 0.7 },
   ],
   vents: [{ a: [29, 17, 1, 0], b: [29, 3, 1, 0] }],
+  tips: ['searchlights sweep the halls: walk behind them.', 'the dog can be lured away with a coin.', 'the air vent in the lobby leads straight to the gem room.'],
 };
