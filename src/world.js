@@ -788,11 +788,25 @@ export function buildWorld(L) {
   const houseCols = [0xe8a48e, 0x9cc7c9, 0xeed79a, 0xb9a9d4, 0xa8d4a0];
   for (let x = -ext + 3, k = 0; x < W + ext; x += 7, k++) {
     const z = H + 4.5 + (k % 2) * 0.8, col = houseCols[k % 5];
+    const roof = [0x8a3a3a, 0x3a4a6a, 0x5a4058, 0x3a5a4a][k % 4];
     B.plain.box(x, 0, z, 5, 2.4, 4, col);
-    B.plain.box(x, 2.4, z, 5.5, 0.3, 4.5, 0x5a4058);
-    B.plain.box(x, 2.7, z, 4.2, 0.4, 3.4, 0x6a4a66);
-    for (const wx of [-1.5, 1.5]) { B.unlit.box(x + wx, 0.95, z - 2.01, 0.8, 0.75, 0.02, 0xffd38a, { faces: NZ }); B.plain.box(x + wx, 0.9, z - 2.03, 0.95, 0.06, 0.06, 0xffffff); }
-    B.woodfine.box(x, 0, z - 2.01, 0.75, 1.35, 0.03, 0x7a4b33, { faces: NZ });
+    B.plain.box(x, 0, z - 2.01, 5.02, 0.35, 0.02, shade(col, 0.75), { faces: NZ });          // foundation band
+    for (let r = 0; r < 4; r++) B.plain.box(x, 2.4 + r * 0.32, z, 5.6 - r * 1.1, 0.32, 4.6, shade(roof, 1 - r * 0.06), { top: shade(roof, 1.12) }); // stepped roof
+    B.plain.box(x + 1.5, 2.9, z + 0.6, 0.5, 1.2, 0.5, 0x8a4a3a, { top: 0x5a2a20 });          // chimney
+    for (const wx of [-1.5, 1.5]) {
+      B.plain.box(x + wx, 0.88, z - 2.02, 0.98, 0.9, 0.04, 0xffffff, { faces: NZ });           // frame
+      B.unlit.box(x + wx, 0.95, z - 2.04, 0.8, 0.75, 0.02, 0xffd38a, { faces: NZ });           // lit pane
+      B.plain.box(x + wx, 1.3, z - 2.06, 0.04, 0.75, 0.02, 0xffffff, { faces: NZ });
+      B.plain.box(x + wx, 1.31, z - 2.06, 0.8, 0.04, 0.02, 0xffffff, { faces: NZ });
+      for (const s of [-1, 1]) B.plain.box(x + wx + s * 0.62, 0.9, z - 2.04, 0.22, 0.86, 0.04, shade(roof, 1.2), { faces: NZ | PX | NX }); // shutters
+      B.plain.box(x + wx, 0.84, z - 2.12, 1.0, 0.08, 0.2, 0xffffff);                           // sill
+      B.plain.box(x + wx, 0.92, z - 2.12, 0.8, 0.14, 0.16, LEAF[k % 4]);                        // flower box
+    }
+    B.plain.box(x, 0, z - 2.3, 1.3, 0.14, 0.6, 0xc8c0b0);                                       // porch step
+    B.woodfine.box(x, 0, z - 2.02, 0.95, 1.55, 0.04, 0xffffff, { faces: NZ });                // door frame
+    B.woodfine.box(x, 0, z - 2.04, 0.75, 1.42, 0.03, [0x7a4b33, 0xb33951, 0x2a5a8a, 0x3a7a4a][(k + 1) % 4], { faces: NZ });
+    B.plain.box(x + 0.25, 0.7, z - 2.07, 0.06, 0.06, 0.04, 0xe0b04a);                         // knob
+    B.plain.box(x - 1.9, 0, z - 3.3, 0.06, 0.8, 0.06, 0x5a3a26); B.plain.box(x - 1.9, 0.8, z - 3.3, 0.24, 0.2, 0.34, [0x2f6ae8, 0xe8483f, 0x3a3a46][k % 3]); // mailbox
     if (rng() < 0.8) tree(x + 3.3, z - 1.5);
   }
   const fenceRun = (x0, z0, x1, z1) => {
