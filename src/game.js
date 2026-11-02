@@ -366,7 +366,7 @@ export class Game {
       if (i >= 0) this.guards.splice(i, 1);
       g.c.root.visible = false; g.cone.visible = false; g.shadow.visible = false; g.stars.visible = false; g.badge.className = 'badge';
     }
-    this.shiftN = 0;
+    this.shiftN = 0; this.shiftWarn = 0;
     for (const g of this.guards) this.resetGuard(g);
     // pickpocket targets: every guard carries a wallet; one patrol guard carries a spare keycard
     this.picks = 0; this.pocketProg = 0; this.koHold = 0; this.koTarget = null;
@@ -566,6 +566,10 @@ export class Game {
       this.time += dt; this.updatePlayer(dt);
       // shift change: reinforcements walk in from the entrance
       const sched = this.app.mode === 'tutorial' || this.daily || this.D.label === 'Easy' ? [] : this.D.mult >= 1.5 ? [45, 90] : [60, 120];
+      if (this.shiftWarn === this.shiftN && this.shiftN < sched.length && this.time >= sched[this.shiftN] - 10) {
+        this.shiftWarn++; this.app.audio.play('radio');
+        this.app.announce('📻 "Relief guard arriving in 10 seconds" — grab what you can!');
+      }
       if (this.shiftN < sched.length && this.time >= sched[this.shiftN] && this.reserve[this.shiftN]) this.callReinforcement(this.reserve[this.shiftN++]);
       // route recap: sample position + whether anyone is onto us
       this.trailT -= dt;

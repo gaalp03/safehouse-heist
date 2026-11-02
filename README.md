@@ -48,6 +48,8 @@ Yawning guards: when a guard pauses on patrol he sometimes yawns, shrinking his 
 
 Level 5 — The Casino (unlocks after the Museum): neon casino floor with banks of slot machines, poker tables and a bar, security office with the keycard, counting room vault, VIP lounge. Hold E at a slot machine for a flashing, jingling jackpot that lures guards (and spits out cash). Two roaming security guards pick random routes across the floor. Contract: distract guards with a slot machine; achievement: High Roller.
 
+Level 6 — The Penthouse (unlocks after the Casino): night-time luxury apartment. A laser-grid hallway with four staggered beams, a sweeping laser across the study in front of the wall safe, the owner asleep beside the keycard in a locked bedroom, a gallery and a kitchen with the breaker box. No van: escape through the roof hatch to the helicopter. Achievement: Sky High.
+
 Route recap: the results and busted screens animate a minimap of your run — your path (green while unseen, red while a guard was onto you), loot grabs, knockouts, where the alarm went off and where you got caught, plus the % of the run you were chased.
 
 Ghost runs: your fastest/best escape per level and difficulty is saved as a route; on the next classic run the minimap shows it as a dashed purple line with a 👻 marker where your best run was at the same moment, the HUD shows its time, and the results screen says whether you beat it.

@@ -11,6 +11,7 @@ export const ACH = [
   { id: 'jewelry', icon: '💎', name: 'Night Owl', desc: 'Escape from the Jewelry Store', check: (s, r) => r.win && r.level === 'jewelry' },
   { id: 'radio3', icon: '📻', name: 'Smooth Talker', desc: 'Fake 3 radio check-ins (total)', check: (s) => (s.radio || 0) >= 3 },
   { id: 'museum', icon: '🏛️', name: 'Night at the Museum', desc: 'Escape from the Museum', check: (s, r) => r.win && r.level === 'museum' },
+  { id: 'penthouse', icon: '🌃', name: 'Sky High', desc: 'Escape from the Penthouse', check: (s, r) => r.win && r.level === 'penthouse' },
   { id: 'casino', icon: '🎰', name: 'High Roller', desc: 'Escape from the Casino', check: (s, r) => r.win && r.level === 'casino' },
   { id: 'pick10', icon: '👛', name: 'Sticky Fingers', desc: 'Pickpocket 10 guards (total)', check: (s) => (s.picks || 0) >= 10 },
   { id: 'iron', icon: '🛡️', name: 'Iron Will', desc: 'Escape on Ironman', check: (s, r) => r.win && r.diff === 'ironman' },
