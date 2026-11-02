@@ -1321,12 +1321,23 @@ export function buildWoodDoor(alongX) {
 }
 export function buildKeycard() {
   const g = new GeoBuilder();
-  g.box(0, -0.1, 0, 0.34, 0.22, 0.03, 0x2f7ae8, { faces: 63 });
-  g.box(0, -0.06, 0, 0.35, 0.05, 0.035, 0xf2c94c, { faces: 63 });
-  g.box(-0.09, -0.16, 0, 0.1, 0.06, 0.036, 0xffffff, { faces: 63 });
-  g.box(0.12, 0.0, 0, 0.05, 0.05, 0.036, 0x22242f, { faces: 63 });
+  // ID keycard: blue card, white photo area, gold chip, magnetic stripe, lanyard clip + red strap
+  g.box(0, -0.14, 0, 0.4, 0.27, 0.035, 0x2f7ae8, { faces: 63, top: 0x5a9aff });
+  g.box(-0.1, -0.1, 0, 0.14, 0.16, 0.04, 0xffffff, { faces: PZ | NZ });           // photo
+  g.box(-0.1, -0.06, 0, 0.07, 0.07, 0.044, 0xf0c8a0, { faces: PZ | NZ });         // face
+  g.box(-0.1, -0.1, 0, 0.1, 0.04, 0.044, 0x1f3a8a, { faces: PZ | NZ });           // shirt
+  g.box(0.09, -0.02, 0, 0.08, 0.06, 0.042, 0xf2c94c, { faces: PZ | NZ });         // chip
+  g.box(0.09, -0.1, 0, 0.14, 0.02, 0.042, 0xffffff, { faces: PZ | NZ });          // name line
+  g.box(0.09, -0.07, 0, 0.1, 0.015, 0.042, 0xd8e4ff, { faces: PZ | NZ });
+  g.box(0, -0.13 + 0.115, 0, 0.4, 0.035, 0.04, 0x1c1e28, { faces: 63 });          // stripe
+  g.box(0, 0.14 - 0.01, 0, 0.06, 0.04, 0.04, 0xc9d2dc, { faces: 63 });            // clip
+  g.box(0, 0.17, 0, 0.03, 0.07, 0.01, 0xe8303e, { faces: 63 });                   // strap
   const m = new Mesh(g.build(), new MeshBasicMaterial({ vertexColors: true }));
   const grp = new Group(); grp.add(m);
+  // pulsing floor halo so it can be spotted from across the room
+  const halo = new Mesh(new PlaneGeometry(1.7, 1.7), new MeshBasicMaterial({ map: textures().glow, color: 0x6fb0ff, transparent: true, opacity: 0.9, depthWrite: false, blending: AdditiveBlending, fog: false }));
+  halo.rotation.x = -Math.PI / 2; halo.position.y = -0.76; halo.renderOrder = 4; grp.add(halo);
+  grp.userData.halo = halo;
   return grp;
 }
 

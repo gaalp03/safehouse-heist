@@ -787,6 +787,7 @@ export class Game {
     for (const k of this.keyMeshes) {
       if (!k.m.visible) continue;
       k.m.rotation.y = this.t * 2; k.m.position.y = 0.8 + Math.sin(this.t * 3) * 0.06;
+      const hl = k.m.userData.halo; if (hl) { hl.position.y = -0.76 - Math.sin(this.t * 3) * 0.06; hl.material.opacity = 0.75 + Math.sin(this.t * 4) * 0.25; hl.rotation.z = -this.t * 2; }
       if (Math.hypot(p.x - (k.x + 0.5), p.z - (k.y + 0.5)) < 0.85) {
         k.m.visible = false; this.hasKey = true;
         app.audio.play('gold'); app.onKey(true); app.hint('door');
