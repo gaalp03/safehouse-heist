@@ -2477,6 +2477,12 @@ export class Game {
   objectiveTarget() {
     const L = this.L;
     if (this.hasStash) return { x: L.exit.x, z: L.exit.z, label: L.van ? 'VAN' : 'ROOF HATCH' };
+    // tutorial: point at the nearest cash until the first grab
+    if (this.tut && this.lootGot === 0) {
+      const p = this.player; let best = null, bd = 1e9;
+      for (const it of this.loot) { const d = Math.hypot(it.x - p.x, it.z - p.z); if (it.type === 'cash' && d < bd) { bd = d; best = it; } }
+      if (best) return { x: best.x, z: best.z, label: 'CASH' };
+    }
     const closed = this.doors.find((d) => !d.open && d.type !== 'lock');
     if (closed && !this.hasKey) { const k = this.keyMeshes.find((k) => k.m.visible); if (k) return { x: k.x + 0.5, z: k.y + 0.5, label: 'KEYCARD' }; }
     if (closed) return { x: closed.x + 0.5, z: closed.y + 0.5, label: 'DOOR' };

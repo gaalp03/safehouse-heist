@@ -427,7 +427,7 @@ class App {
     $('starTotal').textContent = `★ ${tot}/27`;
     LEVELS.forEach((l, i) => { const el = $('lvl' + (i + 1)); if (el) el.classList.toggle('gold', !!(this.save.mastered || {})[l.id]); });
     { const c = this.save.cash || 0, k = c >= 1e6 ? (c / 1e6).toFixed(1) + 'M' : c >= 1e3 ? (c / 1e3).toFixed(c >= 1e4 ? 0 : 1) + 'k' : String(c); $('bOutfit').innerHTML = `🧰 LOCKER${c ? ` <small>$${k}</small>` : ''}`; }
-    { const J = todaysJobs(this.save), n = J.ids.filter((x) => J.done[x]).length; $('bTrophy').innerHTML = `📋 JOBS <small>${n}/3</small>`; }
+    { const J = todaysJobs(this.save), n = J.ids.filter((x) => J.done[x]).length; $('bTrophy').innerHTML = this.save.tutDone ? `📋 JOBS <small>${n}/3</small>` : '🏆 TROPHIES'; }
     $('bOutfit').classList.toggle('pulse', this.save.tutDone && this.canAffordGear());
     { const r = rankOf(this.save.xp || 0); $('rankChip').innerHTML = `🎖 ${r.name}<i style="width:${(r.frac * 100).toFixed(0)}%"></i>`; $('rankChip').title = r.next ? `${r.toNext} XP to ${r.next}` : 'Max rank'; }
   }
