@@ -588,7 +588,7 @@ class App {
     if (d.train) it.push('🚂 Moving train');
     it.push(d.heli ? '🚁 Roof extraction' : L.van ? '🚐 Van out front' : '🪜 Roof hatch exit');
     const t = $('ctoast');
-    t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small><span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span>`;
+    t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small><span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span><span class="stargoal">★ Escape · ★ Grab 70% loot · ★ Never get spotted</span>`;
     t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
     clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 4200);
   }
