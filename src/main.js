@@ -847,6 +847,12 @@ class App {
     this.nightSky.position.copy(this.camera.position);
     if (st !== 'pause') this.dust.update(rdt, this.camera.position.x, this.camera.position.z);
     if (st !== 'pause') this.rain.update(rdt, this.camera.position.x, this.camera.position.z);
+    { // rain on the "lens" while standing outside in a storm
+      const g = this.game, L = g.L, pl = g.player;
+      const wet = st === 'play' && this.level && this.level.rain && L && L.outdoor[Math.floor(pl.z) * L.W + Math.floor(pl.x)] === 1;
+      this.wetK = damp(this.wetK || 0, wet ? 1 : 0, wet ? 2.5 : 0.8, rdt);
+      const el = $('wet'); el.style.opacity = this.wetK.toFixed(2); el.classList.toggle('hidden', this.wetK < 0.02);
+    }
     this.audio.rain(!!(this.level && this.level.rain) && (st === 'play' || st === 'pause' || st === 'busted'));
     if (this.boltK > 0) { this.boltK = Math.max(0, this.boltK - rdt * 2.2); }
     this.renderer.toneMappingExposure = 1.15 + this.boltK * this.boltK * 1.6;
