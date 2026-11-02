@@ -777,9 +777,18 @@ class App {
     $('lootv').textContent = fmtMoney(g.lootGot);
     $('lootp').textContent = Math.round((g.lootGot / g.lootTotal) * 100) + '%';
     $('lootbar').style.width = Math.min(100, (g.lootGot / g.lootTotal) * 100) + '%';
+    // live "new record" moment: loot alone passes your best score on this heist
+    if (!silent && this.mode === 'classic' && g.state === 'play' && !this.bestBeat) {
+      const pb = (this.save.best[diffKey(this.level.id, this.diff)] || {}).score || 0;
+      if (pb > 0 && g.lootGot * g.D.mult > pb) {
+        this.bestBeat = true;
+        this.announce('🏆 New record pace! You already beat your best loot');
+        this.audio.play('combo', 8);
+      }
+    }
     const star = g.lootGot / g.lootTotal >= 0.7;
     $('lootbar').classList.toggle('star', star);
-    if (silent) { this.lootStar = star; return; }
+    if (silent) { this.lootStar = star; this.bestBeat = false; return; }
     if (star && !this.lootStar && g.state === 'play') {
       // second star earned mid-run: tell the player right away
       this.lootStar = true;
