@@ -356,6 +356,10 @@ class App {
     $('trCount').textContent = `${Object.keys(got).filter((k) => ACH.some((a) => a.id === k)).length} / ${ACH.length}`;
     this.screen('trophies');
   }
+  chipify(id) {
+    const el = $(id), parts = el.innerHTML.split(/<br\s*\/?>/).map((x) => x.trim()).filter(Boolean);
+    el.innerHTML = parts.map((x, i) => `<span class="rw" style="animation-delay:${(1.3 + i * 0.12).toFixed(2)}s">${x}</span>`).join('');
+  }
   jobsHTML() {
     const J = todaysJobs(this.save), fm = (d, v) => (d.money ? fmtMoney(v) : v);
     return J.ids.map((id) => { const d = jobDef(id), p = J.prog[id] || 0, ok = !!J.done[id];
@@ -900,6 +904,7 @@ class App {
     SDK.store(this.save);
     const jt = this.mode === 'tutorial' ? '' : this.jobsToast(recordJobs(this.save, this.runRecord(false)));
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).concat(jt ? [jt] : []).join('<br>');
+    this.chipify('bAch');
     this.screen('busted');
     this.drawRecap('bMap', false);
   }
@@ -980,6 +985,7 @@ class App {
     if (jt) { $('rAch').innerHTML += ($('rAch').innerHTML ? '<br>' : '') + jt; $('rAch').classList.remove('hidden'); }
     if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
+    this.chipify('rAch');
     this.screen('result');
     this.drawRecap('rMap', true);
     const stars = $('rStars').children;
