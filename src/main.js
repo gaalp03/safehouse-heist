@@ -185,6 +185,7 @@ class App {
     this.input.on('key', (code) => {
       if (code === 'KeyT' && this.state === 'play' && this.game.tut) this.skipTutorial();
       if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.playSel(); }
+      else if (code === 'Enter' && this.state === 'result') { this.audio.unlock(); $('bNext').click(); }
       else if ((code === 'Enter' || code === 'Space') && (this.state === 'result' || this.state === 'busted')) { this.audio.unlock(); this.retry(); }
     });
     this.input.on('mode', () => this.syncTouch());
