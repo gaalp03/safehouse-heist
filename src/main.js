@@ -340,6 +340,7 @@ class App {
     $('selGoal').classList.toggle('hidden', !goals.length);
     $('bPlay').textContent = locked ? '🔒 LOCKED' : 'PLAY';
     $('bPlay').classList.toggle('dis', locked);
+    $('bPlay').classList.toggle('pulse', !locked && !this.save.tutDone && !this.runs);
     let tot = 0;
     for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
     $('starTotal').textContent = `★ ${tot}/21`;
