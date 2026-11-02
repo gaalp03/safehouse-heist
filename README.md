@@ -36,7 +36,7 @@ Level 2 — The Bank (unlocks after escaping Safe House): find the keycard in th
 
 Outfits (menu): 8 colour-only robber looks (hoodie, gloves, crowbar) unlocked by trophy count or specific achievements, with a live first-person preview.
 
-Trophies (menu): lifetime stats (heists, escapes, busts, total loot, KOs, contracts, best times per level) and 16 achievements (Ghost, Speed Demon, Pacifist, Clean Sweep, Phantom of the Vault, Wardrobe Ninja...), unlocks announced on the results screen.
+Trophies (menu): lifetime stats (heists, escapes, busts, total loot, KOs, contracts, best times per level) and 25 achievements (Ghost, Laser Dancer, Duct Rat, Speed Demon, Pacifist, Clean Sweep, Phantom of the Vault, Wardrobe Ninja...), unlocks announced on the results screen.
 
 Level 3 — The Jewelry Store (unlocks after escaping the Bank): a night heist with moonlit/street-lamp lighting. Hold E to smash glowing display cases (loud, jewels burst out; guards who spot a broken case raise the alarm), laser gates into the back rooms, a breaker, a locked office with the safe, and a rooftop escape through the roof hatch instead of the van.
 

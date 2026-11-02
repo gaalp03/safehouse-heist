@@ -12,6 +12,8 @@ export const ACH = [
   { id: 'radio3', icon: '📻', name: 'Smooth Talker', desc: 'Fake 3 radio check-ins (total)', check: (s) => (s.radio || 0) >= 3 },
   { id: 'museum', icon: '🏛️', name: 'Night at the Museum', desc: 'Escape from the Museum', check: (s, r) => r.win && r.level === 'museum' },
   { id: 'penthouse', icon: '🌃', name: 'Sky High', desc: 'Escape from the Penthouse', check: (s, r) => r.win && r.level === 'penthouse' },
+  { id: 'laser', icon: '🔴', name: 'Laser Dancer', desc: 'Escape the Penthouse with the power on and no lasers tripped', check: (s, r) => r.win && r.level === 'penthouse' && !r.power && r.lasers === 0 },
+  { id: 'vent5', icon: '🕳️', name: 'Duct Rat', desc: 'Crawl through 5 air vents (total)', check: (s) => (s.vents || 0) >= 5 },
   { id: 'casino', icon: '🎰', name: 'High Roller', desc: 'Escape from the Casino', check: (s, r) => r.win && r.level === 'casino' },
   { id: 'pick10', icon: '👛', name: 'Sticky Fingers', desc: 'Pickpocket 10 guards (total)', check: (s) => (s.picks || 0) >= 10 },
   { id: 'iron', icon: '🛡️', name: 'Iron Will', desc: 'Escape on Ironman', check: (s, r) => r.win && r.diff === 'ironman' },
@@ -38,6 +40,7 @@ export function recordRun(save, run) {
   } else s.busts++;
   s.radio = (s.radio || 0) + (run.radio || 0);
   s.picks = (s.picks || 0) + (run.picks || 0);
+  s.vents = (s.vents || 0) + (run.vents || 0);
   s.kos += run.kos; s.hides += run.hides; s.smokes += run.smokes; s.coins += run.coins;
   const got = (save.ach = save.ach || {}), fresh = [];
   for (const a of ACH) if (!got[a.id] && a.check(s, run, save)) { got[a.id] = Date.now(); fresh.push(a); }

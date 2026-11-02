@@ -7,6 +7,7 @@ export const OUTFITS = [
   { id: 'camo', name: 'Woodland', sleeve: 0x5a7a3a, glove: 0x5a3a26, bar: 0x4a5a2a, band: 0xc9a063, ach: 'ghost' },
   { id: 'bubblegum', name: 'Bubblegum', sleeve: 0xff8fc0, glove: 0xf4f1ea, bar: 0xff4fa0, band: 0xffffff, ach: 'pacifist' },
   { id: 'tux', name: 'Black Tie', sleeve: 0x22242f, glove: 0xf4f1ea, bar: 0xb33951, band: 0xffffff, ach: 'bank' },
+  { id: 'neon', name: 'Neon Laser', sleeve: 0x1a1430, glove: 0x0c0a16, bar: 0xff2a5a, band: 0x3affd0, ach: 'laser' },
   { id: 'royal', name: 'Royal', sleeve: 0x6a4ad8, glove: 0xd9b45a, bar: 0xe8b33a, band: 0xd9b45a, need: 6 },
   { id: 'golden', name: 'Golden Boy', sleeve: 0xe8b33a, glove: 0xf2d48a, bar: 0xffd75a, band: 0xffffff, need: 10 },
 ];
