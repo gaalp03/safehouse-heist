@@ -176,7 +176,7 @@ export class Game {
       for (const s of [-1, 1]) gb.box(s * 0.035, 0.27, 0.076, 0.02, 0.02, 0.01, 0x1c1330, { faces: 16 }); // eyes
       gb.box(0, 0.12, 0.072, 0.07, 0.06, 0.01, 0xe8303e, { faces: 16 });               // bib
       gb.box(0, 0.11, 0.078, 0.03, 0.03, 0.01, 0xfff1c0, { faces: 16 });               // coin
-      const cat = new Mesh(gb.build(), new MeshBasicMaterial({ vertexColors: true }));
+      const cat = new Mesh(gb.build(), lootMat());
       cat.position.set(cx, 0.02, cz); cat.scale.setScalar(1.6); this.root.add(cat);
       // face the open side of the corner (toward the walkable neighbour with most space)
       let face = 0, best = -1; for (const [dx, dz] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) { let n = 0; for (let k = 1; k < 4; k++) if (this.walkable(Math.floor(cx + dx * k), Math.floor(cz + dz * k))) n++; else break; if (n > best) { best = n; face = Math.atan2(dx, dz); } }
@@ -189,7 +189,7 @@ export class Game {
       gb.box(0, 0.4, 0, 0.2, 0.05, 0.06, 0x3a2418, { faces: 63 }); for (const sx of [-1, 1]) gb.box(sx * 0.09, 0.36, 0, 0.04, 0.06, 0.06, 0x3a2418, { faces: 63 });
       for (const sx of [-1, 1]) gb.box(sx * 0.17, 0.27, 0.081, 0.07, 0.06, 0.02, 0xd8deea, { faces: 63 });
       gb.box(0, 0.1, 0.082, 0.14, 0.1, 0.01, 0xfff1c0, { faces: 16 });
-      const grp = new Group(); grp.add(new Mesh(gb.build(), new MeshBasicMaterial({ vertexColors: true })));
+      const grp = new Group(); grp.add(new Mesh(gb.build(), lootMat()));
       const halo = new Mesh(new PlaneGeometry(2.2, 2.2), new MeshBasicMaterial({ map: textures().glow, color: 0xffc23a, transparent: true, opacity: 0.9, depthWrite: false, blending: AdditiveBlending, fog: false }));
       halo.rotation.x = -Math.PI / 2; halo.position.y = -0.6; halo.renderOrder = 4; grp.add(halo);
       grp.visible = false; this.root.add(grp);
