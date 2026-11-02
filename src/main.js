@@ -11,6 +11,7 @@ import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
 import { DIFFS, diffKey } from './difficulty.js';
 import { rankOf, xpForRun } from './rank.js';
+import { GEAR, gearLv, nextPrice, gearMods } from './gear.js';
 import { todaysDaily, prevDayKey, nextDailyIn, dayKey as dayKeyNow, MUTATORS } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
 import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
@@ -274,9 +275,31 @@ class App {
     this.vm.setOutfit(colorsOf(o));
     return o;
   }
+  gearMods(on) { return gearMods(this.save, on); }
+  canAffordGear() { return GEAR.some((g) => { const p = nextPrice(this.save, g); return p != null && (this.save.cash || 0) >= p; }); }
+  renderGear() {
+    const cash = this.save.cash || 0;
+    $('wallet').textContent = '💰 ' + fmtMoney(cash);
+    $('gearGrid').innerHTML = GEAR.map((g) => {
+      const lv = gearLv(this.save, g.id), p = nextPrice(this.save, g), max = p == null;
+      return `<button class="gr ${max ? 'max' : cash >= p ? '' : 'cant'}" data-id="${g.id}"><span class="ic">${g.icon}</span><b>${g.name}</b><small>${g.desc}</small>
+        <span class="pips">${g.prices.map((_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</span><span class="pr">${max ? 'MAXED' : fmtMoney(p)}</span></button>`;
+    }).join('');
+    for (const el of document.querySelectorAll('#gearGrid .gr')) el.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const g = GEAR.find((x) => x.id === el.dataset.id), p = nextPrice(this.save, g);
+      if (p == null || (this.save.cash || 0) < p) { this.audio.play('nope'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); return; }
+      this.save.cash -= p; (this.save.gear = this.save.gear || {})[g.id] = gearLv(this.save, g.id) + 1;
+      SDK.store(this.save);
+      this.audio.play('safe'); this.shake.add(0.15);
+      this.renderGear();
+      const nb = document.querySelector(`#gearGrid .gr[data-id="${g.id}"]`); if (nb) nb.classList.add('buy');
+    });
+  }
   showOutfits() {
     SDK.gameplayStop();
     this.state = 'outfits';
+    this.renderGear();
     const cur = this.applyOutfit();
     const sw = (c) => '#' + c.toString(16).padStart(6, '0');
     $('ofGrid').innerHTML = OUTFITS.map((o) => {
@@ -339,6 +362,7 @@ class App {
       if (n === 0) goals.push('Escape to earn your first ★');
       else if (n < 3) goals.push('Next ★: grab 70% loot · or never get spotted');
     }
+    if (this.save.tutDone && this.canAffordGear()) goals.unshift('🧰 You can afford new gear in the Locker!');
     const sk = this.save.streak;
     if (sk && sk.n >= 1 && sk.last === prevDayKey()) goals.unshift(`🔥 Play today's Daily to keep your ${sk.n}-day streak`);
     const nT = Object.keys(this.save.ach || {}).length, nxt = OUTFITS.filter((o) => o.need && o.need > nT).sort((a, b) => a.need - b.need)[0];
@@ -352,6 +376,8 @@ class App {
     let tot = 0;
     for (const id of ['safehouse', 'bank', 'jewelry', 'museum', 'casino', 'penthouse', 'train']) tot += Math.max(...['', '_easy', '_hard', '_ironman'].map((x) => (this.save.best[id + x] || { stars: 0 }).stars));
     $('starTotal').textContent = `★ ${tot}/21`;
+    $('wchip').textContent = this.save.cash ? '💰 ' + fmtMoney(this.save.cash) : '';
+    $('bOutfit').classList.toggle('pulse', this.save.tutDone && this.canAffordGear());
     { const r = rankOf(this.save.xp || 0); $('rankChip').innerHTML = `🎖 ${r.name}<i style="width:${(r.frac * 100).toFixed(0)}%"></i>`; $('rankChip').title = r.next ? `${r.toNext} XP to ${r.next}` : 'Max rank'; }
   }
   playSel() {
@@ -817,6 +843,7 @@ class App {
     $('bustTip').textContent = this.bustTip();
     const fresh = recordRun(this.save, this.runRecord(false));
     this.awardXP(false, 0, this.game.lootGot, 'bXP');
+    { const c = Math.round(this.game.lootGot * 0.25); this.save.cash = (this.save.cash || 0) + c; $('bCash').textContent = c ? `💰 Kept ${fmtMoney(c)} of the loot you grabbed` : ''; }
     // repeated busts on the same heist: offer Easy instead of letting frustration build
     this.bustStreak = this.bustKey === this.level.id ? (this.bustStreak || 0) + 1 : 1; this.bustKey = this.level.id;
     $('bEasy').classList.toggle('hidden', !(this.mode === 'classic' && this.bustStreak >= 3 && (this.diff === 'normal' || this.diff === 'hard')));
@@ -878,6 +905,8 @@ class App {
     if (this.game.tut) this.save.tutDone = true;
     const freshA = recordRun(this.save, this.runRecord(true, res));
     this.awardXP(true, res.score, res.loot, 'rXP');
+    this.save.cash = (this.save.cash || 0) + res.score;
+    $('rCash').textContent = `💰 +${fmtMoney(res.score)} to your stash (${fmtMoney(this.save.cash)})${this.canAffordGear() ? ' · 🧰 new gear affordable!' : ''}`;
     const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
     this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
     this.showAchToast(freshA);

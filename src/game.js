@@ -377,8 +377,9 @@ export class Game {
     this.D = this.daily || this.tut ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
     this.lookTotal = 0;
     this.lootTotal = this.baseLootTotal;
-    this.smokesLeft = this.D.smoke; this.clouds = []; this.smokeHid = false; for (const s of this.smokeFx || []) s.pts.visible = false;
-    this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
+    this.gear = this.app.gearMods ? this.app.gearMods(!this.tut && !this.daily && this.D.label !== 'Ironman') : { coins: 0, smoke: 0, sneak: 1, pickW: 1, crack: 1, disguise: 0 };
+    this.smokesLeft = this.D.smoke + this.gear.smoke; this.clouds = []; this.smokeHid = false; for (const s of this.smokeFx || []) s.pts.visible = false;
+    this.coinsLeft = this.D.coins + this.gear.coins; this.coins = []; this.lures = 0; this.revives = 0;
     this.hidFromAlert = false; this.clerkStopped = false; this.hidesUsed = 0; this.smokesUsed = 0; this.coinsThrown = 0; this.radioFaked = 0;
     this.trail = []; this.trailT = 0; this.marks = [];
     this.heavy = []; this.stashRuns = 0; this.stashedEarly = false; this.app.onWeight && this.app.onWeight(1);
@@ -688,7 +689,7 @@ export class Game {
     if (inp.consumeCrouch()) { p.crouch = !p.crouch; app.onCrouch(p.crouch); app.hintDone('sneak'); }
     if (p.dashT > 0 && p.crouch) { p.crouch = false; app.onCrouch(false); }
     p.crouchK = damp(p.crouchK || 0, p.crouch ? 1 : 0, 10, dt);
-    const spd = P_SPEED * (1 - 0.1 * frac) * (p.crouch ? 0.5 : 1) * this.weightMul();
+    const spd = P_SPEED * (1 - 0.1 * frac) * (p.crouch ? 0.5 * this.gear.sneak : 1) * this.weightMul();
     p.vx = damp(p.vx, wx * spd, 14, dt);
     p.vz = damp(p.vz, wz * spd, 14, dt);
     p.dashCd -= dt; p.inv -= dt; p.punchT -= dt;
@@ -826,7 +827,7 @@ export class Game {
     if (nearSafe) {
       app.hint('safe');
       if (inp.act) {
-        this.safeProg += dt / (this.def.crackTime || 1.4);
+        this.safeProg += dt * this.gear.crack / (this.def.crackTime || 1.4);
         if (this.def.crackNoise) {
           this.crackNoiseT -= dt;
           if (this.crackNoiseT <= 0) { this.crackNoiseT = 1.1; this.makeNoise(sx, sz, this.def.crackNoise, null); app.hint('drill'); }
@@ -1039,7 +1040,7 @@ export class Game {
   takeUniform(g) {
     const app = this.app;
     g.stripped = true; this.disguises++;
-    this.disguiseT = 25;
+    this.disguiseT = 25 + this.gear.disguise;
     g.koT = Math.max(g.koT, 6);
     app.audio.play('creak'); app.audio.play('pick', 6);
     app.floaters.spawn('Uniform on!', g.x, 1.4, g.z, 'big', 1.2);
@@ -2392,7 +2393,7 @@ export class Game {
 
   // ---------- lockpicking minigame ----------
   startPick(d) {
-    this.picking = { d, pin: 0, t: Math.random() * 6, speed: this.tut ? 1.7 : 2.2, w: this.tut ? 0.36 : 0.26, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
+    this.picking = { d, pin: 0, t: Math.random() * 6, speed: this.tut ? 1.7 : 2.2, w: (this.tut ? 0.36 : 0.26) * this.gear.pickW, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
     this.newPinZone();
     this.app.audio.play('click');
     this.app.onPick(this.picking);
