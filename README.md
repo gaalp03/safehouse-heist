@@ -42,6 +42,8 @@ Difficulty: Easy / Normal / Hard (menu) changes guard sight range, speed and rea
 
 Guard dog: roams the kitchen and east hallway, follows your scent trail, barks when it finds you (pulls nearby guards in) and sniffs out wardrobes so a guard can drag you out. Throw a coin and it runs off to sniff it. Contract: don't get barked at.
 
+Tutorial: the very first PLAY starts a guided Safe House heist (7-step card: move, look, loot, sneak, pick the lock, crack the safe, escape) with gentler guards and no contracts; skip with T or a tap, replay from the menu.
+
 Lockpicking: the safe room door in Safe House is locked. Press E to start picking and tap E whenever the pin sweeps through the green zone (3 pins, each faster and tighter). A slip rattles the lock and makes noise. Contract: pick a lock without a slip.
 
 Hiding: press E at a wardrobe to climb in and peek out through the slats (heartbeat when guards are close). Alerted guards lose you, unless one saw you get in: then he comes and drags you out. Contract: hide from an alerted guard.

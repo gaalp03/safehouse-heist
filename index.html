@@ -30,7 +30,7 @@ body{font-family:"Trebuchet MS","Arial Rounded MT Bold","Segoe UI",system-ui,san
 .badge.sus,.badge.alert{display:grid}.badge i{position:absolute;inset:3px;border-radius:50%;background:var(--ink)}
 .badge b{position:relative;color:var(--y);font-size:18px;line-height:1}
 .badge.alert{background:var(--r);animation:pop .3s cubic-bezier(.2,1.8,.4,1)}.badge.alert i{background:var(--r)}.badge.alert b{color:#fff}
-#hud{position:fixed;inset:0;pointer-events:none;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:3;padding:max(10px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left))}
 .pill{background:linear-gradient(180deg,rgba(52,38,82,.92),rgba(28,19,48,.92));border-radius:14px;padding:8px 14px;display:inline-flex;align-items:center;gap:8px;font-size:20px;border:2px solid rgba(255,214,160,.22);box-shadow:0 4px 0 rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.12)}
 .pill svg{width:20px;height:20px;flex:none}
 #loot{position:absolute;left:12px;top:10px;flex-direction:column;align-items:flex-start;gap:4px;min-width:140px;transform-origin:left top}
@@ -161,6 +161,12 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 .ach i{font-style:normal;font-size:24px}.ach b{font-size:13px}.ach small{font-size:10px;opacity:.75}
 #rAch{color:var(--y);font-size:13px;max-width:420px;text-align:center;animation:objp .5s cubic-bezier(.2,1.8,.4,1) 1.4s both}
 @media (max-width:640px){#trStats{grid-template-columns:repeat(4,1fr)}#trStats small{font-size:9px}#trStats b{font-size:13px}#trAch{grid-template-columns:repeat(2,1fr);max-height:52vh}}
+#tut{position:absolute;left:50%;top:62px;transform:translateX(-50%);width:min(440px,72vw);background:linear-gradient(180deg,rgba(79,224,160,.95),rgba(40,170,120,.95));color:#0f2a20;border-radius:14px;padding:7px 14px 9px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;border:3px solid #0f2a20;box-shadow:0 4px 0 rgba(0,0,0,.3);pointer-events:auto}
+#tut small{font-size:11px;letter-spacing:2px;opacity:.75}#tut span{font-size:16px;line-height:1.15}
+#tut b{display:block;width:100%;height:5px;border-radius:3px;background:rgba(0,0,0,.18);overflow:hidden;margin-top:3px}#tut b i{display:block;height:100%;background:#fff6e8;transition:width .4s}
+#tut em{font-style:normal;font-size:10px;opacity:.6}#tut.done{animation:punch .45s}
+@media (max-width:640px){#tut{top:104px;left:auto;right:10px;transform:none;width:calc(100vw - 132px);padding:5px 8px 6px}#tut span{font-size:12px}#tut small{font-size:9px}}
+.linkbtn{font:inherit;background:none;border:0;color:#fff6e8;font-size:14px;cursor:pointer;text-decoration:underline;opacity:.85}
 .keys{font-size:13px;opacity:.75;max-width:520px}body.touch .kb{display:none}body:not(.touch) .tc{display:none}
 #loading{background:radial-gradient(ellipse at center,#3d2c62,#1c1330);z-index:5}#loading .bar{width:200px;height:12px;border-radius:6px;background:#3a3f6e;overflow:hidden}
 #loading .bar i{display:block;height:100%;width:40%;background:var(--y);animation:load 1s infinite ease-in-out alternate}@keyframes load{to{margin-left:60%}}
@@ -187,6 +193,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
 <div id="hud" class="hidden">
   <div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootp">0%</span></div><div class="bar"><div id="lootbar"></div></div></div>
   <div id="obj" class="pill o">Crack the safe!</div>
+  <div id="tut" class="hidden"><small></small><span></span><b><i></i></b><em></em></div>
   <div id="alarm" class="pill o hidden"><b>POLICE</b><span id="alarmt">0:45</span></div>
   <div id="alarmwhy" class="o hidden"></div>
   <canvas id="mm"></canvas>
@@ -225,6 +232,7 @@ body.touch #hint{bottom:auto;top:76px}#prompt{bottom:auto;top:calc(50% + 34px)}
   </div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div>
   <div class="row"><button class="btn s" id="bTrophy">🏆 TROPHIES</button><button class="btn s" id="bOutfit">🧤 OUTFITS</button><button class="btn" id="bPlay">PLAY</button></div>
+  <button id="bTut" class="linkbtn o">🎓 Play the tutorial</button>
   <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
 </div>
 

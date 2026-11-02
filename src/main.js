@@ -12,6 +12,7 @@ import { DIFFS, diffKey } from './difficulty.js';
 import { todaysDaily, prevDayKey } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
 import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
+import { TUT_STEPS } from './tutorial.js';
 
 const $ = (id) => document.getElementById(id);
 const HINTS = {
@@ -129,6 +130,8 @@ class App {
     click('bTrophy', () => this.showTrophies());
     click('bOutfit', () => this.showOutfits());
     click('bOfBack', () => this.showMenu());
+    click('bTut', () => this.start('tutorial', 0));
+    $('tut').addEventListener('pointerdown', (e) => { if (this.input.touch && this.game.tut) { e.stopPropagation(); this.skipTutorial(); } });
     click('bTrBack', () => this.showMenu());
     click('bPause', () => this.pause());
     click('bMute', () => this.toggleMute());
@@ -136,6 +139,7 @@ class App {
     this.input.on('restart', () => { if (['play', 'pause', 'result', 'busted'].includes(this.state)) this.start(); });
     this.input.on('mute', () => this.toggleMute());
     this.input.on('key', (code) => {
+      if (code === 'KeyT' && this.state === 'play' && this.game.tut) this.skipTutorial();
       if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.start('classic'); }
       else if ((code === 'Enter' || code === 'Space') && (this.state === 'result' || this.state === 'busted')) { this.audio.unlock(); this.retry(); }
     });
@@ -271,7 +275,9 @@ class App {
   async start(mode, idx) {
     if (mode) this.mode = mode;
     if (!this.mode) this.mode = 'classic';
-    if (this.mode === 'daily') idx = 0;
+    if (!mode && this.mode === 'tutorial' && this.save.tutDone) this.mode = 'classic';
+    if (this.mode === 'classic' && (idx == null || idx === 0) && !this.save.tutDone && (this.levelIdx || 0) === 0) this.mode = 'tutorial';
+    if (this.mode === 'daily' || this.mode === 'tutorial') idx = 0;
     if (idx != null) this.levelIdx = idx;
     if (this.loadedIdx !== this.levelIdx) await this.useLevel(this.levelIdx);
     if (this.mode === 'daily' && (!this.daily || this.daily.key !== todaysDaily().key)) this.daily = todaysDaily();
@@ -290,6 +296,7 @@ class App {
     this.onCoins(this.game.coinsLeft);
     this.onSmoke(this.game.smokesLeft);
     this.renderContracts(this.game.contracts);
+    this.tutStep = this.game.tut ? 0 : TUT_STEPS.length; $('tut').dataset.k = '';
     clearTimeout(this.whyT); $('alarmwhy').classList.add('hidden');
     if (this.mode === 'daily') {
       const t = $('ctoast');
@@ -356,6 +363,7 @@ class App {
   // ---- called by Game ----
   hint(id) {
     if (!this.level || !this.level.tutorial || this.hShown.has(id) || this.hDone.has(id)) return;
+    if (this.game && this.game.tut && ['move', 'loot', 'safe', 'pick', 'cone', 'stash'].includes(id)) return;
     if (this.hCur === id || this.hQ.includes(id)) return;
     this.hShown.add(id);
     this.hQ.push(id);
@@ -535,10 +543,13 @@ class App {
     $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day streak` : '');
     $('rMult').textContent = res.mult === 1 ? '' : `${res.diff} ×${res.mult}`;
     $('rBest').classList.toggle('new', newBest);
+    const tutJustDone = this.game.tut && !this.save.tutDone;
+    if (this.game.tut) this.save.tutDone = true;
     const freshA = recordRun(this.save, this.runRecord(true, res));
     const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
     this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
     this.showAchToast(freshA);
+    if (tutJustDone) { $('rAch').innerHTML = '🎓 <b>Tutorial complete!</b> Contracts, difficulty and the Daily are yours now.' + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); }
     if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
     this.screen('result');
@@ -599,7 +610,35 @@ class App {
     this.vm.render(this.renderer);
     this.adaptRes(rdt);
   }
+  skipTutorial() {
+    this.save.tutDone = true; SDK.store(this.save);
+    this.tutStep = TUT_STEPS.length;
+    $('tut').classList.add('hidden');
+    this.audio.play('click');
+  }
+  updateTutorial() {
+    const el = $('tut'), g = this.game;
+    if (!g.tut || this.tutStep >= TUT_STEPS.length) { el.classList.add('hidden'); return; }
+    if (this.tutStep == null) this.tutStep = 0;
+    const step = TUT_STEPS[this.tutStep];
+    if (step.done(g)) {
+      this.tutStep++;
+      this.audio.play('star', Math.min(2, this.tutStep % 3));
+      el.classList.remove('done'); void el.offsetWidth; el.classList.add('done');
+      if (this.tutStep >= TUT_STEPS.length) { setTimeout(() => el.classList.add('hidden'), 900); return; }
+    }
+    const s = TUT_STEPS[this.tutStep], key = this.tutStep + (this.input.touch ? 't' : 'k');
+    if (el.dataset.k !== key) {
+      el.dataset.k = key;
+      el.querySelector('small').textContent = `TUTORIAL ${this.tutStep + 1}/${TUT_STEPS.length}`;
+      el.querySelector('span').textContent = s.text[this.input.touch ? 1 : 0];
+      el.querySelector('em').textContent = this.input.touch ? 'tap to skip' : 'T to skip';
+      el.querySelector('i').style.width = (this.tutStep / TUT_STEPS.length * 100) + '%';
+    }
+    el.classList.toggle('hidden', g.alarm || g.state !== 'play');
+  }
   updateHud() {
+    this.updateTutorial();
     const g = this.game, p = g.player;
     const s = Math.floor(g.time);
     if (s !== this.lastSec) { this.lastSec = s; $('time').textContent = fmtTime(s); }

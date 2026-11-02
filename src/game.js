@@ -263,7 +263,9 @@ export class Game {
     this.combo = 0; this.comboT = 0; this.revived = false; this.endT = 0; this.hitstop = 0;
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false;
     this.daily = this.app.mode === 'daily' ? this.app.daily : null;
-    this.D = this.daily ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
+    this.tut = this.app.mode === 'tutorial';
+    this.D = this.daily || this.tut ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
+    this.lookTotal = 0;
     this.lootTotal = this.baseLootTotal;
     this.smokesLeft = this.D.smoke; this.clouds = []; this.smokeHid = false; for (const s of this.smokeFx || []) s.pts.visible = false;
     this.coinsLeft = this.D.coins; this.coins = []; this.lures = 0; this.revives = 0;
@@ -271,7 +273,7 @@ export class Game {
     this.got = { cash: 0, cashLoose: 0, gold: 0, jewel: 0, art: 0 }; this.ownerWoke = false; this.dashes = 0;
     this.totals = { cash: 0, gold: 0, jewel: 0, art: 0 };
     for (const l of this.L.loot) this.totals[l.type]++;
-    this.contracts = pickContracts(3, this.daily ? mulberry32(this.daily.seed) : Math.random, this);
+    this.contracts = this.tut ? [] : pickContracts(3, this.daily ? mulberry32(this.daily.seed) : Math.random, this);
     this.alarm = false; this.alarmT = 0; this.alarmTotal = this.D.alarm; this.disarmProg = 0; this.alarms = 0; this.policeBusted = false;
     if (this.police) this.police.group.visible = false;
     this.app.onAlarm && this.app.onAlarm(false);
@@ -311,6 +313,7 @@ export class Game {
     this.app.particles.clear();
     this.app.floaters.clear();
     if (this.daily) this.daily.mutator.apply(this);
+    if (this.tut) for (const g of this.guards) { g.range *= 0.85; g.speed *= 0.9; }
   }
 
   resetGuard(g) {
@@ -506,6 +509,7 @@ export class Game {
     const sens = app.sens || 0.0024;
     p.lookX = _lk.x; p.lookY = _lk.y;
     p.yaw -= _lk.x * sens;
+    this.lookTotal += Math.abs(_lk.x * sens) + Math.abs(_lk.y * sens);
     p.pitch = clamp(p.pitch - _lk.y * sens, -1.25, 1.2);
     p.face = p.yaw + Math.PI;
     if (p.hiding) { this.updateHiding(dt, inp); return; }
