@@ -3,7 +3,7 @@
 import {
   Mesh, Group, MeshLambertMaterial, PlaneGeometry, MeshBasicMaterial, OctahedronGeometry, Points, PointsMaterial,
   BufferGeometry, BufferAttribute, AdditiveBlending, DoubleSide, BoxGeometry, CylinderGeometry,
-  CanvasTexture, SRGBColorSpace, RepeatWrapping, ClampToEdgeWrapping,
+  CanvasTexture, SRGBColorSpace, RepeatWrapping, ClampToEdgeWrapping, Color,
 } from 'three';
 import { GeoBuilder, PX, NX, PY, NY, PZ, NZ } from './geo.js';
 import { mulberry32, shade, clamp } from './util.js';
@@ -566,7 +566,7 @@ function makeLighting(L, lights) {
     } else {
       const a = 0.85 + 0.15 * ny;
       r = 0.2 * a; g = 0.19 * a; b = 0.27 * a;
-      if (L.def.night) { r *= 0.6; g *= 0.65; b *= 0.85; }
+      if (L.def.night) { r *= 1.05; g *= 1.1; b *= 1.35; }
       for (const l of lights) {
         const dx = l.x - px, dy = l.y - py, dz = l.z - pz, d = Math.hypot(dx, dy, dz);
         if (d > l.R) continue;
@@ -695,6 +695,19 @@ function landscapeTexture() {
   return t;
 }
 
+// lift muddy palette colors into the saturated cartoon range (keeps hue, clamps lightness/saturation floor)
+const _vc = new Color(), _hsl = {};
+function lift(hex, minL, minS) {
+  _vc.setHex(hex).getHSL(_hsl);
+  if (_hsl.l > 0.75) return hex;
+  return _vc.setHSL(_hsl.h, Math.min(0.66, Math.max(minS, _hsl.s * 1.12)), Math.max(minL, _hsl.l)).getHex();
+}
+const _vivid = new Map();
+function vivid(p) {
+  if (_vivid.has(p)) return _vivid.get(p);
+  const q = { ...p, wall: lift(p.wall, 0.34, 0.32), panel: lift(p.panel, 0.2, 0.3), curtain: lift(p.curtain, 0.3, 0.4) };
+  _vivid.set(p, q); return q;
+}
 export function buildWorld(L) {
   const T = textures();
   const B = {
@@ -733,7 +746,7 @@ export function buildWorld(L) {
       }
     }
     const PAL = L.def.palette || ROOMS;
-    rooms.push({ id, cells, pal: PAL[id % PAL.length] });
+    rooms.push({ id, cells, pal: vivid(PAL[id % PAL.length]) });
   }
   for (let i = 0; i < W * H; i++) if (room[i] < 0 && isDoor(i % W, (i / W) | 0)) {
     const x = i % W, y = (i / W) | 0;
