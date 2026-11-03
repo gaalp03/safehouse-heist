@@ -23,6 +23,7 @@ const turnTo = turn;
 const shadowGeo = new CircleGeometry(0.36, 12).rotateX(-Math.PI / 2);
 const shadowMat = new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
 
+const CAM_R = 4.2; // security camera view distance (short, pale red cone)
 function makeCone() {
   const g = new BufferGeometry();
   const pos = new Float32Array((CONE_N + 2) * 3), col = new Float32Array((CONE_N + 2) * 4);
@@ -716,7 +717,7 @@ export class Game {
         if (this.trail.length > 900) this.trail.splice(0, 2);
       }
     }
-    else if (demo) this.player.c.root.visible = false;
+    else if (demo && !this.actorOn) this.player.c.root.visible = false;
 
     let alertN = 0;
     for (const g of this.guards) {
@@ -986,7 +987,7 @@ export class Game {
     if (nearBreaker && !nearSafe && !ko) { app.setPrompt('breaker', this.breakProg); this.updateObjective(); return; }
     const tvN = !nearPanel && !nearSafe && !ko ? this.nearTV() : null;
     if (tvN) { if (pressed) { this.tvOn(tvN); this.updateObjective(); return; } else { app.setPrompt('tv'); this.updateObjective(); return; } }
-    const vent = !nearPanel && !nearSafe && !ko && !this.heavy.length ? this.nearVent() : null;
+    const vent = !nearPanel && !nearSafe && !ko ? this.nearVent() : null;
     if (vent) { app.hint('vent'); if (pressed) { this.enterVent(vent); return; } app.setPrompt('vent'); this.updateObjective(); return; }
     const hideOk = hide && !nearPanel && !nearSafe && !ko;
     if (hideOk) { app.hint('hide'); if (pressed) { this.enterHide(hide); return; } }
@@ -1037,6 +1038,16 @@ export class Game {
     this.fovPunch = (this.fovPunch || 0) + fov * sc; this.kickP = (this.kickP || 0) + kickP * sc; this.kickR = (this.kickR || 0) + kickR * sc;
   }
   mark(t, x, z) { this.marks.push({ t, x, z }); }
+  // intro cutscene: drive the thief's third-person body as an actor
+  actor(dt, x, z, face, move, crouch, swing) {
+    const c = this.player.c; this.actorOn = true;
+    c.root.visible = true; c.root.position.set(x, 0, z); c.root.rotation.set(0, face, 0);
+    c.root.scale.set(1, crouch ? 0.72 : 1, 1);
+    c.armOverride = swing != null;
+    animateChar(c, dt, move, this.t);
+    if (swing != null) { c.armR.rotation.x = -2.9 + swing * 2.4; c.armL.rotation.x = -0.3; }
+  }
+  actorOff() { const c = this.player.c; this.actorOn = false; c.armOverride = false; c.root.scale.set(1, 1, 1); c.root.visible = false; }
   // empty crowbar swing (whoosh); a guard you hit from the front just gets angry
   swing() {
     const p = this.player, app = this.app;
@@ -1240,7 +1251,7 @@ export class Game {
   nearVent() {
     const p = this.player;
     for (const v of this.vents) {
-      if (Math.hypot(p.x - v.cx, p.z - v.cz) < 0.85 && Math.abs(angDiff(p.face, Math.atan2(v.gx - p.x, v.gz - p.z))) < 1.0) return v;
+      if (Math.hypot(p.x - v.cx, p.z - v.cz) < 1.15 && Math.abs(angDiff(p.face, Math.atan2(v.gx - p.x, v.gz - p.z))) < 1.4) return v;
     }
     return null;
   }
@@ -1823,8 +1834,10 @@ export class Game {
       const close = 1 - clamp(seen / this.effRange(g), 0, 1);
       let rate = (0.65 + 2.3 * close * close) * (p.dashT > 0 ? 1.6 : p.crouch ? 0.55 : 1) * this.D.susp;
       // in uniform: from a distance you're just another guard (up close they see your face)
-      if (this.disguiseT > 0 && g.kind !== 'owner' && seen > 2.3 && p.dashT <= 0) rate *= 0.12;
-      g.susp = Math.min(1, g.susp + rate * dt);
+      // in uniform you're just another guard: nobody looks twice unless you walk right into their face
+      const disg = this.disguiseT > 0 && g.kind !== 'owner' && g.state !== 'alert';
+      if (disg) rate = p.dashT > 0 ? rate * 0.5 : seen < 1.2 ? rate * 0.25 : 0;
+      g.susp = Math.min(disg && p.dashT <= 0 ? Math.max(Math.min(g.susp, 0.6), 0) : 1, g.susp + rate * dt);
       if (g.state !== 'alert') g.peak = Math.max(g.peak || 0, g.susp); else g.peak = 0;
       g.lastX = p.x; g.lastZ = p.z; g.lostT = 0;
       if (g.state !== 'alert') {
@@ -1847,7 +1860,7 @@ export class Game {
     // bumping into a guard's face = instantly spotted
     if (perceive && p.inv <= 0 && g.state !== 'alert' && !p.hiding) {
       const d = Math.hypot(p.x - g.x, p.z - g.z);
-      if (d < 0.7 && !this.canKO(g) && Math.abs(angDiff(g.face, Math.atan2(p.x - g.x, p.z - g.z))) < 1.75) this.alert(g);
+      if (d < 0.7 && this.disguiseT <= 0 && !this.canKO(g) && Math.abs(angDiff(g.face, Math.atan2(p.x - g.x, p.z - g.z))) < 1.75) this.alert(g);
     }
 
     const d = g.def;
@@ -2048,7 +2061,7 @@ export class Game {
     let seen = false;
     if (perceive && p.inv <= 0 && cam.cool <= 0) {
       const dx = p.x - x, dz = p.z - z, dist = Math.hypot(dx, dz);
-      seen = this.disguiseT <= 0 && dist < 6.5 && Math.abs(angDiff(cam.face, Math.atan2(dx, dz))) < 0.45 && this.los(x, z, p.x, p.z) && !this.smokeBlocks(x, z, p.x, p.z);
+      seen = this.disguiseT <= 0 && dist < CAM_R && Math.abs(angDiff(cam.face, Math.atan2(dx, dz))) < 0.45 && this.los(x, z, p.x, p.z) && !this.smokeBlocks(x, z, p.x, p.z);
     }
     cam.susp = clamp(cam.susp + (seen ? dt * 1.5 : -dt * 0.8), 0, 1);
     if (cam.susp >= 1) {
@@ -2065,7 +2078,7 @@ export class Game {
     }
     const hot = cam.cool > 0;
     cam.lens.material.color.setHex(hot || (Math.sin(this.t * 6) > 0) ? 0xff3b4e : 0x7a1f28);
-    this.updateCone(cam.cone, x, z, cam.face, 0.9, 6.5, hot ? COL.alert : cam.susp > 0.2 ? COL.sus : 0x9fe8ff);
+    this.updateCone(cam.cone, x, z, cam.face, 0.9, CAM_R, hot ? COL.alert : cam.susp > 0.2 ? 0xff7a86 : 0xffb3b8);
   }
 
   openSafe() {

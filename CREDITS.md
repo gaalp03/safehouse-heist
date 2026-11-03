@@ -76,7 +76,7 @@ Sources:
 | `sfx/radioOk.mp3` | k1/Audio (295 files)/Digital sounds (60 sounds)/twoTone1.ogg | Kenney Audio Pack (kenney.nl), CC0 |
 | `sfx/win.mp3` | k1/Audio (295 files)/Jingle sounds (85 sounds)/jingles_SAX/jingles_SAX07.ogg | Kenney Audio Pack (kenney.nl), CC0 |
 | `sfx/unlock.mp3` | k1/Audio (295 files)/Jingle sounds (85 sounds)/jingles_STEEL/jingles_STEEL01.ogg | Kenney Audio Pack (kenney.nl), CC0 |
-| `sfx/bust.mp3` | sfx-kit/sounds/notifications/notification-failure-fall.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
+| `sfx/bust.mp3` | k1/Audio (295 files)/Jingle sounds (85 sounds)/jingles_SAX/jingles_SAX01.ogg | Kenney Audio Pack (kenney.nl), CC0 |
 | `sfx/dash.mp3` | sfx-kit/sounds/whooshes/whoosh-fast-medium.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
 | `sfx/throw.mp3` | sfx-kit/sounds/swishes-and-zips/swish-soft.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
 | `sfx/gold.mp3` | sfx-kit/sounds/money/money-coin-stack.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |

@@ -637,7 +637,10 @@ class App {
       t.innerHTML = `<small>DAILY CHALLENGE · ${this.daily.label}</small>${this.daily.mutator.name}<b>${this.daily.mutator.desc}</b>`;
       t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 3200);
-    } else if (fresh && this.mode === 'classic' && this.save.tutDone) this.showIntel();
+    } else if (fresh && this.mode === 'classic' && this.save.tutDone) {
+      if ((this.save.mmSeen || {})[this.level.id]) this.showIntel();
+      else { $('ctoast').classList.add('hidden'); clearTimeout(this.intelT); this.intelT = setTimeout(() => { if (this.state === 'play') this.showIntel(); }, 3300); }
+    }
     else $('ctoast').classList.add('hidden');
     if (!(fresh && this.mode === 'classic' && this.save.tutDone) && this.mode !== 'daily') {
       const gs = $('gostamp'); gs.querySelector('small').textContent = this.level.name.toUpperCase() + ((this.save.hot || 0) >= 1 && this.mode === 'classic' ? `  ·  🔥 STREAK ${this.save.hot}` : '');
@@ -649,11 +652,36 @@ class App {
     this.hint('move');
     SDK.gameplayStart();
     if (this.game.tut && this.tutStep === 0 && !this.introSeen) this.beginIntro();
+    else this.mapIntro();
+  }
+  // first visit to a heist: the minimap blinks twice big in the middle, then glides into its corner
+  mapIntro() {
+    const id = this.level.id, seen = (this.save.mmSeen = this.save.mmSeen || {});
+    if (seen[id]) return;
+    seen[id] = 1; SDK.store(this.save);
+    setTimeout(() => {
+      const el = $('mm'); if (!el || this.state !== 'play' || !el.animate) return;
+      const r = el.getBoundingClientRect(); if (!r.width) return;
+      const s = Math.min(3, (Math.min(this.w, this.h) * 0.62) / r.width), dx = this.w / 2 - (r.left + r.width / 2), dy = this.h * 0.45 - (r.top + r.height / 2);
+      const C = `translate(${dx}px,${dy}px) scale(${s})`, glow = 'drop-shadow(0 0 0 rgba(255,210,58,0))', on = 'drop-shadow(0 0 14px rgba(255,210,58,.95))';
+      el.animate([
+        { transform: C, opacity: 0, filter: glow, offset: 0 },
+        { transform: C, opacity: 1, filter: on, offset: 0.1 },
+        { transform: C, opacity: 0.1, filter: glow, offset: 0.24 },
+        { transform: C, opacity: 1, filter: on, offset: 0.38 },
+        { transform: C, opacity: 0.1, filter: glow, offset: 0.52 },
+        { transform: C, opacity: 1, filter: on, offset: 0.64, easing: 'cubic-bezier(.5,0,.2,1.15)' },
+        { transform: 'none', opacity: 0.92, filter: glow, offset: 1 },
+      ], { duration: 2600 });
+      this.audio.play('click'); setTimeout(() => this.audio.play('star', 0), 1650);
+    }, 700);
   }
   // ---- intro cutscene (tutorial only) ----
   beginIntro() {
     this.introSeen = true;
     this.state = 'intro'; this.introI = -1;
+    this.introKO = false;
+    for (const g of this.game.guards) { g.cone.material.opacity = 3.2; g.cone.material.color.setHex(0xffc400); }
     this.input.active = false; this.input.exitLock();
     for (const id of ['hud', 'fp', 'touch', 'tut', 'hint', 'ctoast', 'gostamp']) $(id).classList.add('hidden');
     document.body.classList.remove('tutcard');
@@ -687,11 +715,27 @@ class App {
     L.set(f.l.x + (s.look[0] - f.l.x) * e, f.l.y + (s.look[1] - f.l.y) * e, f.l.z + (s.look[2] - f.l.z) * e);
     cam.lookAt(L);
     const bar = $('intro').querySelector('.ibar i'); bar.style.width = Math.min(100, (this.introT / SHOT_T) * 100) + '%';
+    // little scripted actor scenes
+    const g = this.game, gd = g.guards[2], t = this.introT;
+    if (s.act === 'sneak') g.actor(dt, 9.6 + Math.min(1, t / SHOT_T) * 5.8, 12.45, Math.PI / 2, 0.55, true);
+    else if (s.act === 'ko' && gd) {
+      const bz = gd.z + 0.85;
+      if (t < 1.9) g.actor(dt, gd.x, 6.6 - (t / 1.9) * (6.6 - bz), Math.PI, 0.6, true);
+      else {
+        const sw = Math.min(1, (t - 1.9) / 0.22);
+        g.actor(dt, gd.x, bz, Math.PI, 0, false, sw);
+        if (!this.introKO && sw >= 1) { this.introKO = true; g.player.x = gd.x; g.player.z = bz; g.knockout(gd); }
+      }
+    } else if (s.act === 'stand' && gd) g.actor(dt, gd.x + 0.75, gd.z + 0.5, -2.4, 0, false);
+    else if (g.actorOn) g.actorOff();
     if (this.introT >= SHOT_T) this.nextIntro();
   }
   endIntro() {
     if (this.state !== 'intro') return;
     $('intro').classList.add('hidden');
+    this.game.actorOff();
+    for (const g of this.game.guards) { g.cone.material.opacity = 1; g.cone.material.color.setHex(0xffe14d); }
+    if (this.introKO) { this.game.reset(); this.introKO = false; }
     this.state = 'play';
     this.input.clear();
     this.screen(null);
@@ -699,6 +743,7 @@ class App {
     this.input.requestLock();
     this.hint('move');
     this.audio.play('dash');
+    this.mapIntro();
   }
   // first time you load a level this session: a quick intel card of what's waiting inside
   showIntel() {
