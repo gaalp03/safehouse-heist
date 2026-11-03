@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="build" content="ea975353">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js">
+<link rel="modulepreload" href="./js/main.js?v=ea975353">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -417,6 +418,24 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 #bHit{right:calc(max(22px,env(safe-area-inset-right)) + 196px);bottom:calc(max(26px,env(safe-area-inset-bottom)) + 96px);width:70px;height:70px;background:radial-gradient(circle at 50% 35%,#ffd0d4 0%,#ff6a78 55%,#d8283a 100%)}
 #bHit span{color:#fff;text-shadow:0 2px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink)}
 #bHit.ready{animation:rdy .5s infinite alternate;filter:drop-shadow(0 0 10px rgba(255,80,100,.8))}
+#ver{position:fixed;right:8px;bottom:6px;font:600 10px/1 system-ui,sans-serif;color:#fff;opacity:.55;text-shadow:0 1px 0 #000;pointer-events:none}
+/* ---------- intro cutscene ---------- */
+#intro{position:fixed;inset:0;z-index:8;pointer-events:none}
+#intro .lb{position:absolute;left:0;right:0;height:9vh;background:#0d0818;transition:transform .5s}
+#intro .lb.t{top:0}#intro .lb.b{bottom:0}
+#intro .icard{position:absolute;left:50%;bottom:calc(9vh + 10px);translate:-50% 0;width:min(520px,92vw);background:var(--paper);color:var(--ink);border:4px solid var(--ink);border-radius:18px;box-shadow:6px 7px 0 var(--ink);padding:12px 18px 14px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px;rotate:-1deg;font-family:var(--disp)}
+#intro .icard.pop{animation:panelin .45s cubic-bezier(.2,1.5,.4,1) both}
+#intro .icard small{background:#2fbf7a;color:#fff;padding:2px 12px 1px;border:3px solid var(--ink);border-radius:8px;box-shadow:3px 3px 0 var(--ink);text-shadow:0 2px 0 var(--ink);font-size:13px;letter-spacing:1px;margin-top:-26px;rotate:2deg}
+#intro .icard b{font-size:26px;line-height:1.1;font-weight:400;color:#e8333f;text-shadow:0 2px 0 rgba(28,19,48,.25)}
+#intro .icard span{font-size:16px;line-height:1.25}
+#intro .ikeys{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:2px}
+#intro .ikeys kbd{font-family:var(--disp);font-size:16px;background:#fff;border:3px solid var(--ink);border-radius:9px;box-shadow:0 4px 0 var(--ink);padding:2px 10px 1px;color:var(--ink)}
+#intro .ikeys kbd em{font-style:normal;color:#6a5a8a;font-size:13px;margin-left:5px}
+#intro .ibar{display:block;width:70%;height:6px;border-radius:3px;background:rgba(28,19,48,.15);overflow:hidden;margin-top:6px}
+#intro .ibar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#4fe0a0,#ffd75a)}
+#intro .irow{position:absolute;right:max(16px,env(safe-area-inset-right));top:calc(9vh + 12px);display:flex;gap:12px;pointer-events:auto}
+#intro .irow .btn{font-size:18px;padding:9px 22px 8px;min-height:44px}
+@media (max-width:640px),(max-height:480px){#intro .icard b{font-size:20px}#intro .icard span{font-size:13px}#intro .icard{bottom:calc(9vh + 6px);padding:10px 12px 12px}#intro .irow .btn{font-size:15px;padding:7px 16px 6px;min-height:38px}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -469,7 +488,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 
 <div id="loading" class="screen"><div class="logo o">SAFEHOUSE<small>HEIST</small></div><div class="bar"><i></i></div><p class="sub">Loading...</p></div>
 
-<div id="menu" class="screen hidden">
+<div id="menu" class="screen hidden"><div id="ver"></div>
   <div class="logo o">SAFEHOUSE<small>HEIST</small></div>
   <p class="sub o">Sneak in. Crack the safe. Grab the loot. Get to the van.</p>
   <button id="bSet" class="ib setbtn" aria-label="Settings">⚙</button>
@@ -567,7 +586,11 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js"></script>
+<script type="module" src="./js/main.js?v=ea975353"></script>
+<div id="intro" class="hidden"><div class="lb t"></div><div class="lb b"></div>
+  <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
+  <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>
+</div>
 <div id="iris"></div>
 <div id="ctxlost" class="screen solid hidden" style="z-index:9"><div class="panel"><div class="big o" style="font-size:34px">HOLD ON...</div><p class="sub">Your device paused the graphics. Your progress is saved.</p><button class="btn" onclick="location.reload()">RELOAD</button></div></div>
 </body>

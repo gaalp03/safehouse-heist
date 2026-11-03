@@ -17,6 +17,7 @@ import { todaysDaily, prevDayKey, nextDailyIn, dayKey as dayKeyNow, MUTATORS, we
 import { ACH, recordRun, blankStats } from './achievements.js';
 import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
 import { TUT_STEPS } from './tutorial.js';
+import { INTRO, SHOT_T } from './intro.js';
 
 const $ = (id) => document.getElementById(id);
 const HINTS = {
@@ -185,7 +186,9 @@ class App {
     click('bTrophy', () => this.showTrophies());
     click('bOutfit', () => this.showOutfits());
     click('bOfBack', () => this.showMenu());
-    click('bTut', () => this.start('tutorial', 0));
+    click('bTut', () => { this.introSeen = false; this.start('tutorial', 0); });
+    click('bISkip', () => this.endIntro());
+    click('bINext', () => this.nextIntro());
     $('tutSkip').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.game.tut) this.skipTutorial(); });
     click('bTrBack', () => this.showMenu());
     click('bPause', () => this.pause());
@@ -195,11 +198,14 @@ class App {
     this.input.on('mute', () => this.toggleMute());
     this.input.on('key', (code) => {
       if (code === 'KeyT' && this.state === 'play' && this.game.tut) this.skipTutorial();
+      if (this.state === 'intro') { if (code === 'Escape') this.endIntro(); else if (code === 'Enter' || code === 'Space' || code === 'KeyE') this.nextIntro(); return; }
       if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.playSel(); }
       else if (code === 'Enter' && this.state === 'result') { this.audio.unlock(); $('bNext').click(); }
       else if ((code === 'Enter' || code === 'Space') && (this.state === 'result' || this.state === 'busted')) { this.audio.unlock(); this.retry(); }
     });
     this.input.on('mode', () => this.syncTouch());
+    // a pointer lock that lands late (async) must not trap the mouse during menus / the intro cutscene
+    this.input.on('lock', () => { if (this.state !== 'play') this.input.exitLock(); });
     this.input.on('unlock', () => { if (this.state === 'play' && this.game.state === 'play' && !this.input.touch) this.pause(); });
     addEventListener('pointerdown', () => this.audio.unlock(), { capture: true });
     addEventListener('keydown', () => this.audio.unlock(), { capture: true });
@@ -234,6 +240,7 @@ class App {
     this.input.joyEnd();
   }
   showMenu() {
+    { const m = document.querySelector('meta[name=build]'), v = $('ver'); if (v && m) v.textContent = 'build ' + m.content; }
     this.lastTutLevel = null;
     // daily login bonus: cash for the Locker, growing with consecutive days
     if (this.save.tutDone) {
@@ -258,6 +265,8 @@ class App {
     const b = this.save.best[diffKey('safehouse', this.diff)];
     const bu = this.bankUnlocked(), bb = this.save.best[diffKey('bank', this.diff)];
     $('lvl2').classList.toggle('lock', !bu);
+    $('daily').classList.toggle('lock', !bu);
+    if (!bu && this.sel === 'daily') this.sel = this.save.sel = 'lvl1';
     $('lvl2art').textContent = bu ? '🏦' : '🔒';
     $('lvl2stars').innerHTML = bu ? this.starsHTML(bb ? bb.stars : 0) : '';
     $('lvl2best').textContent = bu ? (bb ? 'Best ' + fmtMoney(bb.score) : 'New!') : 'Escape Safe House to unlock';
@@ -406,7 +415,7 @@ class App {
     $('rAch').classList.toggle('hidden', !list.length);
     if (list.length) setTimeout(() => this.audio.play('contract'), 1600);
   }
-  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : k === 'lvl6' ? !this.penthouseUnlocked() : k === 'lvl7' ? !this.trainUnlocked() : k === 'lvl8' ? !this.warehouseUnlocked() : k === 'lvl9' ? !this.mansionUnlocked() : false; }
+  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : k === 'lvl6' ? !this.penthouseUnlocked() : k === 'lvl7' ? !this.trainUnlocked() : k === 'lvl8' ? !this.warehouseUnlocked() : k === 'lvl9' ? !this.mansionUnlocked() : k === 'daily' ? !this.bankUnlocked() : false; }
   selectPin(k) {
     this.sel = k; this.save.sel = k;
     if (this.pinLocked(k)) { const c = $(k); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
@@ -639,6 +648,57 @@ class App {
     if (this.mode === 'classic' && this.game.contracts.length && !this.save.seenCtr) { this.save.seenCtr = true; SDK.store(this.save); this.hint('ctr'); }
     this.hint('move');
     SDK.gameplayStart();
+    if (this.game.tut && this.tutStep === 0 && !this.introSeen) this.beginIntro();
+  }
+  // ---- intro cutscene (tutorial only) ----
+  beginIntro() {
+    this.introSeen = true;
+    this.state = 'intro'; this.introI = -1;
+    this.input.active = false; this.input.exitLock();
+    for (const id of ['hud', 'fp', 'touch', 'tut', 'hint', 'ctoast', 'gostamp']) $(id).classList.add('hidden');
+    document.body.classList.remove('tutcard');
+    this.introFrom = { p: this.camera.position.clone(), l: this._f.clone() };
+    $('intro').classList.remove('hidden');
+    this.nextIntro();
+  }
+  nextIntro() {
+    if (this.state !== 'intro') return;
+    const cam = this.camera;
+    if (this.introI >= 0) { const s = INTRO[this.introI]; this.introFrom = { p: cam.position.clone(), l: this._introLook ? this._introLook.clone() : this._f.set(...s.look).clone() }; }
+    this.introI++; this.introT = 0;
+    if (this.introI >= INTRO.length) { this.endIntro(); return; }
+    const s = INTRO[this.introI], c = $('intro').querySelector('.icard'), t = this.input.touch ? 1 : 0;
+    c.querySelector('small').textContent = `HOW TO HEIST ${this.introI + 1}/${INTRO.length}`;
+    c.querySelector('b').textContent = s.title;
+    c.querySelector('span').textContent = s.text;
+    c.querySelector('.ikeys').innerHTML = s.keys[t].map(([k, d]) => `<kbd>${k}<em>${d}</em></kbd>`).join('');
+    c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
+    $('bINext').textContent = this.introI === INTRO.length - 1 ? "LET'S GO! ▶" : 'NEXT ▶';
+    this.audio.play('click');
+  }
+  updateIntro(dt) {
+    const s = INTRO[this.introI]; if (!s) return;
+    this.introT += dt;
+    const cam = this.camera, k = Math.min(1, this.introT / 1.3), e = k * k * (3 - 2 * k);
+    const f = this.introFrom, drift = this.introT * 0.12;
+    const tx = s.pos[0] + Math.sin(this.introT * 0.4) * 0.4, tz = s.pos[2] - drift;
+    cam.position.set(f.p.x + (tx - f.p.x) * e, f.p.y + (s.pos[1] - f.p.y) * e, f.p.z + (tz - f.p.z) * e);
+    const L = (this._introLook = this._introLook || this._f.clone());
+    L.set(f.l.x + (s.look[0] - f.l.x) * e, f.l.y + (s.look[1] - f.l.y) * e, f.l.z + (s.look[2] - f.l.z) * e);
+    cam.lookAt(L);
+    const bar = $('intro').querySelector('.ibar i'); bar.style.width = Math.min(100, (this.introT / SHOT_T) * 100) + '%';
+    if (this.introT >= SHOT_T) this.nextIntro();
+  }
+  endIntro() {
+    if (this.state !== 'intro') return;
+    $('intro').classList.add('hidden');
+    this.state = 'play';
+    this.input.clear();
+    this.screen(null);
+    this.iris();
+    this.input.requestLock();
+    this.hint('move');
+    this.audio.play('dash');
   }
   // first time you load a level this session: a quick intel card of what's waiting inside
   showIntel() {
@@ -1003,7 +1063,8 @@ class App {
     const adRev = ADS_ENABLED && SDK.available && !this.game.revived && !this.game.policeBusted;
     $('bRevive').classList.toggle('hidden', !(this.freeRevOk || adRev));
     $('bRevive').innerHTML = this.freeRevOk ? '▶ SECOND CHANCE <small>free · 1 per day</small>' : '▶ SECOND CHANCE';
-    $('bustTip').textContent = this.bustTip();
+    $('bustTip').textContent = (this.game.hasStash && this.mode !== 'daily' && this.levelIdx + 1 < LEVELS.length && !this.levelUnlocked(this.levelIdx + 1)
+      ? `So close! You had the stash: get it all the way back to the ${this.game.L.van ? 'van' : 'exit'} to unlock ${LEVELS[this.levelIdx + 1].name}. ` : '') + this.bustTip();
     this.preBust = JSON.stringify(this.save);   // undone if the player takes a second chance
     const fresh = recordRun(this.save, this.runRecord(false));
     this.awardXP(false, 0, this.game.lootGot, 'bXP');
@@ -1139,7 +1200,7 @@ class App {
     this.time += rdt;
     const st = this.state;
     if (st === 'play' || (st === 'busted' && this.game.state === 'caught' && !this.game.endSent)) this.game.update(rdt, false);
-    else if (st === 'menu' || st === 'soon') this.game.update(rdt, true);
+    else if (st === 'menu' || st === 'soon' || st === 'intro') this.game.update(rdt, true);
     if (st !== 'pause' && st !== 'ad') {
       this.particles.update(rdt, this.camera);
       this.shake.update(rdt);
@@ -1325,7 +1386,8 @@ class App {
     const g = this.game, L = g.L, cam = this.camera;
     const zoom = this.aspect < 1 ? 1 + (1 - this.aspect) * 1.6 : 1;
     let fov;
-    if (this.state === 'menu' || this.state === 'soon') {
+    if (this.state === 'intro') { this.updateIntro(dt); fov = this.aspect < 1 ? 62 : 50; }
+    else if (this.state === 'menu' || this.state === 'soon') {
       const a = this.time * 0.07;
       const look = this._f.set(L.W / 2, 0, L.H / 2 - 2);
       cam.position.set(look.x + Math.sin(a) * 17 * zoom, 19 * zoom, look.z + Math.cos(a) * 17 * zoom);

@@ -64,7 +64,7 @@ export class Input {
     document.addEventListener('pointerlockchange', () => {
       const was = this.locked;
       this.locked = document.pointerLockElement === cv;
-      if (this.locked && !was) { this.lockT = performance.now(); this.lx = 0; this.ly = 0; }
+      if (this.locked && !was) { this.lockT = performance.now(); this.lx = 0; this.ly = 0; this.emit('lock'); }
       if (was && !this.locked) this.emit('unlock');
     });
     document.addEventListener('pointerlockerror', () => { this.lockFailed = true; });
