@@ -87,7 +87,7 @@ export class Game {
       const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
       for (const m of mats) { if (shared.has(m)) continue; if (m.map && !m.map.userData.keep) m.map.dispose(); m.dispose(); }
     });
-    this.root.clear();
+    this.root.clear(); this.disgC = null;
     for (const g of this.guards || []) g.badge.remove();
     this.def = def;
     const L = (this.L = parseLevel(def));
@@ -1039,15 +1039,18 @@ export class Game {
   }
   mark(t, x, z) { this.marks.push({ t, x, z }); }
   // intro cutscene: drive the thief's third-person body as an actor
-  actor(dt, x, z, face, move, crouch, swing) {
-    const c = this.player.c; this.actorOn = true;
+  actor(dt, x, z, face, move, crouch, swing, disg) {
+    if (disg && !this.disgC) { this.disgC = makeCharacter('guard'); if (this.disgC.beam) this.disgC.beam.visible = false; this.root.add(this.disgC.root); }
+    if (this.disgC) this.disgC.root.visible = false;
+    if (disg) this.player.c.root.visible = false;
+    const c = disg ? this.disgC : this.player.c; this.actorOn = true;
     c.root.visible = true; c.root.position.set(x, 0, z); c.root.rotation.set(0, face, 0);
     c.root.scale.set(1, crouch ? 0.72 : 1, 1);
     c.armOverride = swing != null;
     animateChar(c, dt, move, this.t);
     if (swing != null) { c.armR.rotation.x = -2.9 + swing * 2.4; c.armL.rotation.x = -0.3; }
   }
-  actorOff() { const c = this.player.c; this.actorOn = false; c.armOverride = false; c.root.scale.set(1, 1, 1); c.root.visible = false; }
+  actorOff() { const c = this.player.c; this.actorOn = false; c.armOverride = false; c.root.scale.set(1, 1, 1); c.root.visible = false; if (this.disgC) this.disgC.root.visible = false; }
   // empty crowbar swing (whoosh); a guard you hit from the front just gets angry
   swing() {
     const p = this.player, app = this.app;

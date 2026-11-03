@@ -693,7 +693,7 @@ class App {
     this.introSeen = true;
     this.state = 'intro'; this.introI = -1;
     this.floaters.minScale = 1.05;
-    this.introKO = false; this.introCoin = this.introLured = this.introSafe = this.introDirty = this.introSmoke = this.introCough = false;
+    this.introKO = false; this.introCoin = this.introLured = this.introSafe = this.introDirty = this.introSmoke = this.introCough = this.introDisg = this.introNod = this.introR1 = this.introR2 = this.introMe = false;
     for (const g of this.game.guards) { g.cone.material.opacity = 3.2; g.cone.material.color.setHex(0xffc400); }
     this.input.active = false; this.input.exitLock();
     for (const id of ['hud', 'fp', 'touch', 'tut', 'hint', 'ctoast', 'gostamp']) $(id).classList.add('hidden');
@@ -739,8 +739,11 @@ class App {
         g.actor(dt, gd.x, bz, Math.PI, 0, false, sw);
         if (!this.introKO && sw >= 1) { this.introKO = true; g.player.x = gd.x; g.player.z = bz; g.knockout(gd); }
       }
-    } else if (s.act === 'stand' && gd) g.actor(dt, gd.x + 0.75, gd.z + 0.5, -2.4, 0, false);
-    else if (s.act === 'hide' && g.hides[0]) {
+    } else if (s.act === 'stand' && gd) {
+      g.actor(dt, gd.x + 0.75, gd.z + 0.5, -2.4, 0, t > 2.0, t > 2.0 && t < 3.0 ? 0.8 : null);
+      if (!this.introR1 && t > 0.6) { this.introR1 = true; this.audio.play('radio'); this.floaters.spawn('📻 "Unit, report in!"', gd.x, 0.9, gd.z, 'say warn', 1.6); }
+      if (!this.introR2 && t > 2.4) { this.introR2 = true; this.audio.play('radioOk'); this.floaters.spawn('"All clear, over."', gd.x + 0.75, 1.3, gd.z + 0.5, 'say q', 1.8); }
+    } else if (s.act === 'hide' && g.hides[0]) {
       // walk up to the wardrobe, hop in while the patrol strolls past, peek back out
       const h = g.hides[0], fx = h.ex + (h.ex - h.cx) * 1.6, fz = h.ez + (h.ez - h.cz) * 1.6 + 0.4, inF = Math.atan2(h.cx - h.ex, h.cz - h.ez);
       if (t < 1.3) { const k = t / 1.3; g.actor(dt, fx + (h.ex - fx) * k, fz + (h.ez - fz) * k, Math.atan2(h.ex - fx, h.ez - fz), 0.7, false); }
@@ -760,6 +763,22 @@ class App {
         g.makeNoise(lx, lz, 8, null, true);
         this.particles.ring(lx, 0.05, lz, 0xffd23f, 2.2); this.floaters.spawn('CLINK!', lx, 0.6, lz, 'big', 1.2);
         if (cg.state !== 'investigate') { cg.state = 'investigate'; cg.tx = lx; cg.tz = lz; cg.hurry = cg.speed * 1.4; }
+      }
+    } else if (s.act === 'disguise' && gd) {
+      const pill = $('iDisg');
+      if (t < 1.3) {
+        g.actor(dt, gd.x + 0.6, gd.z + 0.45, -2.2, 0, true, 0.7 + Math.sin(t * 22) * 0.15);
+        pill.classList.add('hidden');
+      } else {
+        if (!this.introDisg) { this.introDisg = true; this.audio.play('creak'); this.audio.play('pick', 6); this.floaters.spawn('UNIFORM ON!', gd.x + 0.6, 1.4, gd.z + 0.45, 'big', 1.3); this.particles.puff(gd.x + 0.6, 0.6, gd.z + 0.45, { count: 6, size: 0.4 }); }
+        const P = [[gd.x + 0.6, gd.z + 0.45], [20.5, 6.2], [20.5, 7.4], [20.2, 8.7]], k = Math.max(0, Math.min(1, (t - 1.5) / 2.9));
+        let seg = Math.min(2, Math.floor(k * 3)), u = k * 3 - seg; if (k >= 1) { seg = 2; u = 1; }
+        const [x0, z0] = P[seg], [x1, z1] = P[seg + 1];
+        g.actor(dt, x0 + (x1 - x0) * Math.max(0, u), z0 + (z1 - z0) * Math.max(0, u), Math.atan2(x1 - x0, z1 - z0), t > 1.5 && k < 1 ? 0.7 : 0, false, null, true);
+        pill.classList.remove('hidden'); pill.textContent = '🕴 DISGUISED ' + Math.max(1, Math.ceil(25 - (t - 1.3))) + 's';
+        if (!this.introMe && t > 2.0) { this.introMe = true; this.floaters.spawn('(that\'s you!)', 20.5, 1.3, 6.4, 'say zz', 1.6); }
+        const pg = g.guards[1];
+        if (pg && !this.introNod && t > 3.6) { this.introNod = true; this.floaters.spawn('Evening, partner.', pg.x, 1.2, pg.z, 'say q', 1.6); }
       }
     } else if (s.act === 'smoke') {
       const ax = 13.6, az = 4.6, f = -Math.PI / 2;
@@ -782,11 +801,12 @@ class App {
       }
     }
     else if (g.actorOn) g.actorOff();
+    if (s.act !== 'disguise') $('iDisg').classList.add('hidden');
     if (this.introT >= SHOT_T) this.nextIntro();
   }
   endIntro() {
     if (this.state !== 'intro') return;
-    $('intro').classList.add('hidden');
+    $('intro').classList.add('hidden'); $('iDisg').classList.add('hidden');
     this.game.actorOff();
     for (const g of this.game.guards) { g.cone.material.opacity = 1; g.cone.material.color.setHex(0xffe14d); }
     if (this.introKO || this.introDirty) { this.game.reset(); this.introKO = this.introDirty = false; }
