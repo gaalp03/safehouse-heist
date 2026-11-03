@@ -105,21 +105,26 @@ export class ViewModel {
     this.root.rotation.z = this.kick * 0.08;
 
     // right arm: idle pose / swing / crack jiggle
-    let rx = 0.14, rz = 0, rpz = 0.0;
+    let rx = 0.14, rz = 0, rpz = 0.0, rpx = 0, ry = 0;
     if (s.punch > 0) {
+      // big diagonal crowbar slash: wind up high right, whip down-left across the screen, recover
       const t = 1 - s.punch; // 0..1
-      if (t < 0.3) rx = (t / 0.3) * 0.9;
-      else if (t < 0.55) rx = 0.9 - ((t - 0.3) / 0.25) * 1.9;
-      else rx = -1.0 + ((t - 0.55) / 0.45) * 1.14;
-      rz = -rx * 0.3;
+      const W = { rx: 0.9, rz: -0.45, ry: -0.3, px: 0.05 }, X = { rx: 0.0, rz: 0.7, ry: 0.62, px: -0.12 };
+      const lerp = (a, b, k) => a + (b - a) * k;
+      if (t < 0.22) { const k = t / 0.22; rx = lerp(0.14, W.rx, k); rz = W.rz * k; ry = W.ry * k; rpx = W.px * k; }
+      else if (t < 0.5) { const k = (t - 0.22) / 0.28; rx = lerp(W.rx, X.rx, k); rz = lerp(W.rz, X.rz, k); ry = lerp(W.ry, X.ry, k); rpx = lerp(W.px, X.px, k); rpz = -0.08 * k; }
+      else { const k = (t - 0.5) / 0.5; rx = lerp(X.rx, 0.14, k); rz = X.rz * (1 - k); ry = X.ry * (1 - k); rpx = X.px * (1 - k); rpz = -0.08 * (1 - k); }
     } else if (s.crack) {
       rx = 0.35 + Math.sin(this.t * 38) * 0.08;
       rz = Math.sin(this.t * 23) * 0.1;
       rpz = -0.06;
     }
-    R.rotation.x = damp(R.rotation.x, rx, s.punch > 0 ? 40 : 14, dt);
-    R.rotation.z = damp(R.rotation.z, rz, 20, dt);
-    R.position.z = damp(R.position.z, rpz, 12, dt);
+    const fast = s.punch > 0 ? 45 : 14;
+    R.rotation.x = damp(R.rotation.x, rx, fast, dt);
+    R.rotation.z = damp(R.rotation.z, rz, s.punch > 0 ? 45 : 20, dt);
+    R.rotation.y = damp(R.rotation.y, 0.16 + ry, fast, dt);
+    R.position.x = damp(R.position.x, 0.23 + rpx, fast, dt);
+    R.position.z = damp(R.position.z, rpz, s.punch > 0 ? 40 : 12, dt);
 
     // left hand slides in for grabs and while cracking
     const want = s.grab > 0 || s.crack ? 1 : 0;

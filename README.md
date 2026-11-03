@@ -102,7 +102,7 @@ Daily Jobs: three new tasks every day (knock out 5 guards, steal $8,000, survive
 
 Heavy loot: gold bars (−6%) and paintings (−10%) slow you down while carried (max −35%, shown as a 🏋 badge); walk back near the van / exit to stash them and get your speed back. Contract: stash heavy loot before cracking the safe.
 
-Pickpocketing: guards carry a visible wallet (and on keycard levels one carries a spare keycard). Behind an unaware guard, tap E to knock him out or HOLD E to lift the wallet / keycard (he gets slightly suspicious while you lift). Contract: pickpocket 2 guards; achievement: Sticky Fingers.
+Pickpocketing: guards carry a visible wallet (and on keycard levels one carries a spare keycard). Behind an unaware guard, CLICK (left mouse / HIT button) to knock him out or HOLD E to lift the wallet / keycard (he gets slightly suspicious while you lift). Contract: pickpocket 2 guards; achievement: Sticky Fingers.
 
 Radio check-ins: a few seconds after a knockout the guard's radio calls "Unit, report in!". Hold E next to him to answer "All clear" (he stays down 8 s longer); miss it and the nearest guard runs over to check (on Hard the alarm goes off). Contract: fake a radio check-in; achievement: Smooth Talker.
 
@@ -182,3 +182,7 @@ Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` 
 - No external links, no third-party branding, English UI, all assets CC0/OFL (see CREDITS.md).
 - Mobile: touch controls, no page scroll/zoom/text selection/long-press menus, layouts checked in portrait and landscape.
 - Small download: ~260 KB gzipped to the menu; sound effects (~350 KB) stream in afterwards.
+
+## Controls & training heist (update)
+- Left click (touch: red HIT button) swings the crowbar: knocks out a guard hit from behind; E / ✋ is use, grab, crack, hide, answer radio, wear uniform.
+- The Safe House is a training heist: no dog, four slow guards, one trick per room (dash, sneak behind cover, hide, knockout, radio, disguise, coin, smoke, lock pick, safe, vent). In the guided tutorial, getting spotted rewinds you to the last checkpoint instead of BUSTED, and alarms are off.

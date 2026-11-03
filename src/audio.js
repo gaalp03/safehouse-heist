@@ -147,7 +147,7 @@ export class Audio {
       win: () => S('win', { vol: 0.55 }), bust: () => S('bust', { vol: 0.55 }), alarm: () => S('alarm', { vol: 0.5 }),
       thunder: () => S('thunder', { vol: 0.65, jitter: 0.08 }), vent: () => S('vent', { vol: 0.55 }), clank: () => S('clank', { vol: 0.55, jitter: 0.1 }),
       click: () => S('click', { vol: 0.5 }), star: () => S('star', { vol: 0.5, rate: semi([0, 4, 7][Math.min(2, p | 0)] || 0) }),
-      throw: () => S('throw', { vol: 0.5, jitter: 0.1 }), clink: () => S('clink', { vol: 0.5 * Math.max(0.35, Math.min(1, p || 1)), jitter: 0.1 }),
+      throw: () => S('throw', { vol: 0.5, jitter: 0.1 }), swing: () => S('throw', { vol: 0.6, rate: 1.3, jitter: 0.12 }), clink: () => S('clink', { vol: 0.5 * Math.max(0.35, Math.min(1, p || 1)), jitter: 0.1 }),
       disarm: () => S('disarm', { vol: 0.5 }), contract: () => S('contract', { vol: 0.5 }), creak: () => S('creak', { vol: 0.5, jitter: 0.08 }),
       zap: () => S('zap', { vol: 0.5 }), powerdown: () => S('powerdown', { vol: 0.55 }), smoke: () => S('smoke', { vol: 0.55 }),
       pin: () => S('pin', { vol: 0.55, rate: 1 + p * 0.12 }), slip: () => S('slip', { vol: 0.55 }), glass: () => S('glass', { vol: 0.6, jitter: 0.1 }),
@@ -237,6 +237,7 @@ export class Audio {
       case 'star':
         T(784 * Math.pow(2, (p * 4) / 12), 0.35, { type: 'triangle', vol: 0.2 });
         T(1568 * Math.pow(2, (p * 4) / 12), 0.25, { type: 'sine', vol: 0.08, delay: 0.05 }); break;
+      case 'swing': N(0.16, { vol: 0.2, freq: 2400, slide: 700, q: 1.2 }); break;
       case 'throw': N(0.12, { vol: 0.15, freq: 1800, slide: 900, q: 1.5 }); T(900, 0.06, { type: 'triangle', vol: 0.06 }); break;
       case 'clink': {
         const v = 0.05 + p * 0.12;

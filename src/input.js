@@ -42,12 +42,12 @@ export class Input {
     cv.addEventListener('mousedown', (e) => {
       if (!this.active) return;
       if (!this.locked && !this.lockFailed && !this.touch) { this.requestLock(); return; }
-      if (e.button === 0) { this.act = true; this.actP = true; }
+      if (e.button === 0) this.atkP = true;
       if (e.button === 2) this.dashP = true;
       if (e.button === 1) this.throwP = true;
       this.dragLook = true;
     });
-    addEventListener('mouseup', (e) => { if (e.button === 0) this.act = false; this.dragLook = false; });
+    addEventListener('mouseup', () => { this.dragLook = false; });
     addEventListener('contextmenu', (e) => e.preventDefault());
     addEventListener('mousemove', (e) => {
       if (!this.active) return;
@@ -121,6 +121,7 @@ export class Input {
       el.addEventListener('pointerup', u); el.addEventListener('pointercancel', u); el.addEventListener('pointerleave', u);
     };
     btn(els.bAct, () => { this.act = true; this.actP = true; }, () => { this.act = false; });
+    if (els.bHit) btn(els.bHit, () => { this.atkP = true; });
     btn(els.bDash, () => { this.dashP = true; });
     btn(els.bThrow, () => { this.throwP = true; });
     btn(els.bSmoke, () => { this.smokeP = true; });
@@ -159,10 +160,11 @@ export class Input {
     return out;
   }
   consumeLook(out) { out.x = this.lx; out.y = this.ly; this.lx = 0; this.ly = 0; return out; }
+  consumeAtk() { const v = this.atkP; this.atkP = false; return v; }
   consumeAct() { const v = this.actP; this.actP = false; return v; }
   consumeDash() { const v = this.dashP; this.dashP = false; return v; }
   consumeCrouch() { const v = this.crouchP; this.crouchP = false; return v; }
   consumeSmoke() { const v = this.smokeP; this.smokeP = false; return v; }
   consumeThrow() { const v = this.throwP; this.throwP = false; return v; }
-  clear() { this.actP = false; this.dashP = false; this.throwP = false; this.smokeP = false; this.lx = 0; this.ly = 0; }
+  clear() { this.atkP = false; this.actP = false; this.dashP = false; this.throwP = false; this.smokeP = false; this.lx = 0; this.ly = 0; }
 }

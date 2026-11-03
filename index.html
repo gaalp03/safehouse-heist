@@ -414,6 +414,9 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 #ctoast .stargoal{margin-top:6px;background:rgba(28,19,48,.78);padding:3px 12px;border-radius:999px;border:2px solid rgba(255,214,160,.3)}
 @media (max-width:640px),(max-height:480px){#ctoast .brief{font-size:12px;padding:5px 10px 6px}}
 @media (max-width:640px) and (orientation:portrait){#ctoast{margin-top:110px}}
+#bHit{right:calc(max(22px,env(safe-area-inset-right)) + 196px);bottom:calc(max(26px,env(safe-area-inset-bottom)) + 96px);width:70px;height:70px;background:radial-gradient(circle at 50% 35%,#ffd0d4 0%,#ff6a78 55%,#d8283a 100%)}
+#bHit span{color:#fff;text-shadow:0 2px 0 var(--ink),1px 0 0 var(--ink),-1px 0 0 var(--ink)}
+#bHit.ready{animation:rdy .5s infinite alternate;filter:drop-shadow(0 0 10px rgba(255,80,100,.8))}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -456,6 +459,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 <svg id="ring" class="hidden" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="20"/><circle class="fg" cx="27" cy="27" r="20"/></svg></div>
 <div id="touch" class="hidden">
   <div id="joyzone"></div><div id="lookzone"></div><div id="joy"><div id="knob"></div></div>
+  <button id="bHit"><svg class="ico" viewBox="0 0 32 32"><path d="M9 29 23 7c1-2 3-3 5-2l1 1-2 2c-1-1-2 0-2 1L12 30z" fill="#e8333f" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M20 12l3 2" stroke="#1c1330" stroke-width="2.6"/><path d="M5 14l6-4 4 3-6 4z" fill="#ffd23a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></svg><span>HIT</span></button>
   <button id="bDash"><svg class="ico" viewBox="0 0 32 32"><path d="M19 2 6 18h8l-3 12 15-18h-8l3-10z" fill="#ffd23a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M17 6 10 15" stroke="#fff6b0" stroke-width="2" stroke-linecap="round"/></svg><span>DASH</span></button>
   <button id="bSneak"><svg class="ico" viewBox="0 0 32 32"><path d="M8 3h10v12l8 4c2 1 3 2 3 4v3H5V6z" fill="#c98a4a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M5 26h24v3H5z" fill="#4a3a5a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M9 7h8" stroke="#e8b27a" stroke-width="2" stroke-linecap="round"/></svg><span>SNEAK</span></button>
   <button id="bSmoke"><svg class="ico" viewBox="0 0 32 32"><circle cx="10" cy="19" r="7" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="17" cy="12" r="8" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="23" cy="19" r="7" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="16" cy="22" r="6" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="10" cy="19" r="7" fill="#eef0f8"/><circle cx="17" cy="12" r="8" fill="#eef0f8"/><circle cx="23" cy="19" r="7" fill="#eef0f8"/><circle cx="16" cy="22" r="6" fill="#eef0f8"/><circle cx="14" cy="10" r="3" fill="#fff"/></svg><span>×1</span></button>
@@ -502,7 +506,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button><button data-d="ironman">🛡 IRON</button></div>
   <div class="row menurow"><button class="btn s" id="bTrophy">📋 JOBS</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧰 LOCKER</button></div>
   <button id="bTut" class="linkbtn">🎓 Play the tutorial</button>
-  <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Z sneak · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
+  <p class="keys o"><span class="kb">WASD move · Mouse look · CLICK hit · E use / grab / crack · SPACE dash · Z sneak · Q coin · C smoke · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
 </div>
 
 <div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>

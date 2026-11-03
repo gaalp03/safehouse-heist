@@ -441,7 +441,8 @@ export class Game {
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false; this.slowT = 0; this.fovPunch = 0; this.kickP = 0; this.kickR = 0;
     this.daily = this.app.mode === 'daily' ? this.app.daily : null;
     this.tut = this.app.mode === 'tutorial';
-    this.D = this.daily || this.tut ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
+    this.D = this.tut ? { ...DIFFS.easy, label: 'Normal', mult: 1, susp: 0.5, coins: 5, smoke: 2, safeAlarm: false } : this.daily ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
+    this.tutCheck = null; this.tutAt = null; this.tutRetries = 0;
     this.lookTotal = 0;
     this.lootTotal = this.baseLootTotal;
     this.gear = this.app.gearMods ? this.app.gearMods(!this.tut && !this.daily && this.D.label !== 'Ironman') : { coins: 0, smoke: 0, sneak: 1, pickW: 1, crack: 1, disguise: 0 };
@@ -759,6 +760,7 @@ export class Game {
     this.lookTotal += Math.abs(_lk.x * sens) + Math.abs(_lk.y * sens);
     p.pitch = clamp(p.pitch - _lk.y * sens * (app.invertY ? -1 : 1), -1.25, 1.2);
     p.face = p.yaw + Math.PI;
+    const atk = inp.consumeAtk();
     if (p.hiding) { this.updateHiding(dt, inp); return; }
     if (p.venting) { this.updateVent(dt, inp); return; }
     if (this.picking) { this.updatePicking(dt, inp); return; }
@@ -923,23 +925,19 @@ export class Game {
         if (this.safeProg >= 1) this.openSafe();
       } else this.safeProg = Math.max(0, this.safeProg - dt * 0.5);
     } else this.safeProg = Math.max(0, this.safeProg - dt);
-    // behind an unaware guard: tap E = knock out, hold E = pickpocket
+    // behind an unaware guard: CLICK = knock out, hold E = pickpocket
     const canPocket = ko && (ko.wallet > 0 || ko.spareKey);
     if (ko && !nearSafe) {
       app.hint(canPocket ? 'pocket' : 'ko');
-      if (inp.act) {
-        if (this.koTarget !== ko) { this.koTarget = ko; this.koHold = 0; this.pocketProg = 0; }
-        this.koHold += dt;
-        if (canPocket && this.koHold > 0.22) {
-          this.pocketProg += dt / 0.9; p.crack = true;
-          ko.susp = Math.min(0.9, ko.susp + dt * 0.12);
-          if (this.pocketProg >= 1) { this.pickpocket(ko); this.koHold = 99; }
-        }
-      } else if (this.koHold > 0) {
-        if (this.koHold < 0.22 && this.koTarget === ko) this.knockout(ko);
-        this.koHold = 0; this.pocketProg = 0;
-      }
-    } else { this.koHold = 0; this.pocketProg = 0; this.koTarget = null; }
+      if (atk) { this.knockout(ko); this.pocketProg = 0; }
+      else if (inp.act && canPocket) {
+        if (this.koTarget !== ko) { this.koTarget = ko; this.pocketProg = 0; }
+        this.pocketProg += dt / 0.9; p.crack = true;
+        ko.susp = Math.min(0.9, ko.susp + dt * 0.12);
+        if (this.pocketProg >= 1) { this.pickpocket(ko); this.pocketProg = 0; }
+      } else this.pocketProg = 0;
+    } else { this.pocketProg = 0; this.koTarget = null; }
+    if (atk && !(ko && !nearSafe)) this.swing();
     if (nearSlot && !nearSafe && !ko) { app.setPrompt('slot', nearSlot.prog); this.updateObjective(); return; }
     if (nearCase && !nearSafe && !ko) { app.setPrompt('case', nearCase.prog); this.updateObjective(); return; }
     // answer a knocked-out guard's radio
@@ -1039,13 +1037,30 @@ export class Game {
     this.fovPunch = (this.fovPunch || 0) + fov * sc; this.kickP = (this.kickP || 0) + kickP * sc; this.kickR = (this.kickR || 0) + kickR * sc;
   }
   mark(t, x, z) { this.marks.push({ t, x, z }); }
+  // empty crowbar swing (whoosh); a guard you hit from the front just gets angry
+  swing() {
+    const p = this.player, app = this.app;
+    if (p.punchT > 0.05) return;
+    p.punchT = 0.28; app.audio.play('swing');
+    app.shake.add(0.05);
+    this.swings = (this.swings || 0) + 1;
+    for (const g of this.guards) {
+      if (g.state === 'ko' || g.state === 'sleep' || g.state === 'getup') continue;
+      const d = Math.hypot(g.x - p.x, g.z - p.z);
+      if (d < 1.35 && Math.abs(angDiff(p.face, Math.atan2(g.x - p.x, g.z - p.z))) < 0.8) {
+        app.floaters.spawn('Hit from BEHIND!', g.x, 1.9, g.z, 'warn', 1.1);
+        app.hint('ko');
+        break;
+      }
+    }
+  }
   knockout(g) {
     this.mark('ko', g.x, g.z);
     const app = this.app, p = this.player;
     if (g.reviveT) { g.reviveT.claimed = false; g.reviveT = null; }
     g.safeRun = false; g.claimed = false;
     if (g.kind === 'clerk' && g.state === 'flee') { this.clerkStopped = true; this.app.floaters.spawn('ALARM STOPPED', g.x, 2.2, g.z, 'big', 1.2); }
-    g.state = 'ko'; g.koT = 9; g.susp = 0; g.fallT = 0; g.radioCall = 0; g.answerProg = 0; g.callT = 0;
+    g.state = 'ko'; g.koT = this.tut ? 90 : 9; g.susp = 0; g.fallT = 0; g.radioCall = 0; g.answerProg = 0; g.callT = 0;
     this.koStreak = this.time - (this.lastKo ?? -99) < 8 ? (this.koStreak || 1) + 1 : 1; this.lastKo = this.time; this.maxKoStreak = Math.max(this.maxKoStreak || 0, this.koStreak);
     if (this.koStreak >= 2) {
       app.floaters.spawn(['', '', 'DOUBLE TAKEDOWN!', 'TRIPLE TAKEDOWN!'][this.koStreak] || 'UNSTOPPABLE!', g.x, 2.3, g.z, 'big', 1.3);
@@ -1057,6 +1072,7 @@ export class Game {
     app.shake.add(0.35);
     p.punchT = 0.28;
     squash(p.c, 1.25);
+    app.audio.play('swing');
     app.audio.play('ko');
     app.particles.burst(g.x, 1.0, g.z, { count: 14, colors: [0xffd23f, 0xffffff, 0xff9f1c], speed: 3.5, up: 4, size: 0.13, life: 0.7 }); app.particles.flash(g.x, 1.3, g.z, 0xffe680, 1.6); app.particles.ring(g.x, 0.05, g.z, 0xffd23f, 2.2);
     app.floaters.spawn('KO!', g.x, 1.7, g.z, 'ko', 0.9);
@@ -1781,7 +1797,7 @@ export class Game {
         g.koT -= dt; g.fallT += dt;
         // radio check-in: answer it (hold E next to him) or someone comes looking
         if (g.kind === 'guard' && perceive) {
-          if (!g.radioCall && g.koT < 5.5) { g.radioCall = 1; g.callT = 0; app.hint('radio'); }
+          if (!g.radioCall && g.koT < (this.tut ? 87 : 5.5)) { g.radioCall = 1; g.callT = 0; app.hint('radio'); }
           if (g.radioCall === 1) {
             g.callT -= dt;
             if (g.callT <= 0) { g.callT = 1.1; app.audio.play('radio'); app.floaters.spawn('📻 "Unit, report in!"', g.x, 1.2, g.z, 'say warn', 1.0); }
@@ -2340,6 +2356,7 @@ export class Game {
   // ---------- alarm / police ----------
   triggerAlarm(why) {
     if (this.alarm || this.state !== 'play') return;
+    if (this.tut) { for (const o of this.guards) if (o.state === 'alert') { o.state = 'search'; o.tx = this.player.x; o.tz = this.player.z; } return; }
     this.mark('alarm', this.player.x, this.player.z);
     const app = this.app, ex = this.L.exit;
     this.alarm = true; this.alarmT = this.alarmTotal; this.alarms++; this.spotted = true;
@@ -2409,7 +2426,23 @@ export class Game {
     app.setPrompt('');
   }
 
+  // tutorial never ends in BUSTED: rewind to the last checkpoint and calm everyone down
+  tutRetry(g) {
+    const p = this.player, app = this.app, c = this.tutCheck || { x: this.L.start.x + 0.5, z: this.L.start.y + 0.5 };
+    if (this.picking) this.stopPick();
+    if (p.hiding) this.leaveHide(false);
+    this.tutRetries++;
+    app.floaters.spawn('Spotted!', g.x, 1.9, g.z, 'say alert', 1.1);
+    app.audio.play('nope'); app.flash('red'); app.shake.add(0.3);
+    p.x = c.x; p.z = c.z; p.vx = p.vz = 0; p.inv = 3; p.dashT = 0;
+    for (const o of this.guards) {
+      if (o.state === 'ko' || o.state === 'sleep' || o.state === 'getup') continue;
+      this.baseState(o); o.susp = 0; o.hurry = 1;
+    }
+    app.announce('Spotted! Back to the checkpoint. Try again: stay out of the yellow cones');
+  }
   bust(g) {
+    if (this.tut && this.state === 'play') { this.tutRetry(g); return; }
     this.mark('caught', this.player.x, this.player.z);
     // remember why, so the busted screen can give a tip that actually helps
     const t = this.time;
@@ -2654,6 +2687,7 @@ export class Game {
   }
   objectiveTarget() {
     const L = this.L;
+    if (this.tut && this.tutAt) return this.tutAt;
     if (this.hasStash) return { x: L.exit.x, z: L.exit.z, label: L.van ? 'VAN' : 'ROOF HATCH' };
     // tutorial: point at the nearest cash until the first grab
     if (this.tut && this.lootGot === 0) {

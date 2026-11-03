@@ -27,15 +27,15 @@ const HINTS = {
   vent: ['Air vent! E to crawl through to another room, unseen', 'Air vent! Tap the hand to crawl through, unseen'],
   dash: ['SPACE / SHIFT to dash. Careful, it\'s noisy!', 'Tap DASH to dash. Careful, it\'s noisy!'],
   cone: ['Stay out of the vision cones!', 'Stay out of the vision cones!'],
-  ko: ['Behind a guard? E / Click = knock out!', 'Behind a guard? Tap the hand = knock out!'],
-  safe: ['Hold E / Mouse to crack the safe', 'Hold the hand button to crack the safe'],
+  ko: ['Behind a guard? CLICK to hit = knock out!', 'Behind a guard? Tap HIT = knock out!'],
+  safe: ['Hold E to crack the safe', 'Hold the hand button to crack the safe'],
   owner: ['Shh... the owner is asleep. No dashing near the bed!', 'Shh... the owner is asleep. No dashing near the bed!'],
   loot: ['Extra loot = more stars. Grab it all!', 'Extra loot = more stars. Grab it all!'],
   stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
   dog: ['A guard dog! It follows your scent and barks. Coins distract it.', 'A guard dog! It follows your scent and barks. Coins distract it.'],
   clerk: ['The clerk is running for the alarm button! Knock them out first!', 'The clerk is running for the alarm button! Knock them out first!'],
   camhit: ['Security camera! Hit it with a thrown coin (Q) to knock it out for 12s', 'Security camera! Hit it with a thrown coin to knock it out for 12s'],
-  pocket: ['Behind a guard: tap E to knock out, HOLD E to pickpocket his wallet (or spare keycard)', 'Behind a guard: tap ✋ to knock out, HOLD ✋ to pickpocket his wallet'],
+  pocket: ['Behind a guard: CLICK to knock out, HOLD E to pickpocket his wallet (or spare keycard)', 'Behind a guard: tap HIT to knock out, HOLD ✋ to pickpocket his wallet'],
   slot: ['Slot machine! Hold E to hit a noisy jackpot that lures guards away', 'Slot machine! Hold ✋ to hit a noisy jackpot that lures guards away'],
   spot: ['Spotlight! Stay out of the moving light pools, or cut the power at the breaker', 'Spotlight! Stay out of the moving light pools, or cut the power at the breaker'],
   radio: ['A knocked-out guard\'s radio is calling! Hold E next to him to answer, or backup comes', 'A knocked-out guard\'s radio is calling! Hold ✋ next to him to answer, or backup comes'],
@@ -56,7 +56,7 @@ const HINTS = {
 class App {
   constructor() {
     this.els = {
-      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'), bThrow: $('bThrow'), bSmoke: $('bSmoke'), bSneak: $('bSneak'),
+      canvas: $('c'), fxl: $('fxl'), joyzone: $('joyzone'), lookzone: $('lookzone'), joy: $('joy'), knob: $('knob'), bAct: $('bAct'), bDash: $('bDash'), bThrow: $('bThrow'), bSmoke: $('bSmoke'), bSneak: $('bSneak'), bHit: $('bHit'),
     };
     this.state = 'boot';
     this.hShown = new Set(); this.hDone = new Set(); this.hQ = []; this.hT = 0; this.hCur = null;
@@ -702,8 +702,8 @@ class App {
     $('pObj').textContent = '🎯 ' + (this.game.objText || '');
     $('bPSkip').classList.toggle('hidden', !(this.game.tut && this.tutStep < TUT_STEPS.length));
     const t = this.input.touch, K = t
-      ? [['◀▶', 'Left side: move'], ['👆', 'Right side: look'], ['✋', 'Grab · KO from behind · crack (hold)'], ['⚡', 'Dash (loud!)'], ['🦶', 'Sneak (quiet, slower)'], ['🪙', 'Throw a coin (lure)'], ['💨', 'Smoke bomb']]
-      : [['WASD', 'Move'], ['Mouse', 'Look'], ['E', 'Grab · KO from behind · crack (hold)'], ['Space', 'Dash (loud!)'], ['Z', 'Sneak (quiet, slower)'], ['Q', 'Throw a coin (lure)'], ['C', 'Smoke bomb'], ['R', 'Restart run']];
+      ? [['◀▶', 'Left side: move'], ['👆', 'Right side: look'], ['🔨', 'HIT: knock out a guard from behind'], ['✋', 'Use · grab · crack (hold)'], ['⚡', 'Dash (loud!)'], ['🦶', 'Sneak (quiet, slower)'], ['🪙', 'Throw a coin (lure)'], ['💨', 'Smoke bomb']]
+      : [['WASD', 'Move'], ['Mouse', 'Look'], ['Click', 'HIT: knock out a guard from behind'], ['E', 'Use · grab · crack (hold)'], ['Space', 'Dash (loud!)'], ['Z', 'Sneak (quiet, slower)'], ['Q', 'Throw a coin (lure)'], ['C', 'Smoke bomb'], ['R', 'Restart run']];
     $('pKeys').innerHTML = K.map(([k, d]) => `<li><kbd>${k}</kbd>${d}</li>`).join('');
     this.screen('pause');
   }
@@ -791,14 +791,15 @@ class App {
   setPrompt(kind, prog = 0) {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
     const sn = (this.level && this.level.safeName ? this.level.safeName : 'safe').toUpperCase();
-    const txt = kind === 'slot' ? (t ? 'HOLD ✋ TO PULL THE LEVER' : 'HOLD E: PULL THE LEVER') : kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'uniform' ? (t ? 'HOLD ✋ TO TAKE THE UNIFORM' : 'HOLD E: TAKE HIS UNIFORM') : kind === 'tv' ? (t ? 'TAP ✋ TO TURN THE TV ON' : 'E: TURN THE TV ON (LURE)') : kind === 'vent' ? (t ? 'TAP ✋ TO CRAWL IN' : 'E: CRAWL INTO THE VENT') : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E / CLICK TO CRACK ' + sn) : kind === 'pocket' ? (t ? 'TAP ✋ KO · HOLD ✋ PICKPOCKET' : 'TAP E: KO · HOLD E: PICKPOCKET') : kind === 'ko' ? (t ? 'TAP ✋ TO KNOCK OUT' : 'E / CLICK: KNOCK OUT') : '';
+    const txt = kind === 'slot' ? (t ? 'HOLD ✋ TO PULL THE LEVER' : 'HOLD E: PULL THE LEVER') : kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'uniform' ? (t ? 'HOLD ✋ TO TAKE THE UNIFORM' : 'HOLD E: TAKE HIS UNIFORM') : kind === 'tv' ? (t ? 'TAP ✋ TO TURN THE TV ON' : 'E: TURN THE TV ON (LURE)') : kind === 'vent' ? (t ? 'TAP ✋ TO CRAWL IN' : 'E: CRAWL INTO THE VENT') : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E TO CRACK ' + sn) : kind === 'pocket' ? (t ? 'HIT: KO · HOLD ✋: PICKPOCKET' : 'CLICK: KO · HOLD E: PICKPOCKET') : kind === 'ko' ? (t ? 'TAP HIT TO KNOCK OUT' : 'CLICK TO KNOCK OUT') : '';
     if (p.dataset.k !== kind) {
       p.dataset.k = kind;
       p.innerHTML = txt.replace(/(^|[\s(])(E|✋|CLICK)(?=[\s:/]|$)/g, '$1<kbd>$2</kbd>');
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
-      this.els.bAct.classList.toggle('ready', !!kind);
-      this.els.bAct.lastChild.textContent = kind === 'pocket' ? 'KO / LIFT' : kind === 'slot' ? 'PULL' : kind === 'radio' ? 'ANSWER' : kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'uniform' ? 'DISGUISE' : kind === 'tv' ? 'TV ON' : kind === 'vent' ? 'CRAWL' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
+      this.els.bAct.classList.toggle('ready', !!kind && kind !== 'ko');
+      if (this.els.bHit) this.els.bHit.classList.toggle('ready', kind === 'ko' || kind === 'pocket');
+      this.els.bAct.lastChild.textContent = kind === 'pocket' ? 'LIFT' : kind === 'slot' ? 'PULL' : kind === 'radio' ? 'ANSWER' : kind === 'case' ? 'SMASH' : kind === 'pick' || kind === 'picking' ? 'PICK' : kind === 'breaker' ? 'CUT' : kind === 'door' ? 'OPEN' : kind === 'uniform' ? 'DISGUISE' : kind === 'tv' ? 'TV ON' : kind === 'vent' ? 'CRAWL' : kind === 'hide' ? 'HIDE' : kind === 'leave' ? 'LEAVE' : kind === 'panel' ? 'DISARM' : kind === 'safe' ? 'CRACK' : kind === 'ko' ? 'KO!' : 'GRAB';
     }
     if ((kind === 'safe' || kind === 'uniform' || kind === 'panel' || kind === 'breaker' || kind === 'case' || kind === 'radio' || kind === 'slot' || kind === 'pocket') && prog > 0) {
       ring.lastChild.style.strokeDashoffset = String(126 * (1 - Math.min(1, prog)));
@@ -977,7 +978,7 @@ class App {
     return { gain, up: r1.i > r0.i, rank: r1 };
   }
   bustTip() {
-    const g = this.game, t = this.input.touch, Z = t ? 'the 🦶 button' : 'Z', E = t ? '✋' : 'E';
+    const g = this.game, t = this.input.touch, Z = t ? 'the 🦶 button' : 'Z', E = t ? 'HIT' : 'a CLICK';
     if (g.policeBusted) return 'The police arrived! Knock out alerted guards before they radio in, or disarm the alarm keypad.';
     const C = {
       hide: 'Tip: a guard saw you climb in. Only hide when nobody is looking.',
@@ -1181,16 +1182,18 @@ class App {
   }
   updateTutorial() {
     const el = $('tut'), g = this.game;
-    if (!g.tut || this.tutStep >= TUT_STEPS.length) { el.classList.add('hidden'); document.body.classList.remove('tutcard'); return; }
+    if (!g.tut || this.tutStep >= TUT_STEPS.length) { g.tutAt = null; el.classList.add('hidden'); document.body.classList.remove('tutcard'); return; }
     if (this.tutStep == null) this.tutStep = 0;
     const step = TUT_STEPS[this.tutStep];
     if (step.done(g)) {
       this.tutStep++;
+      if (!g.player.hiding && !g.player.venting) g.tutCheck = { x: g.player.x, z: g.player.z };
       this.audio.play('star', Math.min(2, this.tutStep % 3));
       el.classList.remove('done'); void el.offsetWidth; el.classList.add('done');
       if (this.tutStep >= TUT_STEPS.length) { setTimeout(() => el.classList.add('hidden'), 900); return; }
     }
     const s = TUT_STEPS[this.tutStep], key = this.tutStep + (this.input.touch ? 't' : 'k');
+    g.tutAt = s.at || null;
     if (el.dataset.k !== key) {
       el.dataset.k = key;
       el.querySelector('small').textContent = `TUTORIAL ${this.tutStep + 1}/${TUT_STEPS.length}`;
@@ -1230,7 +1233,7 @@ class App {
       let wpy = Math.max(40, Math.min(this.h - 40, ((1 - y) / 2) * this.h));
       // phones: never let the marker hide under the touch buttons (push it above them)
       if (this.input.touch) {
-        if (!this.btnRects || this.time - (this.btnRectT || 0) > 1) { this.btnRectT = this.time; this.btnRects = ['bAct', 'bDash', 'bThrow', 'bSmoke', 'bSneak'].map((id) => $(id).getBoundingClientRect()).filter((r) => r.width); }
+        if (!this.btnRects || this.time - (this.btnRectT || 0) > 1) { this.btnRectT = this.time; this.btnRects = ['bAct', 'bHit', 'bDash', 'bThrow', 'bSmoke', 'bSneak'].map((id) => $(id).getBoundingClientRect()).filter((r) => r.width); }
         for (const r of this.btnRects) if (wpx > r.left - 70 && wpx < r.right + 70 && wpy > r.top - 24 && wpy < r.bottom + 24) wpy = Math.max(40, r.top - 30);
       }
       wp.style.transform = `translate(${wpx}px,${wpy}px) translate(-50%,-50%)`;
