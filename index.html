@@ -305,6 +305,72 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 #bTut{font-family:var(--disp);font-size:16px;color:var(--ink);background:#7ff0b9;border:3px solid var(--ink);border-radius:12px;box-shadow:0 4px 0 var(--ink);padding:7px 18px 6px;min-height:42px;text-decoration:none;opacity:1;text-shadow:none;cursor:pointer;rotate:-1deg;transition:transform .08s}
 #bTut:hover{transform:translateY(-2px) scale(1.04)}#bTut:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 @media (max-width:640px){#bTut{font-size:14px;padding:6px 14px;min-height:38px}}
+
+/* ===================== BUTTON SYSTEM: chunky 3D cartoon buttons ===================== */
+:root{--txo:0 3px 0 var(--ink),2px 2px 0 var(--ink),-2px 2px 0 var(--ink),2px -2px 0 var(--ink),-2px -2px 0 var(--ink),0 -2px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink),0 5px 0 rgba(28,19,48,.45)}
+.btn,#bTut,#tutSkip,#bEasy{position:relative;isolation:isolate;font-family:var(--disp);font-weight:400;letter-spacing:.6px;color:#fff;text-shadow:var(--txo);text-decoration:none;opacity:1;
+  border:4px solid var(--ink);border-radius:18px;padding:13px 32px 12px;min-height:52px;cursor:pointer;rotate:0deg;
+  background:linear-gradient(180deg,#fff27a 0%,#ffd23a 38%,#ffa915 72%,#f08400 100%);
+  box-shadow:inset 0 4px 0 rgba(255,255,255,.65),inset 0 -7px 0 rgba(150,60,0,.28),0 7px 0 var(--ink),0 12px 18px rgba(0,0,0,.35);
+  transition:transform .12s cubic-bezier(.2,1.8,.4,1),box-shadow .12s,filter .12s;-webkit-tap-highlight-color:transparent;user-select:none}
+.btn::before,#bTut::before,#tutSkip::before,#bEasy::before{content:"";position:absolute;z-index:-1;left:9%;right:9%;top:5px;height:34%;border-radius:12px 12px 40px 40px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.08));pointer-events:none}
+.btn::after,#bTut::after,#tutSkip::after,#bEasy::after{content:"";position:absolute;z-index:-1;right:10px;top:7px;width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.85);pointer-events:none}
+.btn:hover,#bTut:hover,#tutSkip:hover,#bEasy:hover{transform:translateY(-3px) scale(1.05);filter:brightness(1.07) saturate(1.08);box-shadow:inset 0 4px 0 rgba(255,255,255,.7),inset 0 -7px 0 rgba(150,60,0,.28),0 10px 0 var(--ink),0 16px 22px rgba(0,0,0,.35)}
+.btn:active,#bTut:active,#tutSkip:active,#bEasy:active{transform:translateY(6px) scale(1.03,.92);filter:brightness(.97);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),inset 0 -3px 0 rgba(150,60,0,.25),0 1px 0 var(--ink),0 3px 6px rgba(0,0,0,.3);transition-duration:.05s}
+/* variants */
+.btn.s,#tutSkip{background:linear-gradient(180deg,#a6e3ff 0%,#5cb8ff 40%,#2f86f0 75%,#1e64c8 100%);box-shadow:inset 0 4px 0 rgba(255,255,255,.6),inset 0 -7px 0 rgba(10,30,90,.3),0 7px 0 var(--ink),0 12px 18px rgba(0,0,0,.35);font-size:18px;padding:10px 22px 9px;min-height:46px}
+.btn.g,#bTut,#bEasy{background:linear-gradient(180deg,#c6ffd9 0%,#6ef0a8 40%,#26c873 75%,#139a52 100%);box-shadow:inset 0 4px 0 rgba(255,255,255,.6),inset 0 -7px 0 rgba(0,60,30,.28),0 7px 0 var(--ink),0 12px 18px rgba(0,0,0,.35)}
+.btn.p{background:linear-gradient(180deg,#ffd0ea 0%,#ff8fcb 40%,#f0569f 75%,#c8307a 100%);box-shadow:inset 0 4px 0 rgba(255,255,255,.6),inset 0 -7px 0 rgba(90,0,40,.28),0 7px 0 var(--ink),0 12px 18px rgba(0,0,0,.35)}
+.btn.s:hover,#tutSkip:hover{box-shadow:inset 0 4px 0 rgba(255,255,255,.65),inset 0 -7px 0 rgba(10,30,90,.3),0 10px 0 var(--ink),0 16px 22px rgba(0,0,0,.35)}
+.btn.g:hover,#bTut:hover,#bEasy:hover{box-shadow:inset 0 4px 0 rgba(255,255,255,.65),inset 0 -7px 0 rgba(0,60,30,.28),0 10px 0 var(--ink),0 16px 22px rgba(0,0,0,.35)}
+.btn.p:hover{box-shadow:inset 0 4px 0 rgba(255,255,255,.65),inset 0 -7px 0 rgba(90,0,40,.28),0 10px 0 var(--ink),0 16px 22px rgba(0,0,0,.35)}
+.btn.s:active,.btn.g:active,.btn.p:active,#tutSkip:active,#bTut:active,#bEasy:active{box-shadow:inset 0 3px 0 rgba(255,255,255,.5),inset 0 -3px 0 rgba(0,0,0,.2),0 1px 0 var(--ink),0 3px 6px rgba(0,0,0,.3)}
+.btn.dis{filter:grayscale(.7) brightness(.85);cursor:not-allowed}
+.btn.dis:hover{transform:none}
+#bPlay{font-size:30px;padding:14px 44px 13px;min-height:62px;border-radius:20px}
+#bTut,#tutSkip,#bEasy{font-size:16px;padding:8px 20px 7px;min-height:44px;border-radius:14px}
+#tutSkip kbd{font:inherit;color:var(--ink);text-shadow:none;background:#fff6d6;border:2px solid var(--ink);border-radius:7px;padding:0 6px;margin-left:6px;box-shadow:0 2px 0 var(--ink)}
+.btn small,#bTrophy small,#bOutfit small{font-size:13px;color:var(--y);text-shadow:none;background:var(--ink);border-radius:7px;padding:1px 6px;margin-left:4px;vertical-align:2px}
+#bRevive small{background:none;color:#fff;text-shadow:var(--txo);display:block;font-size:12px;margin:0}
+/* HUD + settings icon buttons */
+.ib{position:relative;border:3px solid var(--ink);border-radius:14px;background:linear-gradient(180deg,#8a72d0 0%,#5d44a8 45%,#3d2a7a 100%);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.4),inset 0 -5px 0 rgba(0,0,0,.25),0 5px 0 var(--ink),0 8px 12px rgba(0,0,0,.3);transition:transform .12s cubic-bezier(.2,1.8,.4,1),box-shadow .12s;cursor:pointer;color:#fff;text-shadow:var(--txo)}
+.ib svg{filter:drop-shadow(0 2px 0 var(--ink))}
+.ib:hover{transform:translateY(-2px) scale(1.08)}
+.ib:active{transform:translateY(4px) scale(1.04,.92);box-shadow:inset 0 2px 0 rgba(255,255,255,.3),0 1px 0 var(--ink)}
+/* difficulty selector: bevelled segmented control */
+#diff{border:4px solid var(--ink);border-radius:16px;box-shadow:0 5px 0 var(--ink),0 9px 14px rgba(0,0,0,.3);overflow:hidden}
+#diff button{font-family:var(--disp);letter-spacing:.5px;padding:9px 16px 8px;background:linear-gradient(180deg,#fffaf0,#e3d3b8);color:#6a5a7a;box-shadow:inset 0 3px 0 rgba(255,255,255,.7),inset 0 -4px 0 rgba(0,0,0,.08);transition:transform .1s,filter .1s}
+#diff button:hover{filter:brightness(1.06)}
+#diff button:active{transform:translateY(2px)}
+#diff button.on{color:#fff;text-shadow:var(--txo);box-shadow:inset 0 3px 0 rgba(255,255,255,.55),inset 0 -5px 0 rgba(0,0,0,.2)}
+#diff button.on[data-d=easy]{background:linear-gradient(180deg,#c6ffd9,#26c873)}
+#diff button.on[data-d=normal]{background:linear-gradient(180deg,#fff27a,#f08400)}
+#diff button.on[data-d=hard]{background:linear-gradient(180deg,#ffb0b8,#e8303e)}
+#diff button.on[data-d=ironman]{background:linear-gradient(180deg,#8a94a4,#2a2f3a);color:#ffd23a}
+/* touch controls: glossy bevelled discs */
+#touch button{box-shadow:inset 0 5px 0 rgba(255,255,255,.65),inset 0 -8px 0 rgba(0,0,0,.18),0 6px 0 var(--ink),0 10px 14px rgba(0,0,0,.35);transition:transform .08s}
+#touch button::before{content:"";position:absolute;left:18%;right:18%;top:8%;height:28%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,0));pointer-events:none}
+#touch button span{font-family:var(--disp);letter-spacing:.4px}
+#touch button.down{transform:translateY(5px) scale(1.04,.9);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),inset 0 -3px 0 rgba(0,0,0,.15),0 1px 0 var(--ink)}
+#bAct{background:radial-gradient(circle at 50% 35%,#fff 0%,#fff6d6 60%,#ffd88a 100%)}
+#bDash{background:radial-gradient(circle at 50% 35%,#d8f2ff 0%,#7fd0ff 55%,#3a9ae8 100%)}
+#bThrow{background:radial-gradient(circle at 50% 35%,#fff6c0 0%,#ffd84a 55%,#f0a000 100%)}
+#bSmoke{background:radial-gradient(circle at 50% 35%,#fff 0%,#e2dcef 55%,#b8aed0 100%)}
+#bSneak{background:radial-gradient(circle at 50% 35%,#fff 0%,#c9d6e8 55%,#90a6c8 100%)}
+#bSneak.on{background:radial-gradient(circle at 50% 35%,#e8fff2 0%,#8ff0c4 55%,#3fcf8e 100%)}
+@media (max-width:640px){.btn{font-size:18px;padding:10px 22px 9px;min-height:46px}.btn.s{font-size:15px;padding:9px 14px 8px;min-height:44px}#bPlay{font-size:24px;padding:11px 28px 10px;min-height:54px}#tutSkip,#bTut,#bEasy{font-size:14px}}
+@media (max-height:520px){.btn{min-height:42px;padding:8px 20px 7px}.btn.s{min-height:40px;padding:7px 12px 6px;font-size:14px}#bPlay{min-height:50px}}
+@keyframes playp{0%,100%{transform:scale(1);filter:none}50%{transform:scale(1.07);filter:brightness(1.1) drop-shadow(0 0 12px rgba(255,201,74,.95))}}
+.setbtn{position:fixed!important}
+:root{--txs:0 2px 0 var(--ink),1px 1px 0 var(--ink),-1px 1px 0 var(--ink),1px -1px 0 var(--ink),-1px -1px 0 var(--ink)}
+#diff button.on,.btn small,#touch button span{text-shadow:var(--txs)}
+#diff button.on[data-d=ironman]{text-shadow:var(--txs)}
+@media (max-height:820px){#menu .menurow .btn{min-height:46px}#menu .menurow #bPlay{font-size:24px;padding:10px 34px 9px;min-height:52px}#menu .menurow .btn.s{font-size:16px;padding:8px 16px 7px}#bTut{min-height:38px;padding:6px 16px 5px;font-size:14px}#diff button{padding:7px 14px 6px}}
+#diff button.on[data-d=easy],#diff button.on[data-d=normal],#diff button.on[data-d=hard]{color:#fff}
+#menu .menurow .btn{white-space:nowrap}
+@media (max-width:640px){#menu .menurow{gap:6px}#menu .menurow .btn.s{font-size:13px;padding:7px 9px 6px;min-height:42px}#menu .menurow .btn.s small{font-size:11px;padding:0 4px}#menu .menurow #bPlay{font-size:22px;padding:9px 20px 8px}}
+@media (max-height:820px) and (min-height:521px) and (min-width:641px){#city{width:min(700px,94vw,calc((100vh - 360px) * 2))!important}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -392,7 +458,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
   <div id="selInfo"><b id="selName">Safe House</b><span id="selStars" class="stars"></span><small id="selSub"></small><small id="selGoal"></small></div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button><button data-d="ironman">🛡 IRON</button></div>
   <div class="row menurow"><button class="btn s" id="bTrophy">📋 JOBS</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧰 LOCKER</button></div>
-  <button id="bTut" class="linkbtn o">🎓 Play the tutorial</button>
+  <button id="bTut" class="linkbtn">🎓 Play the tutorial</button>
   <p class="keys o"><span class="kb">WASD move · Mouse look · SPACE dash · Z sneak · Q coin · C smoke · E / Click knock out &amp; crack · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
 </div>
 
