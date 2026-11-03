@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="4a4d6f08">
+<meta name="build" content="c92ef35b">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=4a4d6f08">
+<link rel="modulepreload" href="./js/main.js?v=c92ef35b">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -447,6 +447,9 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 #hint.tipnow{background:#fff6b0;border-color:#f5b400;box-shadow:0 0 22px 6px rgba(255,214,58,.7)}
 #pTip{background:var(--paper);color:var(--ink);font-family:var(--disp);font-size:14px;line-height:1.25;border:3px solid var(--ink);border-radius:10px;padding:6px 12px;box-shadow:3px 4px 0 var(--ink);max-width:min(480px,86vw);rotate:-1deg}
 #pTip:empty{display:none}
+@property --mma{syntax:'<angle>';inherits:false;initial-value:0deg}
+.mmring{position:fixed;z-index:6;pointer-events:none;border-radius:16px;padding:6px;background:conic-gradient(from var(--mma),transparent 0deg 250deg,rgba(255,200,40,.5) 290deg,#ffd23a 330deg,#fff6c0 350deg,transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);-webkit-mask-composite:xor;filter:drop-shadow(0 0 8px rgba(255,210,58,.9));animation:mmrun 1s linear infinite}
+@keyframes mmrun{to{--mma:360deg}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -598,7 +601,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=4a4d6f08"></script>
+<script type="module" src="./js/main.js?v=c92ef35b"></script>
 <div id="intro" class="hidden"><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

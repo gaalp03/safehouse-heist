@@ -11,8 +11,10 @@ export const INTRO = [
     keys: [[['CLICK', 'hit']], [['HIT', 'hit']]], act: 'ko' },
   { pos: [22.6, 2.4, 6], look: [20.5, 0.5, 3.6], title: 'RADIO & DISGUISE', text: 'Knocked-out guards get radio calls: answer them! Then wear the uniform and nobody spots you from afar.',
     keys: [[['HOLD E', 'answer · wear']], [['HOLD HAND', 'answer · wear']]], act: 'stand' },
-  { pos: [14.6, 4.0, 8.4], look: [11.6, 0.3, 4.6], act: 'coin', title: 'LURE THEM AWAY', text: 'Throw a coin to make a guard look somewhere else. Smoke bombs block their view.',
-    keys: [[['Q', 'coin'], ['C', 'smoke']], [['COIN', 'coin'], ['CLOUD', 'smoke']]] },
+  { pos: [14.6, 4.0, 8.4], look: [11.6, 0.3, 4.6], act: 'coin', title: 'LURE THEM AWAY', text: 'Throw a coin: the guard hears the clink and walks over to check. Sneak past while he looks away!',
+    keys: [[['Q', 'throw coin']], [['COIN', 'throw coin']]] },
+  { pos: [15.6, 3.4, 7.6], look: [12.6, 0.4, 4.4], act: 'smoke', title: 'SMOKE BOMBS', text: "Spotted? Drop a smoke bomb: guards can't see into or through the cloud. Slip away inside it!",
+    keys: [[['C', 'smoke bomb']], [['CLOUD', 'smoke bomb']]] },
   { pos: [7.4, 3.6, 7.9], look: [4.6, 0.2, 5.0], act: 'safe', title: 'CRACK IT & ESCAPE', text: 'Pick the lock, crack the safe, then crawl through the vent back to the van. Dashing is fast but LOUD!',
     keys: [[['E', 'lock · safe · vent'], ['SPACE', 'dash']], [['HAND', 'lock · safe · vent'], ['DASH', 'dash']]] },
 ];

@@ -641,7 +641,7 @@ class App {
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 3200);
     } else if (fresh && this.mode === 'classic' && this.save.tutDone) {
       if ((this.save.mmSeen || {})[this.level.id]) this.showIntel();
-      else { $('ctoast').classList.add('hidden'); clearTimeout(this.intelT); this.intelT = setTimeout(() => { if (this.state === 'play') this.showIntel(); }, 3300); }
+      else { $('ctoast').classList.add('hidden'); clearTimeout(this.intelT); this.intelT = setTimeout(() => { if (this.state === 'play') this.showIntel(); }, 5200); }
     }
     else $('ctoast').classList.add('hidden');
     if (!(fresh && this.mode === 'classic' && this.save.tutDone) && this.mode !== 'daily') {
@@ -666,17 +666,26 @@ class App {
       const el = $('mm'); if (!el || this.state !== 'play' || !el.animate) return;
       const r = el.getBoundingClientRect(); if (!r.width) return;
       const s = Math.min(3, (Math.min(this.w, this.h) * 0.62) / r.width), dx = this.w / 2 - (r.left + r.width / 2), dy = this.h * 0.45 - (r.top + r.height / 2);
-      const C = `translate(${dx}px,${dy}px) scale(${s})`, glow = 'drop-shadow(0 0 0 rgba(255,210,58,0))', on = 'drop-shadow(0 0 14px rgba(255,210,58,.95))';
+      const C = `translate(${dx}px,${dy}px) scale(${s})`, C0 = `translate(${dx}px,${dy}px) scale(${s * 0.7})`;
+      // one calm reveal: pop in at the centre, a gold streak runs round the frame for 3s, then it glides into the corner
       el.animate([
-        { transform: C, opacity: 0, filter: glow, offset: 0 },
-        { transform: C, opacity: 1, filter: on, offset: 0.1 },
-        { transform: C, opacity: 0.1, filter: glow, offset: 0.24 },
-        { transform: C, opacity: 1, filter: on, offset: 0.38 },
-        { transform: C, opacity: 0.1, filter: glow, offset: 0.52 },
-        { transform: C, opacity: 1, filter: on, offset: 0.64, easing: 'cubic-bezier(.5,0,.2,1.15)' },
-        { transform: 'none', opacity: 0.92, filter: glow, offset: 1 },
-      ], { duration: 2600 });
-      this.audio.play('click'); setTimeout(() => this.audio.play('star', 0), 1650);
+        { transform: C0, opacity: 0, offset: 0 },
+        { transform: C, opacity: 1, offset: 0.1, easing: 'linear' },
+        { transform: C, opacity: 1, offset: 0.78, easing: 'cubic-bezier(.45,0,.2,1)' },
+        { transform: 'none', opacity: 0.92, offset: 1 },
+      ], { duration: 4300 });
+      const ring = document.createElement('div'); ring.className = 'mmring';
+      document.body.appendChild(ring);
+      const t0 = performance.now(), follow = () => {
+        if (!ring.isConnected) return;
+        const q = el.getBoundingClientRect();
+        Object.assign(ring.style, { left: (q.left - 7) + 'px', top: (q.top - 7) + 'px', width: (q.width + 14) + 'px', height: (q.height + 14) + 'px' });
+        if (performance.now() - t0 < 3500) requestAnimationFrame(follow);
+      };
+      follow();
+      ring.animate([{ opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 1, offset: 0.92 }, { opacity: 0 }], { duration: 3400 });
+      setTimeout(() => ring.remove(), 3400);
+      this.audio.play('click'); setTimeout(() => this.audio.play('star', 0), 3350);
     }, 700);
   }
   // ---- intro cutscene (tutorial only) ----
@@ -684,7 +693,7 @@ class App {
     this.introSeen = true;
     this.state = 'intro'; this.introI = -1;
     this.floaters.minScale = 1.05;
-    this.introKO = false; this.introCoin = this.introLured = this.introSafe = this.introDirty = false;
+    this.introKO = false; this.introCoin = this.introLured = this.introSafe = this.introDirty = this.introSmoke = this.introCough = false;
     for (const g of this.game.guards) { g.cone.material.opacity = 3.2; g.cone.material.color.setHex(0xffc400); }
     this.input.active = false; this.input.exitLock();
     for (const id of ['hud', 'fp', 'touch', 'tut', 'hint', 'ctoast', 'gostamp']) $(id).classList.add('hidden');
@@ -752,6 +761,16 @@ class App {
         this.particles.ring(lx, 0.05, lz, 0xffd23f, 2.2); this.floaters.spawn('CLINK!', lx, 0.6, lz, 'big', 1.2);
         if (cg.state !== 'investigate') { cg.state = 'investigate'; cg.tx = lx; cg.tz = lz; cg.hurry = cg.speed * 1.4; }
       }
+    } else if (s.act === 'smoke') {
+      const ax = 13.6, az = 4.6, f = -Math.PI / 2;
+      g.actor(dt, ax, az, f, 0, false, t > 0.6 && t < 0.95 ? (t - 0.6) / 0.35 : null);
+      if (!this.introSmoke && t > 0.9) {
+        this.introSmoke = true; this.introDirty = true;
+        const pl = g.player; pl.x = ax; pl.z = az; pl.face = f; pl.yaw = f - Math.PI; pl.vx = pl.vz = 0;
+        g.smokesLeft = Math.max(1, g.smokesLeft); g.dropSmoke();
+        this.floaters.spawn('POOF!', ax - 0.7, 0.9, az, 'big', 1.2);
+      }
+      if (this.introSmoke && t > 2.6 && !this.introCough) { this.introCough = true; const cg = g.guards[3]; if (cg) this.floaters.spawn('*cough* Where did he go?!', cg.x, 1.0, cg.z, 'say q', 1.8); }
     } else if (s.act === 'safe' && g.L.safe) {
       const sx = g.L.safe.x + 0.5, sz = g.L.safe.y + 1.35;
       if (t < 2.4) { g.actor(dt, sx, sz, Math.PI, 0, true, 0.75 + Math.sin(t * 30) * 0.12); if (g.safe.dial) g.safe.dial.rotation.z = t * 6; }

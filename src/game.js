@@ -1299,7 +1299,7 @@ export class Game {
     const p = this.player, app = this.app;
     if (this.smokesLeft <= 0) { app.audio.play('nope'); return; }
     if (this.clouds.length >= this.smokeFx.length) return;
-    this.smokesLeft--; this.smokesUsed++;
+    this.smokesLeft--; this.smokesUsed++; this.smokeAt = this.time;
     let x = p.x + Math.sin(p.face) * 0.7, z = p.z + Math.cos(p.face) * 0.7;
     if (!this.walkable(Math.floor(x), Math.floor(z))) { x = p.x; z = p.z; }
     const fx = this.smokeFx.find((f) => !f.pts.visible);
