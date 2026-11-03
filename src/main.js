@@ -156,6 +156,7 @@ class App {
       });
     }
     click('bResume', () => this.resume());
+    click('bPSkip', () => { this.skipTutorial(); this.resume(); });
     click('bSet', () => this.showSettings());
     click('bPSet', () => this.showSettings());
     click('bSetBack', () => { if (this.setFrom === 'pause') { this.state = 'pause'; this.screen('pause'); } else this.showMenu(); });
@@ -185,7 +186,7 @@ class App {
     click('bOutfit', () => this.showOutfits());
     click('bOfBack', () => this.showMenu());
     click('bTut', () => this.start('tutorial', 0));
-    $('tut').addEventListener('pointerdown', (e) => { if (this.input.touch && this.game.tut) { e.stopPropagation(); this.skipTutorial(); } });
+    $('tutSkip').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.game.tut) this.skipTutorial(); });
     click('bTrBack', () => this.showMenu());
     click('bPause', () => this.pause());
     click('bMute', () => this.toggleMute());
@@ -692,6 +693,7 @@ class App {
     this.state = 'pause';
     SDK.gameplayStop();
     $('pObj').textContent = '🎯 ' + (this.game.objText || '');
+    $('bPSkip').classList.toggle('hidden', !(this.game.tut && this.tutStep < TUT_STEPS.length));
     const t = this.input.touch, K = t
       ? [['◀▶', 'Left side: move'], ['👆', 'Right side: look'], ['✋', 'Grab · KO from behind · crack (hold)'], ['⚡', 'Dash (loud!)'], ['🦶', 'Sneak (quiet, slower)'], ['🪙', 'Throw a coin (lure)'], ['💨', 'Smoke bomb']]
       : [['WASD', 'Move'], ['Mouse', 'Look'], ['E', 'Grab · KO from behind · crack (hold)'], ['Space', 'Dash (loud!)'], ['Z', 'Sneak (quiet, slower)'], ['Q', 'Throw a coin (lure)'], ['C', 'Smoke bomb'], ['R', 'Restart run']];
@@ -1186,7 +1188,7 @@ class App {
       el.dataset.k = key;
       el.querySelector('small').textContent = `TUTORIAL ${this.tutStep + 1}/${TUT_STEPS.length}`;
       el.querySelector('span').textContent = s.text[this.input.touch ? 1 : 0];
-      el.querySelector('em').textContent = this.input.touch ? 'tap to skip' : 'T to skip';
+      $('tutSkip').innerHTML = this.input.touch ? 'SKIP TUTORIAL ▶' : 'SKIP TUTORIAL <kbd>T</kbd>';
       el.querySelector('i').style.width = (this.tutStep / TUT_STEPS.length * 100) + '%';
     }
     el.classList.toggle('hidden', g.alarm || g.state !== 'play');
