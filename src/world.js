@@ -714,7 +714,7 @@ export function buildWorld(L) {
     wood: new GeoBuilder(2), carpet: new GeoBuilder(1), tile: new GeoBuilder(1), wallpaper: new GeoBuilder(1),
     panel: new GeoBuilder(1), brick: new GeoBuilder(0.9), plaster: new GeoBuilder(2), grass: new GeoBuilder(3),
     asphalt: new GeoBuilder(3), concrete: new GeoBuilder(1), plain: new GeoBuilder(1), woodfine: new GeoBuilder(0.8),
-    rug: new GeoBuilder(1), unlit: new GeoBuilder(1), shadow: new GeoBuilder(1), patch: new GeoBuilder(1),
+    rug: new GeoBuilder(1), unlit: new GeoBuilder(1), shadow: new GeoBuilder(1), patch: new GeoBuilder(1), glass: new GeoBuilder(1),
     trainN: new GeoBuilder(8), trainS: new GeoBuilder(8), slotReel: new GeoBuilder(1), slotSign: new GeoBuilder(1), pics: [0, 1, 2, 3].map(() => new GeoBuilder(1)), skyline: new GeoBuilder(6),
   };
   const TRAIN = !!L.def.train;
@@ -843,6 +843,16 @@ export function buildWorld(L) {
       bld.box(fx + (dy ? t : 0), y0, fz + (dx ? t : 0), dx ? 0 : 1 / seg, h, dy ? 0 : 1 / seg, col, { faces: bit });
     }
   };
+  // wall face with a real window opening (see in and out): strips around the hole
+  const HX = 0.31, HY0 = 0.82, HY1 = 1.44;
+  const holeQuad = (bld, x, y, dx, dy, y0, h, col) => {
+    const bit = dx > 0 ? PX : dx < 0 ? NX : dy > 0 ? PZ : NZ;
+    const fx = x + 0.5 + dx * 0.5, fz = y + 0.5 + dy * 0.5, y1 = y0 + h;
+    const piece = (t0, t1, a, b) => { if (b - a < 0.001 || t1 - t0 < 0.001) return; const tc = (t0 + t1) / 2, w = t1 - t0; bld.box(fx + (dy ? tc : 0), a, fz + (dx ? tc : 0), dx ? 0 : w, b - a, dy ? 0 : w, col, { faces: bit }); };
+    piece(-0.5, -HX, y0, y1); piece(HX, 0.5, y0, y1);
+    piece(-HX, HX, y0, Math.min(y1, HY0)); piece(-HX, HX, Math.max(y0, HY1), y1);
+  };
+  const seeThrough = (x, y, dx, dy, out) => !TRAIN && !(L.def.skyline && !out);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x, c = ch[i];
     if (c === '#') {
@@ -858,7 +868,17 @@ export function buildWorld(L) {
           quad(B.plain, x, y, dx, dy, 0, WALL_H, 0x2a3552, 2);
           B.plain.box(fx + dx * 0.01, 0.62, fz + dy * 0.01, dx ? 0.02 : 1, 0.08, dy ? 0.02 : 1, 0xd9b45a, { faces: bit });
         } else if (out) {
-          quad(B.brick, x, y, dx, dy, 0, WALL_H, 0xffffff, 2);
+          const hole = win && seeThrough(x, y, dx, dy, out);
+          if (hole) {
+            holeQuad(B.brick, x, y, dx, dy, 0, WALL_H, 0xffffff);
+            // reveal through the wall thickness + a pane of glass in the middle
+            const cx = x + 0.5, cz = y + 0.5, along = (w) => [dx ? 1 : w, dy ? 1 : w];
+            const [sw, sd] = along(2 * HX);
+            B.plain.box(cx, HY0 - 0.02, cz, sw, 0.02, sd, 0xe2d6c0, { faces: PY });
+            B.plain.box(cx, HY1, cz, sw, 0.02, sd, 0xcfc2aa, { faces: NY });
+            for (const sg of [-1, 1]) B.plain.box(cx + (dy ? sg * HX : 0), HY0, cz + (dx ? sg * HX : 0), dx ? 1 : 0, HY1 - HY0, dy ? 1 : 0, 0xd8cbb5, { faces: dy ? (sg > 0 ? NX : PX) : (sg > 0 ? NZ : PZ) });
+            B.glass.box(cx, HY0, cz, dx ? 0 : 2 * HX, HY1 - HY0, dy ? 0 : 2 * HX, 0xd6efff, { faces: dx ? (PX | NX) : (PZ | NZ) });
+          } else quad(B.brick, x, y, dx, dy, 0, WALL_H, 0xffffff, 2);
           // stone cornice + cap along the roofline, occasional drainpipe
           B.plain.box(fx + dx * 0.05, WALL_H - 0.16, fz + dy * 0.05, dx ? 0.1 : 1.0, 0.16, dy ? 0.1 : 1.0, 0xe2d6c0, { faces: 63 & ~(dx > 0 ? NX : dx < 0 ? PX : dy > 0 ? NZ : PZ) });
           B.plain.box(fx + dx * 0.035, WALL_H - 0.24, fz + dy * 0.035, dx ? 0.07 : 1.0, 0.08, dy ? 0.07 : 1.0, 0xb8a888, { faces: 63 & ~PY & ~(dx > 0 ? NX : dx < 0 ? PX : dy > 0 ? NZ : PZ) });
@@ -872,8 +892,11 @@ export function buildWorld(L) {
         } else {
           const pal = palAt(x + dx, y + dy);
           quad(B.panel, x, y, dx, dy, 0, 0.72, pal.panel, 2);
-          quad(B.wallpaper, x, y, dx, dy, 0.72, 0.6, pal.wall, 2);
-          quad(B.wallpaper, x, y, dx, dy, 1.32, WALL_H - 1.32, pal.wall, 2);
+          if (win && seeThrough(x, y, dx, dy, out)) holeQuad(B.wallpaper, x, y, dx, dy, 0.72, WALL_H - 0.72, pal.wall);
+          else {
+            quad(B.wallpaper, x, y, dx, dy, 0.72, 0.6, pal.wall, 2);
+            quad(B.wallpaper, x, y, dx, dy, 1.32, WALL_H - 1.32, pal.wall, 2);
+          }
           const [w1, d1] = tw(1.0);
           B.woodfine.box(fx + dx * 0.015, 0, fz + dy * 0.015, w1, 0.13, d1, TRIM, { faces: bit | PY });
           B.plain.box(fx + dx * 0.02, 0.7, fz + dy * 0.02, dx ? 0.04 : 1, 0.05, dy ? 0.04 : 1, RAIL, { faces: bit | PY | NY });
@@ -883,7 +906,7 @@ export function buildWorld(L) {
           const wf = out ? 0xf6f0e6 : 0xffffff;
           if (L.def.skyline && !out) B.skyline.box(fx + dx * 0.006, 0.82, fz + dy * 0.006, dx ? 0.01 : 0.62, 0.62, dy ? 0.01 : 0.62, 0xffffff, { faces: bit });
           else if (TRAIN && !out) (dy > 0 ? B.trainN : B.trainS).box(fx + dx * 0.006, 0.82, fz + dy * 0.006, 0.62, 0.62, 0.01, 0xffffff, { faces: bit });
-          else {
+          else if (!seeThrough(x, y, dx, dy, out)) {
           B.unlit.box(fx + dx * 0.006, 0.82, fz + dy * 0.006, dx ? 0.01 : 0.62, 0.62, dy ? 0.01 : 0.62, out ? (NIGHT ? 0x3a4a6a : 0x6f9ec2) : (NIGHT ? 0x4a5a8a : 0xffe2b0), { faces: bit });
           B.unlit.box(fx + dx * 0.008, 1.14, fz + dy * 0.008, dx ? 0.01 : 0.62, 0.3, dy ? 0.01 : 0.62, out ? (NIGHT ? 0x4a5a7a : 0x8fb8d6) : (NIGHT ? 0x6a7aa8 : 0xfff1d0), { faces: bit });
           }
@@ -1019,6 +1042,7 @@ export function buildWorld(L) {
   mk(B.concrete, lit(T.concrete)); mk(B.plain, lit(T.plain)); mk(B.woodfine, lit(T.woodfine));
   mk(B.rug, new MeshBasicMaterial({ vertexColors: true, map: T.rug, polygonOffset: true, polygonOffsetFactor: -1 }));
   mk(B.unlit, new MeshBasicMaterial({ vertexColors: true, toneMapped: false }));
+  mk(B.glass, new MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.16, depthWrite: false, side: DoubleSide }), 5);
   if (!B.skyline.empty) { const t = skylineTexture(); t.repeat.set(1, 6 / 0.62); t.offset.set(0, -0.82 / 0.62); mk(B.skyline, new MeshBasicMaterial({ map: t, toneMapped: false })); }
   { const pt = picTextures(); B.pics.forEach((bld, k) => mk(bld, new MeshBasicMaterial({ vertexColors: true, map: pt[k] }))); }
   if (!B.slotReel.empty) { const st = slotTextures(); mk(B.slotReel, new MeshBasicMaterial({ vertexColors: true, map: st.reel, toneMapped: false })); mk(B.slotSign, new MeshBasicMaterial({ vertexColors: true, map: st.sign, toneMapped: false })); }

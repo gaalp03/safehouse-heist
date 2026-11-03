@@ -188,6 +188,7 @@ class App {
     click('bOfBack', () => this.showMenu());
     click('bTut', () => { this.introSeen = false; this.start('tutorial', 0); });
     click('bISkip', () => this.endIntro());
+    click('bHint', () => this.showHintTip());
     click('bINext', () => this.nextIntro());
     $('tutSkip').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.game.tut) this.skipTutorial(); });
     click('bTrBack', () => this.showMenu());
@@ -198,6 +199,7 @@ class App {
     this.input.on('mute', () => this.toggleMute());
     this.input.on('key', (code) => {
       if (code === 'KeyT' && this.state === 'play' && this.game.tut) this.skipTutorial();
+      if (code === 'KeyH' && this.state === 'play') this.showHintTip();
       if (this.state === 'intro') { if (code === 'Escape') this.endIntro(); else if (code === 'Enter' || code === 'Space' || code === 'KeyE') this.nextIntro(); return; }
       if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.playSel(); }
       else if (code === 'Enter' && this.state === 'result') { this.audio.unlock(); $('bNext').click(); }
@@ -651,6 +653,7 @@ class App {
     if (this.mode === 'classic' && this.game.contracts.length && !this.save.seenCtr) { this.save.seenCtr = true; SDK.store(this.save); this.hint('ctr'); }
     this.hint('move');
     SDK.gameplayStart();
+    { const hb = $('bHint'); hb.classList.remove('pulse'); if (this.hintPulse) { this.hintPulse = false; void hb.offsetWidth; hb.classList.add('pulse'); } }
     if (this.game.tut && this.tutStep === 0 && !this.introSeen) this.beginIntro();
     else this.mapIntro();
   }
@@ -680,7 +683,8 @@ class App {
   beginIntro() {
     this.introSeen = true;
     this.state = 'intro'; this.introI = -1;
-    this.introKO = false;
+    this.floaters.minScale = 1.05;
+    this.introKO = false; this.introCoin = this.introLured = this.introSafe = this.introDirty = false;
     for (const g of this.game.guards) { g.cone.material.opacity = 3.2; g.cone.material.color.setHex(0xffc400); }
     this.input.active = false; this.input.exitLock();
     for (const id of ['hud', 'fp', 'touch', 'tut', 'hint', 'ctoast', 'gostamp']) $(id).classList.add('hidden');
@@ -727,6 +731,37 @@ class App {
         if (!this.introKO && sw >= 1) { this.introKO = true; g.player.x = gd.x; g.player.z = bz; g.knockout(gd); }
       }
     } else if (s.act === 'stand' && gd) g.actor(dt, gd.x + 0.75, gd.z + 0.5, -2.4, 0, false);
+    else if (s.act === 'hide' && g.hides[0]) {
+      // walk up to the wardrobe, hop in while the patrol strolls past, peek back out
+      const h = g.hides[0], fx = h.ex + (h.ex - h.cx) * 1.6, fz = h.ez + (h.ez - h.cz) * 1.6 + 0.4, inF = Math.atan2(h.cx - h.ex, h.cz - h.ez);
+      if (t < 1.3) { const k = t / 1.3; g.actor(dt, fx + (h.ex - fx) * k, fz + (h.ez - fz) * k, Math.atan2(h.ex - fx, h.ez - fz), 0.7, false); }
+      else if (t < 3.7) { if (g.player.c.root.visible) { g.player.c.root.visible = false; this.audio.play('creak'); this.floaters.spawn('Shh... hidden!', h.ex, 0.7, h.ez + 0.3, 'say q', 2.2); } }
+      else g.actor(dt, h.ex, h.ez, inF + Math.PI, 0, false);
+    } else if (s.act === 'coin' && g.guards[3]) {
+      const cg = g.guards[3], ax = 15.3, az = 4.5;
+      g.actor(dt, ax, az, -Math.PI / 2 - 0.35, 0, t < 3.2, t > 0.7 && t < 1.1 ? (t - 0.7) / 0.4 : null);
+      if (!this.introCoin && t > 1.0) {
+        this.introCoin = true; this.introDirty = true;
+        const pl = g.player; pl.x = ax; pl.z = az; pl.face = -Math.PI / 2 - 0.55; pl.yaw = pl.face - Math.PI; pl.pitch = 0.15; pl.vx = pl.vz = 0;
+        g.coinsLeft = Math.max(1, g.coinsLeft); g.throwCoin();
+      }
+      if (this.introCoin && !this.introLured && t > 1.9) {
+        this.introLured = true;
+        const c = g.coins[g.coins.length - 1], lx = c ? c.x : 12, lz = c ? c.z : 6;
+        g.makeNoise(lx, lz, 8, null, true);
+        this.particles.ring(lx, 0.05, lz, 0xffd23f, 2.2); this.floaters.spawn('CLINK!', lx, 0.6, lz, 'big', 1.2);
+        if (cg.state !== 'investigate') { cg.state = 'investigate'; cg.tx = lx; cg.tz = lz; cg.hurry = cg.speed * 1.4; }
+      }
+    } else if (s.act === 'safe' && g.L.safe) {
+      const sx = g.L.safe.x + 0.5, sz = g.L.safe.y + 1.35;
+      if (t < 2.4) { g.actor(dt, sx, sz, Math.PI, 0, true, 0.75 + Math.sin(t * 30) * 0.12); if (g.safe.dial) g.safe.dial.rotation.z = t * 6; }
+      else {
+        if (!this.introSafe) { this.introSafe = true; this.introDirty = true; g.openSafe(); }
+        const k = Math.min(1, (t - 2.6) / 1.6), vx = 2.6, vz = 4.5;
+        if (t < 2.6) g.actor(dt, sx, sz, Math.PI, 0, false, 1);
+        else g.actor(dt, sx + (vx - sx) * k, sz + (vz - sz) * k, Math.atan2(vx - sx, vz - sz), k < 1 ? 0.9 : 0, false);
+      }
+    }
     else if (g.actorOn) g.actorOff();
     if (this.introT >= SHOT_T) this.nextIntro();
   }
@@ -735,7 +770,8 @@ class App {
     $('intro').classList.add('hidden');
     this.game.actorOff();
     for (const g of this.game.guards) { g.cone.material.opacity = 1; g.cone.material.color.setHex(0xffe14d); }
-    if (this.introKO) { this.game.reset(); this.introKO = false; }
+    if (this.introKO || this.introDirty) { this.game.reset(); this.introKO = this.introDirty = false; }
+    this.floaters.clear(); this.particles.clear(); this.floaters.minScale = 0;
     this.state = 'play';
     this.input.clear();
     this.screen(null);
@@ -805,6 +841,7 @@ class App {
     this.state = 'pause';
     SDK.gameplayStop();
     $('pObj').textContent = '🎯 ' + (this.game.objText || '');
+    $('pTip').textContent = this.game.tut ? '' : '💡 HINT: ' + (this.lastTip && this.lastTipLevel === this.level.id ? this.lastTip : this.bustTip()).replace(/^Tip: /, '') + (this.input.touch ? '' : '  (press H in game)');
     $('bPSkip').classList.toggle('hidden', !(this.game.tut && this.tutStep < TUT_STEPS.length));
     const t = this.input.touch, K = t
       ? [['◀▶', 'Left side: move'], ['👆', 'Right side: look'], ['🔨', 'HIT: knock out a guard from behind'], ['✋', 'Use · grab · crack (hold)'], ['⚡', 'Dash (loud!)'], ['🦶', 'Sneak (quiet, slower)'], ['🪙', 'Throw a coin (lure)'], ['💨', 'Smoke bomb']]
@@ -865,6 +902,16 @@ class App {
   }
 
   // ---- called by Game ----
+  // HINT button: the same tip the busted screen gives (last bust on this heist, or a fresh one)
+  showHintTip() {
+    const t = this.lastTip && this.lastTipLevel === this.level.id ? this.lastTip : this.bustTip();
+    const el = $('hint');
+    this.hCur = '_tip'; this.hT = 6;
+    el.textContent = '💡 ' + t.replace(/^Tip: /, '');
+    el.classList.remove('hidden'); el.classList.add('tipnow');
+    el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+    this.audio.play('click');
+  }
   hint(id) {
     if (!this.level || !this.level.tutorial || this.hShown.has(id) || this.hDone.has(id)) return;
     // during the guided tutorial the step card is the only instruction on screen
@@ -883,7 +930,7 @@ class App {
     const el = $('hint');
     if (this.hCur) {
       this.hT -= dt;
-      if (this.hT <= 0 || this.state !== 'play' || this.game.state !== 'play') { this.hCur = null; el.classList.add('hidden'); }
+      if (this.hT <= 0 || this.state !== 'play' || this.game.state !== 'play') { this.hCur = null; el.classList.add('hidden'); el.classList.remove('tipnow'); }
     } else if (this.hQ.length && this.state === 'play') {
       this.hCur = this.hQ.shift();
       if (this.hDone.has(this.hCur) && this.hCur !== 'stash') { this.hCur = null; return; }
@@ -1108,8 +1155,11 @@ class App {
     const adRev = ADS_ENABLED && SDK.available && !this.game.revived && !this.game.policeBusted;
     $('bRevive').classList.toggle('hidden', !(this.freeRevOk || adRev));
     $('bRevive').innerHTML = this.freeRevOk ? '▶ SECOND CHANCE <small>free · 1 per day</small>' : '▶ SECOND CHANCE';
-    $('bustTip').textContent = (this.game.hasStash && this.mode !== 'daily' && this.levelIdx + 1 < LEVELS.length && !this.levelUnlocked(this.levelIdx + 1)
+    const tipTxt = (this.game.hasStash && this.mode !== 'daily' && this.levelIdx + 1 < LEVELS.length && !this.levelUnlocked(this.levelIdx + 1)
       ? `So close! You had the stash: get it all the way back to the ${this.game.L.van ? 'van' : 'exit'} to unlock ${LEVELS[this.levelIdx + 1].name}. ` : '') + this.bustTip();
+    $('bustTip').textContent = tipTxt;
+    this.lastTip = this.bustTip(); this.lastTipLevel = this.level.id;
+    { const bt = $('bustTip'), first = !this.save.tipSeen; bt.classList.remove('glow'); void bt.offsetWidth; bt.classList.toggle('glow', first); if (first) { this.save.tipSeen = 1; this.hintPulse = true; } }
     this.preBust = JSON.stringify(this.save);   // undone if the player takes a second chance
     const fresh = recordRun(this.save, this.runRecord(false));
     this.awardXP(false, 0, this.game.lootGot, 'bXP');

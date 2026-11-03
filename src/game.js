@@ -286,7 +286,7 @@ export class Game {
     });
     // security cameras
     this.cams = (def.cameras || []).map((cd) => {
-      const cone = makeCone(); this.root.add(cone);
+      const cone = makeCone(); cone.material.opacity = 2.4; this.root.add(cone);
       // ceiling-mounted CCTV: plate + drop pole stay fixed, the head swivels/tilts
       const mount = new Group();
       const gb = new GeoBuilder();
@@ -2078,7 +2078,7 @@ export class Game {
     }
     const hot = cam.cool > 0;
     cam.lens.material.color.setHex(hot || (Math.sin(this.t * 6) > 0) ? 0xff3b4e : 0x7a1f28);
-    this.updateCone(cam.cone, x, z, cam.face, 0.9, CAM_R, hot ? COL.alert : cam.susp > 0.2 ? 0xff7a86 : 0xffb3b8);
+    this.updateCone(cam.cone, x, z, cam.face, 0.9, CAM_R, hot ? COL.alert : cam.susp > 0.2 ? 0xff2a40 : 0xff5a6e);
   }
 
   openSafe() {

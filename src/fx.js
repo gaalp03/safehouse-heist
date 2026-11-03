@@ -201,7 +201,7 @@ export class Floaters {
       }
       _v.set(f.x, f.y, f.z).project(camera);
       f.el.style.visibility = _v.z > 1 ? 'hidden' : '';
-      const dist = Math.hypot(f.x - camera.position.x, f.y - camera.position.y, f.z - camera.position.z), k = Math.max(0.55, Math.min(1.1, 3.4 / (dist || 1)));
+      const dist = Math.hypot(f.x - camera.position.x, f.y - camera.position.y, f.z - camera.position.z), k = Math.max(this.minScale || 0.55, Math.min(1.1, 3.4 / (dist || 1)));
       f.el.style.transform = `translate(${((_v.x + 1) / 2) * w}px,${((1 - _v.y) / 2) * h}px) translate(-50%,-50%) scale(${k.toFixed(2)})`;
       if (f.t > f.life * 0.6) f.el.style.opacity = String(1 - (f.t - f.life * 0.6) / (f.life * 0.4));
     }
