@@ -3,7 +3,7 @@
 A tiny, juicy first-person voxel stealth-heist game for the browser. Through the robber's eyes (gloved hands + crowbar, head bob, mouse/touch look), sneak into the house, crack the safe, grab the loot and get back to the getaway van. Three stars per level: **escape**, **70%+ loot**, **ghost (never spotted)**.
 
 - Three.js (bundled locally, tree-shaken), no runtime CDN for game code
-- All geometry is procedural (**zero image/model files**); sound effects are CC0 recordings (Kenney, wyzowl/sfx-kit; ~240 KB in `sfx/`, lazy-loaded after the menu so the first load stays small) with WebAudio synth fallbacks and a procedural adaptive soundtrack
+- All geometry is procedural (**zero image/model files**); sound effects are CC0 recordings (Kenney, wyzowl/sfx-kit, Simone Piervergili; ~350 KB in `sfx/`, lazy-loaded after the menu so the first load stays small) with WebAudio synth fallbacks and a procedural adaptive soundtrack
 - Initial download: `index.html` + one JS bundle, ~160 KB gzipped. Levels are separate lazy-loaded chunks
 - Mouse + keyboard and touch (dynamic virtual joystick + buttons), auto-detected
 - CrazyGames SDK v3 integrated with a safe fallback everywhere else
@@ -74,7 +74,7 @@ Daily Challenge: one seeded run per day (Normal rules) on a heist picked from th
 
 Difficulty: Easy / Normal / Hard / Ironman (unlocks after any Hard escape: sharper and faster guards, 1 coin, no smoke, 15 s police, ×2.5 score) (menu) changes guard sight range, speed and reaction, coins (4/3/2), alarm timer (60/45/30 s) and radio delay; score multiplier ×0.75 / ×1 / ×1.5 with a separate best score per difficulty.
 
-Guard dog: roams the kitchen and east hallway, follows your scent trail, barks when it finds you (pulls nearby guards in) and sniffs out wardrobes so a guard can drag you out. Throw a coin and it runs off to sniff it. Contract: don't get barked at.
+Guard dog: in the Safe House it is on a leash at the hallway guard's side (barks if it sees you up close, waits by its handler if he's knocked out); in the Museum and Warehouse it roams freely, follows your scent trail, barks when it finds you (pulls nearby guards in) and sniffs out wardrobes so a guard can drag you out. Throw a coin and it runs off to sniff it. Contract: don't get barked at.
 
 Tutorial: the very first PLAY starts a guided Safe House heist (7-step card: move, look, loot, sneak, pick the lock, crack the safe, escape) with gentler guards and no contracts; skip with T or a tap, replay from the menu.
 
@@ -181,4 +181,4 @@ Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` 
 - Auto-pause and mute when the tab is hidden or loses focus; WebGL context loss is caught (progress saved, reload prompt).
 - No external links, no third-party branding, English UI, all assets CC0/OFL (see CREDITS.md).
 - Mobile: touch controls, no page scroll/zoom/text selection/long-press menus, layouts checked in portrait and landscape.
-- Small download: ~260 KB gzipped to the menu; sound effects (~240 KB) stream in afterwards.
+- Small download: ~260 KB gzipped to the menu; sound effects (~350 KB) stream in afterwards.

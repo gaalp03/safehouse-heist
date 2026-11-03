@@ -276,7 +276,9 @@ export class Game {
     this.dogs = (def.dogs || []).map((dd) => {
       const m = makeDog();
       this.root.add(m.root);
-      return { def: dd, m, shadow: this.addShadow() };
+      let leash = null;
+      if (dd.handler != null) { leash = new Mesh(new BoxGeometry(0.022, 0.022, 1), new MeshBasicMaterial({ color: 0xc8302e })); this.root.add(leash); }
+      return { def: dd, m, leash, shadow: this.addShadow() };
     });
     // security cameras
     this.cams = (def.cameras || []).map((cd) => {
@@ -499,6 +501,8 @@ export class Game {
       const s = d.def.path[0];
       Object.assign(d, { x: s[0] + 0.5, z: s[1] + 0.5, wp: 1 % d.def.path.length, state: 'roam', t: 0, barkT: 0, sniffT: 0, ci: 0, lostT: 0,
         nav: [], navGoal: -1, navT: 0, face: 0, moving: 0, tx: 0, tz: 0, waitT: 0, smellT: 0, mul: 1 });
+      const H = d.def.handler != null && this.guards[d.def.handler];
+      if (H) { const t = this.heelSpot(d, H); d.x = t[0]; d.z = t[1]; d.face = H.face; d.state = 'heel'; }
     }
     for (const cam of this.cams) { Object.assign(cam, { susp: 0, cool: 0, face: cam.def.face, off: 0 }); cam.cone.visible = true; cam.mesh.rotation.x = 0; }
     this.camsHit = 0;
@@ -1423,7 +1427,7 @@ export class Game {
       g.susp = Math.max(g.susp, 0.3);
     }
     if (lure) for (const d of this.dogs) {
-      if ((d.state === 'roam' || d.state === 'sniff') && Math.hypot(d.x - x, d.z - z) < r + 2) {
+      if (d.def.handler == null && (d.state === 'roam' || d.state === 'sniff') && Math.hypot(d.x - x, d.z - z) < r + 2) {
         d.state = 'coin'; d.tx = x; d.tz = z; d.waitT = 5; d.navGoal = -1;
         this.app.floaters.spawn('!', d.x, 1.0, d.z, 'q', 0.7);
       }
@@ -1446,7 +1450,35 @@ export class Game {
       }
     }
     const P = d.def.path;
-    switch (d.state) {
+    const H = d.def.handler != null ? this.guards[d.def.handler] : null;
+    if (H) {
+      // on a leash: walks at the handler's side, never wanders, sniffs trails or chases coins
+      const down = H.state === 'ko' || H.state === 'getup';
+      if (d.state === 'bark') {
+        const sees = !hide && dist < 6 && this.los(d.x, d.z, p.x, p.z);
+        if (sees) d.lostT = 0; else d.lostT += dt;
+        d.face = turnTo(d.face, Math.atan2(p.x - d.x, p.z - d.z), 8 * dt);
+        this.dogBark(d, dt, d.x, d.z);
+        if (playing && sees) this.lastBark = this.time;
+        if (playing && sees && !this.barkedAt) { this.barkedAt = true; this.spotted = true; }
+        if (d.lostT > 2.5 || hide) d.state = 'heel';
+      } else if (d.state === 'barkHide') {
+        const h = d.hide;
+        if (!p.hiding) d.state = 'heel';
+        else { d.face = turnTo(d.face, Math.atan2(h.cx - d.x, h.cz - d.z), 8 * dt); this.dogBark(d, dt, h.ex, h.ez, 10); if (!this.barkedAt) this.barkedAt = true; }
+      } else d.state = 'heel';
+      // keep up with the handler (also while barking, so the leash never stretches)
+      const t = this.heelSpot(d, H), dd = Math.hypot(t[0] - d.x, t[1] - d.z);
+      if (!down && dd > 0.18) this.navTo(d, t[0], t[1], Math.max(2.6, H.speed * 1.5), dt);
+      else if (d.state === 'heel') d.face = turnTo(d.face, down ? Math.atan2(H.x - d.x, H.z - d.z) : H.face, 6 * dt);
+      if (Math.hypot(H.x - d.x, H.z - d.z) > 1.6) { const k = 1.6 / Math.hypot(H.x - d.x, H.z - d.z); d.x = H.x + (d.x - H.x) * k; d.z = H.z + (d.z - H.z) * k; }
+      if (d.leash) {
+        const hx = H.x + Math.cos(H.face) * 0.22, hz = H.z - Math.sin(H.face) * 0.22, hy = 0.75, cx = d.x + Math.sin(d.face) * 0.28, cz = d.z + Math.cos(d.face) * 0.28, cy = 0.42;
+        const len = Math.hypot(cx - hx, cy - hy, cz - hz);
+        d.leash.position.set((hx + cx) / 2, (hy + cy) / 2 - 0.04, (hz + cz) / 2);
+        d.leash.lookAt(cx, cy, cz); d.leash.scale.set(1, 1, len); d.leash.visible = true;
+      }
+    } else switch (d.state) {
       case 'roam': {
         if (d.waitT > 0) { d.waitT -= dt; d.face += Math.sin(d.t * 3) * dt; break; }
         const w = P[d.wp];
@@ -1510,6 +1542,15 @@ export class Game {
     d.shadow.scale.set(0.8, 1, 1.1);
     animateDog(m, dt, d.moving ? 1 : 0, this.t, d.state === 'bark' || d.state === 'barkHide');
     probe(m, this.L, d.x, d.z, dt);
+  }
+  // spot at the handler's side (falls back to behind him in tight corridors)
+  heelSpot(d, H) {
+    const fx = Math.sin(H.face), fz = Math.cos(H.face), rx = fz, rz = -fx;
+    for (const [s, b] of [[0.6, -0.15], [-0.6, -0.15], [0, -0.75]]) {
+      const x = H.x + rx * s + fx * b, z = H.z + rz * s + fz * b;
+      if (this.walkable(Math.floor(x), Math.floor(z))) return [x, z];
+    }
+    return [H.x - fx * 0.5, H.z - fz * 0.5];
   }
   dogBark(d, dt, nx, nz, r = 7) {
     d.barkT -= dt;
@@ -1995,7 +2036,6 @@ export class Game {
       cam.susp = 0; cam.cool = 4;
       this.triggerAlarm('The camera triggered the alarm!');
       this.spotted = true;
-      this.app.audio.play('alarm');
       this.app.flash('alarm');
       this.app.floaters.spawn('ALARM!', x, 2.0, z, 'alert', 1.2);
       for (const g of this.guards) {

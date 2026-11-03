@@ -974,7 +974,7 @@ class App {
       hide: 'Tip: a guard saw you climb in. Only hide when nobody is looking.',
       owner: 'Tip: the owner wakes up to noise. Sneak past slowly and never dash near him.',
       dash: `Tip: dashing is loud and gets you noticed. Walk, or sneak with ${Z}.`,
-      dog: 'Tip: the dog follows your scent. Throw a coin and it runs off to sniff it.',
+      dog: (this.level.dogs || []).some((d) => d.handler != null) ? 'Tip: the dog walks with its handler and barks if it sees you up close. Stay out of its sight, or take the handler out from behind.' : 'Tip: the dog follows your scent. Throw a coin and it runs off to sniff it.',
       los: 'Tip: once spotted, break line of sight: duck round a corner, hide in a wardrobe or drop smoke.',
       cone: `Tip: stay out of the yellow vision cones. Sneak with ${Z} behind low furniture, and hit guards from behind with ${E}.`,
     };

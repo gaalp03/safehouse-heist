@@ -117,6 +117,7 @@ export class Audio {
       try { this.ctx.decodeAudioData(ab, (b) => { this.bufs[f] = b; }, () => {}); } catch (_) {}
     }
   }
+  loopBuf(name) { const f = this.man && this.man[name] && this.man[name][0]; return (f && this.bufs && this.bufs[f]) || null; }
   // play a sample by logical name (random variant); returns false if not loaded so the caller can fall back
   sample(name, o = {}) {
     const list = this.man && this.man[name]; if (!list) return false;
@@ -128,7 +129,7 @@ export class Audio {
     let out = g;
     if (o.pan) { const pn = ctx.createStereoPanner(); pn.pan.value = o.pan; g.connect(pn); out = pn; }
     src.connect(g); out.connect(o.dest || this.sfx);
-    src.start(ctx.currentTime + (o.delay || 0));
+    src.start(ctx.currentTime + (o.delay || 0), o.offset || 0);
     return true;
   }
 
@@ -137,23 +138,25 @@ export class Audio {
     const S = (n, o) => this.sample(n, o);
     const semi = (k) => Math.pow(2, k / 12);
     const REC = {
-      dash: () => S('dash', { vol: 0.55, jitter: 0.1 }),
-      pick: () => S('pick', { vol: 0.5, rate: semi(Math.min(p, 12) * 0.6), jitter: 0.06 }),
+      dash: () => S('dash', { vol: 0.5, jitter: 0.1 }),
+      pick: () => S('pick', { vol: 0.55, rate: semi(Math.min(p, 12) * 0.5), jitter: 0.06 }),
       gold: () => S('gold', { vol: 0.6 }), jewel: () => S('jewel', { vol: 0.55 }), art: () => S('art', { vol: 0.55 }),
-      ko: () => S('ko', { vol: 0.8, jitter: 0.12 }), alert: () => S('alert', { vol: 0.55 }), lost: () => S('lost', { vol: 0.45 }),
-      tick: () => S('tick', { vol: 0.35, rate: 1 + Math.min(1, p) * 0.35, jitter: 0.08 }),
-      safe: () => S('safe', { vol: 0.7 }) && (S('coins', { vol: 0.55, delay: 0.25 }), true),
-      win: () => S('win', { vol: 0.6 }), bust: () => S('bust', { vol: 0.6 }), alarm: () => S('alarm', { vol: 0.5 }),
-      thunder: () => S('thunder', { vol: 0.8, jitter: 0.1 }), vent: () => S('vent', { vol: 0.6 }), clank: () => S('clank', { vol: 0.6, jitter: 0.1 }),
+      ko: () => S('ko', { vol: 0.6, jitter: 0.12 }), alert: () => S('alert', { vol: 0.5 }), lost: () => S('lost', { vol: 0.45 }),
+      tick: () => S('tick', { vol: 0.45, rate: 1 + Math.min(1, p) * 0.35, jitter: 0.08 }),
+      safe: () => S('safe', { vol: 0.6 }) && (S('coins', { vol: 0.5, delay: 0.18 }), true),
+      win: () => S('win', { vol: 0.55 }), bust: () => S('bust', { vol: 0.55 }), alarm: () => S('alarm', { vol: 0.5 }),
+      thunder: () => S('thunder', { vol: 0.65, jitter: 0.08 }), vent: () => S('vent', { vol: 0.55 }), clank: () => S('clank', { vol: 0.55, jitter: 0.1 }),
       click: () => S('click', { vol: 0.5 }), star: () => S('star', { vol: 0.5, rate: semi([0, 4, 7][Math.min(2, p | 0)] || 0) }),
-      throw: () => S('throw', { vol: 0.5, jitter: 0.1 }), clink: () => S('clink', { vol: 0.5 * Math.max(0.3, p || 1), jitter: 0.1 }),
-      disarm: () => S('disarm', { vol: 0.5 }), contract: () => S('contract', { vol: 0.55 }), creak: () => S('creak', { vol: 0.5, jitter: 0.1 }),
-      zap: () => S('zap', { vol: 0.55 }), powerdown: () => S('powerdown', { vol: 0.6 }), smoke: () => S('smoke', { vol: 0.6 }),
-      pin: () => S('pin', { vol: 0.6, rate: 1 + p * 0.12 }), slip: () => S('slip', { vol: 0.6 }), glass: () => S('glass', { vol: 0.75, jitter: 0.1 }),
-      radio: () => S('radio', { vol: 0.35 }), radioOk: () => S('radioOk', { vol: 0.5 }),
-      jackpot: () => S('jackpot', { vol: 0.6 }) && (S('coins', { vol: 0.5, delay: 0.3 }), true),
+      throw: () => S('throw', { vol: 0.5, jitter: 0.1 }), clink: () => S('clink', { vol: 0.5 * Math.max(0.35, Math.min(1, p || 1)), jitter: 0.1 }),
+      disarm: () => S('disarm', { vol: 0.5 }), contract: () => S('contract', { vol: 0.5 }), creak: () => S('creak', { vol: 0.5, jitter: 0.08 }),
+      zap: () => S('zap', { vol: 0.5 }), powerdown: () => S('powerdown', { vol: 0.55 }), smoke: () => S('smoke', { vol: 0.55 }),
+      pin: () => S('pin', { vol: 0.55, rate: 1 + p * 0.12 }), slip: () => S('slip', { vol: 0.55 }), glass: () => S('glass', { vol: 0.6, jitter: 0.1 }),
+      radio: () => S('radio', { vol: 0.4 }), radioOk: () => S('radioOk', { vol: 0.5 }),
+      jackpot: () => S('jackpot', { vol: 0.55 }) && (S('coins', { vol: 0.45, delay: 0.25 }), true),
       nope: () => S('nope', { vol: 0.45 }), combo: () => S('combo', { vol: 0.4, rate: semi(Math.min(p, 12)) }),
       tvon: () => S('tvon', { vol: 0.5 }), unlock: () => S('unlock', { vol: 0.55 }),
+      woof: () => S('woof', { vol: 0.6, jitter: 0.1 }), scream: () => S('scream', { vol: 0.55, jitter: 0.08 }),
+      chopper: () => S('chopper', { vol: 0.6 }), engine: () => S('engine', { vol: 0.55, offset: 0.7 }),
     };
     if (REC[name] && REC[name]()) return;
     const T = (f, d, o) => this.tone(f, d, o), N = (d, o) => this.noise(d, o);
@@ -293,9 +296,10 @@ export class Audio {
     if (!this.ctx || !this.noiseBuf) return;
     if (on && !this.rn) {
       const ctx = this.ctx, src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), f2 = ctx.createBiquadFilter(), g = ctx.createGain();
-      src.buffer = this.noiseBuf; src.loop = true;
-      f.type = 'lowpass'; f.frequency.value = 1400; f2.type = 'highpass'; f2.frequency.value = 220;
-      g.gain.value = 0.0001; g.gain.setTargetAtTime(0.09, ctx.currentTime, 0.6);
+      const rec = this.loopBuf('rain');
+      src.buffer = rec || this.noiseBuf; src.loop = true;
+      f.type = 'lowpass'; f.frequency.value = rec ? 2600 : 1400; f2.type = 'highpass'; f2.frequency.value = 220;
+      g.gain.value = 0.0001; g.gain.setTargetAtTime(rec ? 0.5 : 0.09, ctx.currentTime, 0.6);
       src.connect(f).connect(f2).connect(g).connect(this.sfx);
       src.start();
       this.rn = { src, g };
@@ -308,7 +312,15 @@ export class Audio {
 
   siren(on) {
     if (!this.ctx) return;
-    if (on && !this.sir) {
+    const rec = this.loopBuf('siren');
+    if (on && !this.sir && rec) {
+      // recorded alarm bell/siren, looped
+      const ctx = this.ctx, src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = rec; src.loop = true;
+      g.gain.value = 0.0001; g.gain.setTargetAtTime(0.32, ctx.currentTime, 0.15);
+      src.connect(g).connect(this.sfx); src.start();
+      this.sir = { o: src, g };
+    } else if (on && !this.sir) {
       const ctx = this.ctx, o = ctx.createOscillator(), lfo = ctx.createOscillator(), lg = ctx.createGain(), g = ctx.createGain();
       o.type = 'sawtooth'; o.frequency.value = 780;
       lfo.type = 'square'; lfo.frequency.value = 1.6; lg.gain.value = 170;
@@ -321,7 +333,7 @@ export class Audio {
     } else if (!on && this.sir) {
       const s = this.sir, t = this.ctx.currentTime;
       s.g.gain.setTargetAtTime(0.0001, t, 0.1);
-      s.o.stop(t + 0.5); s.lfo.stop(t + 0.5);
+      s.o.stop(t + 0.5); if (s.lfo) s.lfo.stop(t + 0.5);
       this.sir = null;
     }
   }
@@ -401,7 +413,7 @@ export class Audio {
   stepSound(surface, vol = 1, pan = 0) {
     if (!this.ctx || this.ctx.state !== 'running') return;
     const sn = { carpet: 'step_carpet', tile: 'step_tile', road: 'step_tile', grass: 'step_grass', boot: 'step_tile' }[surface] || 'step_wood';
-    if (this.sample(sn, { vol: 0.3 * vol * (surface === 'boot' ? 1.2 : 1), rate: surface === 'boot' ? 0.82 : 1, jitter: 0.12, pan })) return;
+    if (this.sample(sn, { vol: 0.32 * vol * (surface === 'boot' ? 1.15 : 1), rate: surface === 'boot' ? 0.85 : 1, jitter: 0.1, pan })) return;
     let dest = this.sfx;
     if (pan) { const p = this.ctx.createStereoPanner(); p.pan.value = pan; p.connect(this.sfx); dest = p; }
     const N = (d, o) => this.noise(d, { ...o, vol: (o.vol || 0.1) * vol, dest }), T = (f, d, o) => this.tone(f, d, { ...o, vol: (o.vol || 0.1) * vol, dest });
