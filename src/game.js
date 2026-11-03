@@ -92,6 +92,9 @@ export class Game {
     const L = (this.L = parseLevel(def));
     const world = buildWorld(L);
     this.root.add(world);
+    // world materials get a red/blue strobe tint while the alarm is ringing
+    this.worldMats = []; world.traverse((o) => { if (o.isMesh && o.material && o.material.vertexColors && !o.material.blending) this.worldMats.push(o.material); });
+    this.alarmTint = 0;
     this.trainMats = world.userData.trainMats || null; this.clackT = 0; this.sway = 0;
 
     this.safe = buildSafe();
@@ -778,7 +781,7 @@ export class Game {
       app.audio.play('dash');
       app.shake.add(0.18);
       squash(p.c, 0.7);
-      app.particles.burst(p.x, 0.1, p.z, { count: 8, colors: [0xffffff, 0xdfe6ee], speed: 2, up: 1.5, size: 0.16, gravity: 2, life: 0.5 });
+      app.particles.puff(p.x, 0.1, p.z, { count: 6, size: 0.34, speed: 1.8, up: 0.7, life: 0.55 });
       this.makeNoise(p.x, p.z, 4.2, null);
       app.hintDone('dash');
     }
@@ -787,7 +790,7 @@ export class Game {
       p.dashT -= dt;
       const k = Math.max(0, p.dashT / DASH_T);
       vx += p.ddx * DASH_V * k; vz += p.ddz * DASH_V * k;
-      if (Math.random() < 0.6) app.particles.burst(p.x, 0.15, p.z, { count: 1, colors: [0xffffff], speed: 0.5, up: 0.5, size: 0.12, gravity: 0, life: 0.35 });
+      if (Math.random() < 0.6) app.particles.puff(p.x, 0.12, p.z, { count: 1, size: 0.24, speed: 0.4, up: 0.5, life: 0.45 });
     }
     this.moveEnt(p, vx * dt, vz * dt, PR);
     // scent trail for dogs
@@ -842,7 +845,7 @@ export class Game {
         k.m.visible = false; this.hasKey = true;
         app.audio.play('gold'); app.onKey(true); app.hint('door');
         app.floaters.spawn('KEYCARD!', k.x + 0.5, 1.3, k.y + 0.5, 'big', 1.2);
-        app.particles.burst(k.x + 0.5, 0.8, k.y + 0.5, { count: 12, colors: [0x2f7ae8, 0xffffff, 0xf2c94c], speed: 2, up: 2, size: 0.04, life: 0.6 });
+        app.particles.burst(k.x + 0.5, 0.8, k.y + 0.5, { count: 12, colors: [0x2f7ae8, 0xffffff, 0xf2c94c], speed: 2, up: 2, size: 0.04, life: 0.6 }); app.particles.flash(k.x + 0.5, 0.9, k.y + 0.5, 0x6fb0ff, 1.6);
       }
     }
     let nearDoor = null;
@@ -1055,7 +1058,7 @@ export class Game {
     p.punchT = 0.28;
     squash(p.c, 1.25);
     app.audio.play('ko');
-    app.particles.burst(g.x, 1.0, g.z, { count: 14, colors: [0xffd23f, 0xffffff, 0xff9f1c], speed: 3.5, up: 4, size: 0.13, life: 0.7 });
+    app.particles.burst(g.x, 1.0, g.z, { count: 14, colors: [0xffd23f, 0xffffff, 0xff9f1c], speed: 3.5, up: 4, size: 0.13, life: 0.7 }); app.particles.flash(g.x, 1.3, g.z, 0xffe680, 1.6); app.particles.ring(g.x, 0.05, g.z, 0xffd23f, 2.2);
     app.floaters.spawn('KO!', g.x, 1.7, g.z, 'ko', 0.9);
     this.makeNoise(g.x, g.z, 2.5, g);
     app.hintDone('ko');
@@ -1079,7 +1082,7 @@ export class Game {
       if (g.state !== 'ko' && g.state !== 'sleep' && g.state !== 'getup' && this.canSee(g)) {
         witnessed = true; g.knowsHide = true;
         if (g.state !== 'alert') this.alert(g);
-        app.floaters.spawn('I saw that!', g.x, 2.0, g.z, 'alert', 1.2);
+        app.floaters.spawn('I saw that!', g.x, 2.0, g.z, 'say alert', 1.2);
       }
     }
     p.hiding = h; p.hideT = 0; p.vx = p.vz = 0; p.x = h.ex; p.z = h.ez;
@@ -1170,7 +1173,7 @@ export class Game {
       app.floaters.spawn('+' + fmt(b.value) + ' BRIEFCASE!', b.x, 1.6, b.z, 'big', 1.5);
       app.audio.play('gold'); app.audio.play('combo', 10); app.flash('gold');
       this.juice(0.35, 0.4, -8, 0.03, 0); app.shake.add(0.25);
-      app.particles.burst(b.x, 0.8, b.z, { count: 26, colors: [0xffd23f, 0xffffff, 0xffe680], speed: 4, up: 5, size: 0.09, life: 0.9 });
+      app.particles.burst(b.x, 0.8, b.z, { count: 26, colors: [0xffd23f, 0xffffff, 0xffe680], speed: 4, up: 5, size: 0.09, life: 0.9 }); app.particles.flash(b.x, 0.9, b.z, 0xfff1a8, 2.2); app.particles.ring(b.x, 0.05, b.z, 0xffd23f, 2.8);
       app.onLoot(true);
       bc.group.visible = false; this.brief = null; app.onBrief(0);
     } else if (b.t <= 0) {
@@ -1199,7 +1202,7 @@ export class Game {
   tvOff(tv, g) {
     tv.on = false; tv.used = true; tv.scr.visible = tv.glow.visible = false;
     this.app.audio.play('click');
-    if (g) { this.tvLures++; this.app.floaters.spawn('Stupid TV...', g.x, 2.0, g.z, 'q', 1.2); }
+    if (g) { this.tvLures++; this.app.floaters.spawn('Stupid TV...', g.x, 2.0, g.z, 'say q', 1.2); }
   }
   updateTVs(dt) {
     const p = this.player;
@@ -1230,7 +1233,7 @@ export class Game {
     for (const g of this.guards) {
       if (g.state !== 'ko' && g.state !== 'sleep' && g.state !== 'getup' && this.canSee(g)) {
         if (g.state !== 'alert') this.alert(g);
-        app.floaters.spawn('Hey! The vent!', g.x, 2.0, g.z, 'alert', 1.2);
+        app.floaters.spawn('Hey! The vent!', g.x, 2.0, g.z, 'say alert', 1.2);
       }
     }
     this.ventsUsed++;
@@ -1260,7 +1263,7 @@ export class Game {
       app.audio.play('clank');
       app.shake.add(0.12);
       this.makeNoise(p.x, p.z, 2.4, null);
-      app.particles.burst(p.x, 0.3, p.z, { count: 10, colors: [0xb8b0a0, 0x8a8478], speed: 1.2, up: 1.2, size: 0.07, gravity: -0.5, life: 0.8 });
+      app.particles.puff(p.x, 0.3, p.z, { count: 5, color: 0xcfc6b4, size: 0.3, speed: 0.9, up: 0.7, life: 0.8 });
     }
   }
 
@@ -1277,7 +1280,7 @@ export class Game {
     this.clouds.push({ x, z, t: 0, dur: 7.5, r: 0, fx });
     app.audio.play('smoke');
     app.shake.add(0.12);
-    app.particles.burst(x, 0.2, z, { count: 14, colors: [0xffffff, 0xd9d4e2, 0xb8b2c6], speed: 3, up: 2, size: 0.12, life: 0.7, gravity: 1 });
+    app.particles.burst(x, 0.2, z, { count: 14, colors: [0xffffff, 0xd9d4e2, 0xb8b2c6], speed: 3, up: 2, size: 0.12, life: 0.7, gravity: 1 }); app.particles.puff(x, 0.25, z, { count: 14, color: 0xeeeaf6, size: 0.85, speed: 2.4, up: 0.9, life: 1.5, spread: 0.3 }); app.particles.ring(x, 0.05, z, 0xffffff, 3);
     app.onSmoke(this.smokesLeft);
     app.hintDone('smoke');
   }
@@ -1326,7 +1329,7 @@ export class Game {
       for (const g of this.guards) {
         if (g.coughT > 0) g.coughT -= dt;
         if (g.state === 'ko' || g.state === 'sleep' || Math.hypot(g.x - c.x, g.z - c.z) > c.r * 0.8) continue;
-        if (!(g.coughT > 0)) { g.coughT = 2.2; this.app.floaters.spawn('*cough*', g.x, 1.9, g.z, 'q', 0.9); if (g.state === 'alert') g.lostT = Math.max(g.lostT, 1.5); }
+        if (!(g.coughT > 0)) { g.coughT = 2.2; this.app.floaters.spawn('*cough*', g.x, 1.9, g.z, 'say q', 0.9); if (g.state === 'alert') g.lostT = Math.max(g.lostT, 1.5); }
       }
       if (c.t >= c.dur) { f.pts.visible = false; this.clouds.splice(i, 1); }
     }
@@ -1419,7 +1422,7 @@ export class Game {
       if (g.state === 'sleep') { this.wake(g, x, z); continue; }
       if (g.state !== 'investigate' && g.state !== 'suspicious') {
         this.app.audio.play('huh');
-        this.app.floaters.spawn(typeof lure === 'string' ? lure : lure ? 'Huh? A coin?' : '?', g.x, 1.9, g.z, 'q', 0.9);
+        this.app.floaters.spawn(typeof lure === 'string' ? lure : lure ? 'Huh? A coin?' : '?', g.x, 1.9, g.z, 'say q', 0.9);
         if (lure === true) this.lures++;
         if (lure === 'Jackpot!?') this.slotLures++;
       }
@@ -1429,7 +1432,7 @@ export class Game {
     if (lure) for (const d of this.dogs) {
       if (d.def.handler == null && (d.state === 'roam' || d.state === 'sniff') && Math.hypot(d.x - x, d.z - z) < r + 2) {
         d.state = 'coin'; d.tx = x; d.tz = z; d.waitT = 5; d.navGoal = -1;
-        this.app.floaters.spawn('!', d.x, 1.0, d.z, 'q', 0.7);
+        this.app.floaters.spawn('!', d.x, 1.0, d.z, 'say q', 0.7);
       }
     }
   }
@@ -1444,7 +1447,7 @@ export class Game {
     if (playing && d.state !== 'bark' && d.state !== 'barkHide') {
       if (!hide && p.inv <= 0 && dist < 3.0 && this.los(d.x, d.z, p.x, p.z) && !this.smokeBlocks(d.x, d.z, p.x, p.z)) {
         d.state = 'bark'; d.barkT = 0.25; d.lostT = 0;
-        app.floaters.spawn('!', d.x, 1.1, d.z, 'alert', 0.8);
+        app.floaters.spawn('!', d.x, 1.1, d.z, 'say alert', 0.8);
       } else if (hide && Math.hypot(hide.ex - d.x, hide.ez - d.z) < 1.4) {
         d.state = 'barkHide'; d.barkT = 0.3; d.hide = hide;
       }
@@ -1558,7 +1561,7 @@ export class Game {
     d.barkT = 0.85;
     const app = this.app;
     app.audio.play('woof');
-    app.floaters.spawn('WOOF!', d.x, 1.0, d.z, 'woof', 0.7);
+    app.floaters.spawn('WOOF!', d.x, 1.0, d.z, 'say woof', 0.7);
     d.m.sq = 1.3; d.m.sqv = 0;
     this.makeNoise(nx, nz, r, null);
   }
@@ -1572,7 +1575,7 @@ export class Game {
     g.face = Math.atan2(x - g.x, z - g.z);
     squash(g.c, 1.4);
     this.app.audio.play('wake');
-    this.app.floaters.spawn('WHO\'S THERE?!', g.x, 2.0, g.z, 'warn', 1.3);
+    this.app.floaters.spawn('WHO\'S THERE?!', g.x, 2.0, g.z, 'say warn', 1.3);
     this.app.shake.add(0.15);
   }
 
@@ -1589,7 +1592,7 @@ export class Game {
       o.claimed = true;
       g.state = 'investigate'; g.tx = o.x; g.tz = o.z; g.hurry = g.speed * 1.7; g.reviveT = o; g.susp = Math.max(g.susp, 0.6); g.navGoal = -1;
       app.audio.play('huh');
-      app.floaters.spawn('Man down!', g.x, 2.0, g.z, 'warn', 1.3);
+      app.floaters.spawn('Man down!', g.x, 2.0, g.z, 'say warn', 1.3);
       return;
     }
     if (this.casesSmashed && g.kind === 'guard' && !g.sawCase) {
@@ -1598,7 +1601,7 @@ export class Game {
         g.sawCase = true; g.safeRun = true;
         g.state = 'investigate'; g.tx = c.cx; g.tz = c.cz + 1.2; g.hurry = g.speed * 1.6; g.susp = Math.max(g.susp, 0.7); g.navGoal = -1;
         app.audio.play('huh');
-        app.floaters.spawn('The display case!?', g.x, 2.0, g.z, 'warn', 1.3);
+        app.floaters.spawn('The display case!?', g.x, 2.0, g.z, 'say warn', 1.3);
         return;
       }
     }
@@ -1608,7 +1611,7 @@ export class Game {
         g.sawSafe = true; g.safeRun = true;
         g.state = 'investigate'; g.tx = sx; g.tz = sz + 1; g.hurry = g.speed * 1.6; g.susp = Math.max(g.susp, 0.7); g.navGoal = -1;
         app.audio.play('huh');
-        app.floaters.spawn('The safe!?', g.x, 2.0, g.z, 'warn', 1.3);
+        app.floaters.spawn('The safe!?', g.x, 2.0, g.z, 'say warn', 1.3);
       }
     }
   }
@@ -1625,7 +1628,7 @@ export class Game {
       if (best) {
         best.checkedT = this.t;
         g.state = 'checkHide'; g.chk = best; g.navGoal = -1;
-        app.floaters.spawn('Hmm... the wardrobe?', g.x, 2.0, g.z, 'q', 1.2);
+        app.floaters.spawn('Hmm... the wardrobe?', g.x, 2.0, g.z, 'say q', 1.2);
         return;
       }
     }
@@ -1635,13 +1638,13 @@ export class Game {
       if (o.state === 'ko' && Math.hypot(o.x - g.x, o.z - g.z) < 1.8) {
         o.koT = 0.25; this.revives++;
         g.face = Math.atan2(o.x - g.x, o.z - g.z);
-        app.floaters.spawn('Wake up!', o.x, 1.4, o.z, 'warn', 1.1);
+        app.floaters.spawn('Wake up!', o.x, 1.4, o.z, 'say warn', 1.1);
         app.audio.play('wake');
       }
     }
     const ph = this.player.hiding;
     if (ph && this.state === 'play' && this.dogs.some((d) => d.state === 'barkHide') && Math.hypot(ph.ex - g.x, ph.ez - g.z) < 1.8) {
-      app.floaters.spawn('Got you!', g.x, 2.0, g.z, 'alert', 1.2);
+      app.floaters.spawn('Got you!', g.x, 2.0, g.z, 'say alert', 1.2);
       this.leaveHide(true);
       this.bust(g);
       return;
@@ -1649,7 +1652,7 @@ export class Game {
     if (g.safeRun) {
       g.safeRun = false;
       if (this.D.safeAlarm && this.state === 'play' && !this.alarm) {
-        app.floaters.spawn('We\'ve been robbed!', g.x, 2.0, g.z, 'alert', 1.4);
+        app.floaters.spawn('We\'ve been robbed!', g.x, 2.0, g.z, 'say alert', 1.4);
         this.triggerAlarm('A guard found the open safe!');
       }
     }
@@ -1661,18 +1664,18 @@ export class Game {
       g.state = 'flee'; g.susp = 1; g.navGoal = -1;
       this.spotted = true;
       this.app.audio.play('scream');
-      this.app.floaters.spawn('AAAH! A ROBBER!', g.x, 2.0, g.z, 'alert', 1.2);
+      this.app.floaters.spawn('AAAH! A ROBBER!', g.x, 2.0, g.z, 'say alert', 1.2);
       this.app.shake.add(0.12);
       squash(g.c, 1.35);
       this.app.hint('clerk');
       return;
     }
     g.state = 'alert'; g.susp = 1; g.lostT = 0; g.radioT = 0; g.radioSaid = false; g.alertAt = this.time;
-    if (this.disguiseT > 0) { this.disguiseT = 0; this.app.onDisguise(0); this.app.floaters.spawn("You're not Dave!", g.x, 2.3, g.z, 'alert', 1.3); }
+    if (this.disguiseT > 0) { this.disguiseT = 0; this.app.onDisguise(0); this.app.floaters.spawn("You're not Dave!", g.x, 2.3, g.z, 'say alert', 1.3); }
     if (!this.spotted) this.app.hintDone('cone');
     this.spotted = true;
     this.app.audio.play('alert');
-    this.app.floaters.spawn('!', g.x, 2.0, g.z, 'alert', 0.8);
+    this.app.floaters.spawn('!', g.x, 2.0, g.z, 'say alert', 0.8);
     if (this.smokesLeft > 0) this.app.hint('smoke');
     this.app.shake.add(0.15);
     squash(g.c, 1.3);
@@ -1696,7 +1699,7 @@ export class Game {
     const app = this.app, p = this.player;
     if (this.chatQ) {
       const q = this.chatQ; q.t -= dt;
-      if (q.t <= 0) { this.chatQ = null; if (CALM.has(q.g.state)) { app.floaters.spawn(q.text, q.g.x, 2.0, q.g.z, 'zz', 1.6); app.audio.play('mumble'); } }
+      if (q.t <= 0) { this.chatQ = null; if (CALM.has(q.g.state)) { app.floaters.spawn(q.text, q.g.x, 2.0, q.g.z, 'say zz', 1.6); app.audio.play('mumble'); } }
       return;
     }
     this.chatT -= dt;
@@ -1710,7 +1713,7 @@ export class Game {
       if (a.def.reinforce || b.def.reinforce) lines.push(['You the new guy?', 'First night. Anything I should know?']);
       if (this.kos > 0) lines.push(['Anyone seen Dave? He\'s not answering.', 'Probably asleep on the job again.']);
       const [l1, l2] = lines[this.chatI++ % lines.length];
-      app.floaters.spawn(l1, a.x, 2.0, a.z, 'zz', 1.6); app.audio.play('mumble');
+      app.floaters.spawn(l1, a.x, 2.0, a.z, 'say zz', 1.6); app.audio.play('mumble');
       a.face = Math.atan2(b.x - a.x, b.z - a.z);
       this.chatQ = { g: b, text: l2, t: 1.5 };
       this.chatT = 16 + Math.random() * 10;
@@ -1738,7 +1741,7 @@ export class Game {
     this.guards.push(g);
     app.audio.play('radio');
     app.announce('📻 Shift change! A new guard is on duty');
-    app.floaters.spawn('Reporting for duty!', g.x, 2.0, g.z, 'warn', 1.4);
+    app.floaters.spawn('Reporting for duty!', g.x, 2.0, g.z, 'say warn', 1.4);
   }
   roamCell(z, fx, fz) {
     let tries = 0;
@@ -1781,7 +1784,7 @@ export class Game {
           if (!g.radioCall && g.koT < 5.5) { g.radioCall = 1; g.callT = 0; app.hint('radio'); }
           if (g.radioCall === 1) {
             g.callT -= dt;
-            if (g.callT <= 0) { g.callT = 1.1; app.audio.play('radio'); app.floaters.spawn('📻 "Unit, report in!"', g.x, 1.2, g.z, 'warn', 1.0); }
+            if (g.callT <= 0) { g.callT = 1.1; app.audio.play('radio'); app.floaters.spawn('📻 "Unit, report in!"', g.x, 1.2, g.z, 'say warn', 1.0); }
             if (g.koT < 1.8) this.missedCheckIn(g);
           }
         }
@@ -1837,7 +1840,7 @@ export class Game {
         const w = d.path[g.wp];
         if (this.navTo(g, w[0] + 0.5, w[1] + 0.5, g.speed, dt) || g.stateT > 14) {
           g.state = 'wait'; g.t = d.wait ?? 1; g.baseFace = g.face;
-          if (g.kind === 'guard' && g.susp < 0.1 && Math.random() < 0.35) { g.yawnT = 2.2; g.t = Math.max(g.t, 2.2); app.floaters.spawn('*yaaawn*', g.x, 1.9, g.z, 'zz', 1.4); }
+          if (g.kind === 'guard' && g.susp < 0.1 && Math.random() < 0.35) { g.yawnT = 2.2; g.t = Math.max(g.t, 2.2); app.floaters.spawn('*yaaawn*', g.x, 1.9, g.z, 'say zz', 1.4); }
         }
         break;
       }
@@ -1869,7 +1872,7 @@ export class Game {
       }
       case 'alert': {
         g.radioT = (g.radioT || 0) + dt;
-        if (!this.alarm && g.radioT > 0.7 && !g.radioSaid) { g.radioSaid = true; app.floaters.spawn('Calling it in...', g.x, 2.0, g.z, 'warn', 1.4); }
+        if (!this.alarm && g.radioT > 0.7 && !g.radioSaid) { g.radioSaid = true; app.floaters.spawn('Calling it in...', g.x, 2.0, g.z, 'say warn', 1.4); }
         if (!this.alarm && g.radioT > this.D.radio) this.triggerAlarm('A guard radioed the police!');
         let tx = seen ? p.x : g.lastX, tz = seen ? p.z : g.lastZ;
         if (g.knowsHide && p.hiding) {
@@ -1880,7 +1883,7 @@ export class Game {
         if (!seen && g.lostT > 2.2) {
           g.state = 'search'; g.tx = g.lastX; g.tz = g.lastZ; g.hurry = 2.8; g.susp = 0.6;
           app.audio.play('lost');
-          app.floaters.spawn('?', g.x, 1.9, g.z, 'q', 0.8);
+          app.floaters.spawn('?', g.x, 1.9, g.z, 'say q', 0.8);
         }
         if (this.state === 'play' && p.inv <= 0 && !p.hiding && Math.hypot(p.x - g.x, p.z - g.z) < 0.78) this.bust(g);
         break;
@@ -1897,11 +1900,11 @@ export class Game {
         if (this.navTo(g, h.ex, h.ez, g.speed * 1.15, dt) || g.stateT > 8) {
           g.face = Math.atan2(h.cx - g.x, h.cz - g.z);
           if (this.player.hiding === h && this.state === 'play') {
-            app.floaters.spawn('Found you!', g.x, 2.0, g.z, 'alert', 1.2);
+            app.floaters.spawn('Found you!', g.x, 2.0, g.z, 'say alert', 1.2);
             this.leaveHide(true); this.bust(g);
           } else {
             app.audio.play('creak');
-            app.floaters.spawn('Nobody here...', g.x, 2.0, g.z, 'q', 1.1);
+            app.floaters.spawn('Nobody here...', g.x, 2.0, g.z, 'say q', 1.1);
             g.state = 'look'; g.t = 1.6; g.baseFace = g.face;
           }
         }
@@ -2038,6 +2041,7 @@ export class Game {
       this.spotted = true;
       this.app.flash('alarm');
       this.app.floaters.spawn('ALARM!', x, 2.0, z, 'alert', 1.2);
+      this.app.particles.flash(x, cam.mesh.position.y, z, 0xff3b4e, 1.8);
       for (const g of this.guards) {
         if (g.state === 'ko' || g.state === 'sleep' || g.state === 'getup' || g.state === 'alert' || g.state === 'waking') continue;
         if (Math.hypot(g.x - p.x, g.z - p.z) < 18) { g.state = 'investigate'; g.tx = p.x; g.tz = p.z; g.hurry = 3.2; g.susp = Math.max(g.susp, 0.6); }
@@ -2057,7 +2061,7 @@ export class Game {
     app.shake.add(0.55);
     app.audio.play('safe');
     app.flash('gold');
-    app.particles.burst(sx, 0.8, sz + 0.4, { count: 24, colors: [0xffd23f, 0xffffff, 0xffe680], speed: 4, up: 6, size: 0.1, life: 1.0 });
+    app.particles.burst(sx, 0.8, sz + 0.4, { count: 24, colors: [0xffd23f, 0xffffff, 0xffe680], speed: 4, up: 6, size: 0.1, life: 1.0 }); app.particles.flash(sx, 1.0, sz + 0.4, 0xfff1a8, 2.6, 0.35); app.particles.ring(sx, 0.05, sz + 0.4, 0xffd23f, 3.4, 0.6);
     app.particles.burst(sx, 1.0, sz + 0.5, { count: 30, colors: [0x6fcf7a, 0x9be39a, 0x4fae5a], speed: 3, up: 4, size: 0.13, life: 2.2, shape: 'bill', gravity: 3, drag: 1.5 });
     app.floaters.spawn('+$' + v.stash.toLocaleString('en-US') + ' STASH!', sx, 1.8, sz, 'big', 1.6);
     for (let i = 0; i < v.bundles; i++) {
@@ -2329,7 +2333,7 @@ export class Game {
       this.van.vx = Math.min(16, this.van.vx + dt * 14);
       van.position.x += this.van.vx * dt;
       van.rotation.z = Math.min(0.06, this.van.vx * 0.01);
-      if (Math.random() < 0.7) app.particles.burst(van.position.x - 1.5, 0.25, van.position.z, { count: 2, colors: [0xdddddd, 0xbbbbbb], speed: 1, up: 1, size: 0.22, gravity: -1, life: 0.6 });
+      if (Math.random() < 0.7) app.particles.puff(van.position.x - 1.5, 0.25, van.position.z, { count: 1, color: 0xd6d6de, size: 0.4, speed: 0.9, up: 0.7, life: 0.7 });
     }
     if (t > 2.0 && !this.endSent) { this.endSent = true; app.onWin(this.results()); }
   }
@@ -2345,6 +2349,7 @@ export class Game {
     app.audio.play('alarm');
     app.audio.siren(true);
     app.flash('alarm');
+    app.particles.ring(this.player.x, 0.05, this.player.z, 0xff3b4e, 4, 0.6);
     app.shake.add(0.25);
     app.onAlarm(true, why);
     app.hint('alarm');
@@ -2363,6 +2368,16 @@ export class Game {
     if (this.panel) {
       const on = this.alarm && Math.sin(this.t * 14) > 0;
       this.panel.led.material.color.setHex(this.alarm ? (on ? 0xff2a3a : 0x5a0a10) : 0x3ddc84);
+    }
+    { // whole-level emergency strobe (cheap: one color uniform per world material)
+      const want = this.alarm && this.state === 'play' ? 1 : 0;
+      this.alarmTint += (want - this.alarmTint) * Math.min(1, dt * 4);
+      if (this.alarmTint > 0.004 || this.alarmTintOn) {
+        this.alarmTintOn = this.alarmTint > 0.004;
+        const a = this.alarmTintOn ? this.alarmTint : 0, w = Math.max(0, Math.sin(this.t * 7)), v = Math.max(0, -Math.sin(this.t * 7));
+        const r = 1 - a * (0.05 + 0.12 * v), gg = 1 - a * (0.2 * w + 0.12 * v), b = 1 - a * (0.24 * w);
+        for (const m of this.worldMats) m.color.setRGB(r, gg, b);
+      }
     }
     const pc = this.police;
     if (!this.alarm) {
@@ -2410,7 +2425,7 @@ export class Game {
     app.flash('red');
     app.audio.play('bust');
     app.audio.siren(false);
-    app.floaters.spawn('BUSTED!', g.x, 1.5, g.z, 'alert big', 1.2);
+    app.floaters.spawn('BUSTED!', g.x, 1.5, g.z, 'alert big', 1.2); app.particles.ring(g.x, 0.05, g.z, 0xff3b4e, 3); app.particles.flash(g.x, 1.4, g.z, 0xff5a6a, 1.8);
     app.setPrompt('');
   }
   revive() {
@@ -2430,7 +2445,7 @@ export class Game {
     for (const sp of this.spots) { sp.pool.visible = sp.cone.visible = false; }
     app.audio.play('powerdown');
     app.shake.add(0.2);
-    app.particles.burst(bp.x, bp.y + 0.3, bp.z, { count: 24, colors: [0xfff1a8, 0x7fd8ff, 0xffffff], speed: 3, up: 3, size: 0.04, life: 0.6 });
+    app.particles.burst(bp.x, bp.y + 0.3, bp.z, { count: 24, colors: [0xfff1a8, 0x7fd8ff, 0xffffff], speed: 3, up: 3, size: 0.04, life: 0.6 }); app.particles.flash(bp.x, bp.y + 0.3, bp.z, 0x7fd8ff, 1.8);
     app.floaters.spawn('LASERS OFF', bp.x, 1.6, bp.z, 'big', 1.3);
   }
   updateSlots(dt) {
@@ -2503,7 +2518,7 @@ export class Game {
     const app = this.app;
     g.radioCall = 3;
     app.audio.play('radio');
-    app.floaters.spawn('📻 "No answer... sending backup!"', g.x, 1.4, g.z, 'alert', 1.4);
+    app.floaters.spawn('📻 "No answer... sending backup!"', g.x, 1.4, g.z, 'say alert', 1.4);
     let best = null, bd = 1e9;
     for (const o of this.guards) {
       if (o === g || o.kind !== 'guard' || ['ko', 'getup', 'sleep', 'alert', 'waking'].includes(o.state)) continue;
@@ -2513,7 +2528,7 @@ export class Game {
     if (best) {
       g.claimed = true;
       best.state = 'investigate'; best.tx = g.x; best.tz = g.z; best.hurry = best.speed * 1.8; best.reviveT = g; best.susp = Math.max(best.susp, 0.7); best.navGoal = -1;
-      app.floaters.spawn('On my way!', best.x, 2.0, best.z, 'warn', 1.1);
+      app.floaters.spawn('On my way!', best.x, 2.0, best.z, 'say warn', 1.1);
     }
     if (this.app.diff === 'hard' && this.app.mode !== 'daily' && this.app.mode !== 'tutorial') this.triggerAlarm('A guard missed his radio check-in!');
   }
@@ -2552,7 +2567,7 @@ export class Game {
       app.onLoot(false);
     }
     p.grabT = 1;
-    app.floaters.spawn('?', g.x, 2.0, g.z, 'q', 0.7);
+    app.floaters.spawn('?', g.x, 2.0, g.z, 'say q', 0.7);
     app.hintDone('pocket');
   }
 
@@ -2563,7 +2578,7 @@ export class Game {
     app.audio.play('glass');
     app.shake.add(0.28);
     this.hitstop = 0.06; this.juice(0, 1, -4, -0.06, (Math.random() - 0.5) * 0.08);
-    app.particles.burst(c.cx, 1.05, c.cz, { count: 26, colors: [0xdff4ff, 0xbfe6ff, 0xffffff], speed: 3.2, up: 3, size: 0.07, life: 0.9, spin: 2 });
+    app.particles.burst(c.cx, 1.05, c.cz, { count: 26, colors: [0xdff4ff, 0xbfe6ff, 0xffffff], speed: 3.2, up: 3, size: 0.07, life: 0.9, spin: 2 }); app.particles.flash(c.cx, 1.1, c.cz, 0xdff4ff, 1.8);
     app.particles.burst(c.cx, 0.95, c.cz, { count: 8, colors: [0x4cdcff, 0xff4f7a, 0xffd75a], speed: 1.5, up: 2.5, size: 0.05, life: 0.7 });
     this.makeNoise(c.cx, c.cz, 3.6, null);
     for (let i = 0; i < this.caseLoot; i++) {
@@ -2611,7 +2626,7 @@ export class Game {
         pk.slips++; pk.cool = 0.45;
         app.audio.play('slip');
         app.shake.add(0.15);
-        app.floaters.spawn('*rattle*', d.x + 0.5, 1.2, d.y + 0.5, 'warn', 0.8);
+        app.floaters.spawn('*rattle*', d.x + 0.5, 1.2, d.y + 0.5, 'say warn', 0.8);
         this.makeNoise(d.x + 0.5, d.y + 0.5, 3.4, null);
       }
     }
@@ -2634,7 +2649,7 @@ export class Game {
     d.m.led.material.color.setHex(0x3ddc84);
     app.audio.play('disarm'); app.audio.play('creak');
     app.shake.add(0.25);
-    app.particles.burst(d.x + 0.5, 1.5, d.y + 0.5, { count: 18, colors: [0xd8deea, 0xffffff], speed: 1.5, up: 0.5, size: 0.06, life: 0.8 });
+    app.particles.puff(d.x + 0.5, 1.2, d.y + 0.5, { count: 6, color: 0xe4e8f2, size: 0.35, speed: 1.2, up: 0.3, life: 0.8 }); app.particles.flash(d.x + 0.5, 1.0, d.y + 0.5, 0x3ddc84, 1.4);
     app.floaters.spawn('ACCESS GRANTED', d.x + 0.5, 1.6, d.y + 0.5, 'big', 1.2);
   }
   objectiveTarget() {

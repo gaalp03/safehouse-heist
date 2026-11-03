@@ -371,6 +371,43 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 #menu .menurow .btn{white-space:nowrap}
 @media (max-width:640px){#menu .menurow{gap:6px}#menu .menurow .btn.s{font-size:13px;padding:7px 9px 6px;min-height:42px}#menu .menurow .btn.s small{font-size:11px;padding:0 4px}#menu .menurow #bPlay{font-size:22px;padding:9px 20px 8px}}
 @media (max-height:820px) and (min-height:521px) and (min-width:641px){#city{width:min(700px,94vw,calc((100vh - 360px) * 2))!important}}
+/* ---------- floating text + speech bubbles ---------- */
+@keyframes ftpop{0%{scale:.15;rotate:-10deg}55%{scale:1.32;rotate:4deg}78%{scale:.93;rotate:-1deg}100%{scale:1;rotate:0deg}}
+@keyframes sayp{0%{scale:0;rotate:-14deg}55%{scale:1.16;rotate:5deg}78%{scale:.95;rotate:-2deg}100%{scale:1;rotate:0deg}}
+@keyframes zzf{0%{scale:.4;opacity:0}30%{scale:1;opacity:1}100%{scale:1}}
+.ft{animation:ftpop .5s cubic-bezier(.2,1.6,.4,1) both;transform-origin:50% 60%}
+.ft.big,.ft.ko,.ft.alert.big{filter:drop-shadow(0 0 7px rgba(255,200,40,.55))}
+.ft.alert.big{filter:drop-shadow(0 0 8px rgba(255,60,80,.7))}
+.ft.cash,.ft.gold,.ft.jewel,.ft.art{filter:drop-shadow(0 0 6px rgba(255,255,255,.35))}
+.ft.say{font-size:17px;line-height:1.1;color:var(--ink);background:linear-gradient(180deg,#fff 0%,#fff 62%,#eceaf4 100%);padding:6px 14px 7px;border:3px solid var(--ink);border-radius:18px;text-shadow:none;-webkit-text-stroke:0;box-shadow:0 5px 0 rgba(28,19,48,.5);animation:sayp .42s cubic-bezier(.2,1.9,.4,1) both;transform-origin:50% 120%;filter:none}
+.ft.say::after{content:'';position:absolute;left:50%;bottom:-9px;width:12px;height:12px;margin-left:-8px;background:inherit;background:#eceaf4;border:3px solid var(--ink);border-top:0;border-left:0;transform:rotate(45deg);border-radius:0 0 4px 0}
+.ft.say.alert{background:linear-gradient(180deg,#ff7a86 0%,#ff4d5e 60%,#e0303f 100%);color:#fff;text-shadow:0 2px 0 var(--ink),1.5px 0 0 var(--ink),-1.5px 0 0 var(--ink),0 -1.5px 0 var(--ink)}
+.ft.say.alert::after{background:#e0303f}
+.ft.say.warn{background:linear-gradient(180deg,#fff27a 0%,#ffd23a 60%,#f5b400 100%)}
+.ft.say.warn::after{background:#f5b400}
+.ft.say.woof{background:linear-gradient(180deg,#ffd29a 0%,#ffb35a 60%,#f08a1c 100%);color:#fff;text-shadow:0 2px 0 var(--ink),1.5px 0 0 var(--ink),-1.5px 0 0 var(--ink),0 -1.5px 0 var(--ink);border-radius:8px;rotate:-4deg}
+.ft.say.woof::after{background:#f08a1c}
+.ft.say.zz{background:#e6f2ff;color:#3a4a80;border-radius:22px;font-size:15px;animation:zzf .5s ease-out both;border-color:#3a4a80;box-shadow:0 4px 0 rgba(28,19,48,.35)}
+.ft.say.zz::after{width:9px;height:9px;bottom:-15px;margin-left:-14px;border:3px solid #3a4a80;border-radius:50%;transform:none;background:#e6f2ff}
+.ft.say.short{font-size:26px;min-width:44px;padding:3px 10px 4px;text-align:center;border-radius:50%/48%}
+.ft.zz:not(.say){color:#cfe6ff;font-size:22px;animation:zzf .6s ease-out both}
+@media (max-width:640px){.ft.say{font-size:14px;padding:5px 11px 6px}.ft.say.short{font-size:22px}}
+/* ---------- transitions ---------- */
+#iris{position:fixed;left:50%;top:50%;width:0;height:0;border-radius:50%;border:9px solid #ffd23a;box-shadow:0 0 0 250vmax #1c1330,inset 0 0 0 4px #1c1330;z-index:60;pointer-events:none;display:none;translate:-50% -50%}
+#iris.go{display:block;animation:iris .75s cubic-bezier(.55,0,.25,1) forwards}
+@keyframes iris{0%,18%{width:0;height:0}100%{width:270vmax;height:270vmax;border-width:30px}}
+@keyframes panelin{0%{scale:.6;opacity:0;rotate:-3deg}60%{scale:1.04;opacity:1;rotate:1deg}100%{scale:1;rotate:0deg}}
+.screen:not(.hidden)>.panel{animation:panelin .42s cubic-bezier(.2,1.5,.4,1) both}
+#pause:not(.hidden)>.panel{animation-duration:.3s}
+#rStars{gap:10px;align-items:flex-end}
+#rStars span{color:#2a1f45;-webkit-text-stroke:3px #120c22;paint-order:stroke fill;text-shadow:none;filter:drop-shadow(0 3px 0 rgba(0,0,0,.35))}
+#rStars span.on{background:linear-gradient(180deg,#fff7b0 0%,#ffd23a 48%,#f59a00 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-stroke:3px var(--ink);text-shadow:none;filter:drop-shadow(0 4px 0 var(--ink)) drop-shadow(0 0 12px rgba(255,210,58,.55))}
+#rStars span:nth-child(2){translate:0 -10px}
+#rMap,#bMap{border:4px solid var(--ink);border-radius:12px;box-shadow:0 5px 0 var(--ink),inset 0 0 0 2px rgba(255,255,255,.15);background:#1d2140}
+/* ---------- drawn icons ---------- */
+.ico{width:1.2em;height:1.2em;vertical-align:-.25em;flex:none;filter:drop-shadow(0 2px 0 rgba(28,19,48,.45));overflow:visible}
+#touch button .ico{width:30px;height:30px;display:block;margin:0 auto 1px}
+#touch #bAct .ico{width:40px;height:40px}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -393,11 +430,11 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
   <div id="alarmwhy" class="o hidden"></div>
   <canvas id="mm"></canvas>
   <ul id="ctr" class="o"></ul>
-  <div id="smokep" class="pill o">💨<span>×1</span></div>
-  <div id="key" class="pill o hidden">🔑 KEYCARD</div>
+  <div id="smokep" class="pill o"><svg class="ico" viewBox="0 0 32 32"><circle cx="10" cy="19" r="7" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="17" cy="12" r="8" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="23" cy="19" r="7" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="16" cy="22" r="6" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="10" cy="19" r="7" fill="#eef0f8"/><circle cx="17" cy="12" r="8" fill="#eef0f8"/><circle cx="23" cy="19" r="7" fill="#eef0f8"/><circle cx="16" cy="22" r="6" fill="#eef0f8"/><circle cx="14" cy="10" r="3" fill="#fff"/></svg><span>×1</span></div>
+  <div id="key" class="pill o hidden"><svg class="ico" viewBox="0 0 32 32"><path d="M14 16h15v4h-3v4h-4v-4h-3v-4" fill="#ffd23a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="9" cy="17" r="6.5" fill="#ffd23a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="9" cy="17" r="2.4" fill="#1c1330"/></svg> KEYCARD</div>
   <div id="coins" class="pill o"><i class="coin"></i><span>×3</span></div>
   <div id="tr">
-    <div id="ghostp" class="pill o hidden" title="Your best escape">👻<span>0:00</span></div>
+    <div id="ghostp" class="pill o hidden" title="Your best escape"><svg class="ico" viewBox="0 0 32 32"><path d="M6 28V14a10 10 0 0 1 20 0v14l-3.3-2.5L19.3 28 16 25.5 12.7 28 9.3 25.5z" fill="#f4f6ff" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><circle cx="12.5" cy="14" r="2" fill="#1c1330"/><circle cx="19.5" cy="14" r="2" fill="#1c1330"/></svg><span>0:00</span></div>
     <div id="time" class="pill o">0:00</div>
     <button id="bMute" class="ib" aria-label="Sound"><svg viewBox="0 0 24 24"><path d="M3 9h4l5-4v14l-5-4H3z"/><path class="w" d="M15 8.5a5 5 0 0 1 0 7l1.4 1.4a7 7 0 0 0 0-9.8zM17.8 5.7a9 9 0 0 1 0 12.6l1.4 1.4a11 11 0 0 0 0-15.4z"/><path class="x" d="M15 9.4l1.4-1.4 2.1 2.1 2.1-2.1 1.4 1.4-2.1 2.1 2.1 2.1-1.4 1.4-2.1-2.1-2.1 2.1-1.4-1.4 2.1-2.1z"/></svg></button>
     <button id="bPause" class="ib" aria-label="Pause"><svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
@@ -413,11 +450,11 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 <svg id="ring" class="hidden" viewBox="0 0 54 54"><circle class="bg" cx="27" cy="27" r="20"/><circle class="fg" cx="27" cy="27" r="20"/></svg></div>
 <div id="touch" class="hidden">
   <div id="joyzone"></div><div id="lookzone"></div><div id="joy"><div id="knob"></div></div>
-  <button id="bDash">⚡<span>DASH</span></button>
-  <button id="bSneak">🦶<span>SNEAK</span></button>
-  <button id="bSmoke">💨<span>×1</span></button>
+  <button id="bDash"><svg class="ico" viewBox="0 0 32 32"><path d="M19 2 6 18h8l-3 12 15-18h-8l3-10z" fill="#ffd23a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M17 6 10 15" stroke="#fff6b0" stroke-width="2" stroke-linecap="round"/></svg><span>DASH</span></button>
+  <button id="bSneak"><svg class="ico" viewBox="0 0 32 32"><path d="M8 3h10v12l8 4c2 1 3 2 3 4v3H5V6z" fill="#c98a4a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M5 26h24v3H5z" fill="#4a3a5a" stroke="#1c1330" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M9 7h8" stroke="#e8b27a" stroke-width="2" stroke-linecap="round"/></svg><span>SNEAK</span></button>
+  <button id="bSmoke"><svg class="ico" viewBox="0 0 32 32"><circle cx="10" cy="19" r="7" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="17" cy="12" r="8" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="23" cy="19" r="7" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="16" cy="22" r="6" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><circle cx="10" cy="19" r="7" fill="#eef0f8"/><circle cx="17" cy="12" r="8" fill="#eef0f8"/><circle cx="23" cy="19" r="7" fill="#eef0f8"/><circle cx="16" cy="22" r="6" fill="#eef0f8"/><circle cx="14" cy="10" r="3" fill="#fff"/></svg><span>×1</span></button>
   <button id="bThrow"><i class="coin"></i><span>×3</span></button>
-  <button id="bAct">✋<span>GRAB</span></button>
+  <button id="bAct"><svg class="ico" viewBox="0 0 32 32"><rect x="8" y="13" width="17" height="15" rx="5" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><rect x="8" y="5" width="4.4" height="12" rx="2.2" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><rect x="12.6" y="3" width="4.4" height="13" rx="2.2" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><rect x="17.2" y="4" width="4.4" height="12" rx="2.2" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><rect x="21.6" y="7" width="4" height="10" rx="2" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><rect x="2.5" y="15" width="9" height="4.4" rx="2.2" transform="rotate(30 7 17)" fill="#1c1330" stroke="#1c1330" stroke-width="5.2" stroke-linejoin="round"/><rect x="8" y="13" width="17" height="15" rx="5" fill="#fff4e0"/><rect x="8" y="5" width="4.4" height="12" rx="2.2" fill="#fff4e0"/><rect x="12.6" y="3" width="4.4" height="13" rx="2.2" fill="#fff4e0"/><rect x="17.2" y="4" width="4.4" height="12" rx="2.2" fill="#fff4e0"/><rect x="21.6" y="7" width="4" height="10" rx="2" fill="#fff4e0"/><rect x="2.5" y="15" width="9" height="4.4" rx="2.2" transform="rotate(30 7 17)" fill="#fff4e0"/><path d="M11 24h11" stroke="#e8d2b0" stroke-width="2" stroke-linecap="round"/></svg><span>GRAB</span></button>
 </div>
 
 <div id="loading" class="screen"><div class="logo o">SAFEHOUSE<small>HEIST</small></div><div class="bar"><i></i></div><p class="sub">Loading...</p></div>
@@ -521,6 +558,7 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 </div></div>
 
 <script type="module" src="./js/main.js"></script>
+<div id="iris"></div>
 <div id="ctxlost" class="screen solid hidden" style="z-index:9"><div class="panel"><div class="big o" style="font-size:34px">HOLD ON...</div><p class="sub">Your device paused the graphics. Your progress is saved.</p><button class="btn" onclick="location.reload()">RELOAD</button></div></div>
 </body>
 </html>

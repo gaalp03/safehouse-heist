@@ -163,6 +163,9 @@ export function animateChar(c, dt, move, t) {
     c.armR.rotation.x = c.beam ? -1.35 + Math.sin(c.phase * 0.5) * 0.06 * move + Math.sin(t * 1.3) * 0.03 : sw * 0.9;
   }
   c.body.position.y = Math.abs(Math.sin(c.phase)) * 0.07 * move + (1 - move) * Math.sin(t * 2.2) * 0.012;
+  // cartoony waddle: side-to-side roll + slight forward lean when walking
+  c.body.rotation.z = Math.sin(c.phase) * 0.07 * move;
+  c.body.rotation.x = 0.07 * move * move;
   c.head.rotation.y = c.beam ? Math.sin(t * 0.9) * 0.15 * (1 - move) : 0;
   c.sqv += (1 - c.sq) * 260 * dt;
   c.sqv *= Math.exp(-11 * dt);
@@ -229,8 +232,10 @@ export function animateDog(m, dt, move, t, bark) {
   const sw = Math.sin(m.phase) * 0.7 * move;
   m.legs[0].rotation.x = sw; m.legs[3].rotation.x = sw; m.legs[1].rotation.x = -sw; m.legs[2].rotation.x = -sw;
   m.tail.rotation.y = Math.sin(t * (bark ? 26 : 12)) * (bark ? 0.4 : 0.7);
-  m.body.position.y = Math.abs(Math.sin(m.phase)) * 0.03 * move;
-  m.head.rotation.x = bark ? -0.25 + Math.sin(t * 18) * 0.15 : Math.sin(t * 1.5) * 0.05;
+  m.body.position.y = Math.abs(Math.sin(m.phase)) * 0.05 * move;
+  m.body.rotation.x = Math.sin(m.phase * 2) * 0.06 * move;
+  m.head.rotation.x = bark ? -0.25 + Math.sin(t * 18) * 0.15 : Math.sin(t * 1.5) * 0.05 + Math.sin(m.phase * 2 + 1) * 0.08 * move;
+  m.head.rotation.z = bark ? 0 : Math.sin(t * 0.8) * 0.16 * (1 - move);
   m.sqv += (1 - m.sq) * 260 * dt; m.sqv *= Math.exp(-11 * dt); m.sq += m.sqv * dt;
   const s = 1.1 * Math.max(0.6, m.sq);
   m.body.scale.set(1.1 / Math.sqrt(m.sq), s, 1.1);

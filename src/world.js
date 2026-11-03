@@ -846,6 +846,15 @@ export function buildWorld(L) {
           B.plain.box(fx + dx * 0.01, 0.62, fz + dy * 0.01, dx ? 0.02 : 1, 0.08, dy ? 0.02 : 1, 0xd9b45a, { faces: bit });
         } else if (out) {
           quad(B.brick, x, y, dx, dy, 0, WALL_H, 0xffffff, 2);
+          // stone cornice + cap along the roofline, occasional drainpipe
+          B.plain.box(fx + dx * 0.05, WALL_H - 0.16, fz + dy * 0.05, dx ? 0.1 : 1.0, 0.16, dy ? 0.1 : 1.0, 0xe2d6c0, { faces: 63 & ~(dx > 0 ? NX : dx < 0 ? PX : dy > 0 ? NZ : PZ) });
+          B.plain.box(fx + dx * 0.035, WALL_H - 0.24, fz + dy * 0.035, dx ? 0.07 : 1.0, 0.08, dy ? 0.07 : 1.0, 0xb8a888, { faces: 63 & ~PY & ~(dx > 0 ? NX : dx < 0 ? PX : dy > 0 ? NZ : PZ) });
+          if ((x * 3 + y * 5) % 9 === 0 && !((x + y) % 3 === 0)) {
+            const ox = dy ? 0.42 : 0, oz = dx ? 0.42 : 0;
+            B.plain.box(fx + dx * 0.05 + ox, 0.05, fz + dy * 0.05 + oz, 0.07, WALL_H - 0.25, 0.07, 0x5a6476);
+            for (const py of [0.5, 1.2]) B.plain.box(fx + dx * 0.04 + ox, py, fz + dy * 0.04 + oz, dx ? 0.06 : 0.11, 0.04, dy ? 0.06 : 0.11, 0x3e4656);
+            B.plain.box(fx + dx * 0.09 + ox, 0.02, fz + dy * 0.09 + oz, dx ? 0.14 : 0.09, 0.05, dy ? 0.14 : 0.09, 0x5a6476);
+          }
           B.plain.box(fx + dx * 0.02, 0, fz + dy * 0.02, ...[dx ? 0.04 : 1, 0.2, dy ? 0.04 : 1].slice(0, 1), 0.2, dy ? 0.04 : 1, 0x8a7a6a, { faces: bit | PY });
         } else {
           const pal = palAt(x + dx, y + dy);

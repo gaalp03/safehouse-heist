@@ -211,6 +211,12 @@ class App {
     this.updateMuteIcon();
   }
 
+  // cartoon iris-open reveal when a heist starts
+  iris() {
+    const e = $('iris'); if (!e) return;
+    e.classList.remove('go'); void e.offsetWidth; e.classList.add('go');
+    clearTimeout(this.irisT); this.irisT = setTimeout(() => e.classList.remove('go'), 850);
+  }
   screen(id) {
     for (const s of document.querySelectorAll('.screen')) s.classList.toggle('hidden', s.id !== id);
     const inGame = this.state === 'play';
@@ -477,7 +483,7 @@ class App {
       if (my !== this.recapId) return;
       const p = Math.min(1, (performance.now() - t0) / dur), n = Math.max(1, Math.floor(trail.length * p));
       x.drawImage(base, 0, 0, cv.width, cv.height);
-      x.fillStyle = 'rgba(28,19,48,.35)'; x.fillRect(0, 0, cv.width, cv.height);
+      x.fillStyle = 'rgba(28,19,48,.18)'; x.fillRect(0, 0, cv.width, cv.height);
       x.lineCap = 'round'; x.lineJoin = 'round'; x.lineWidth = 3.5;
       for (let i = 1; i < n; i++) {
         const a = trail[i - 1], b = trail[i];
@@ -596,6 +602,7 @@ class App {
     this.game.reset();
     this.input.clear();
     this.state = 'play';
+    this.iris();
     this.input.requestLock();
     this.runs++;
     this.startT = this.time;
@@ -1133,7 +1140,7 @@ class App {
     if (st === 'play' || (st === 'busted' && this.game.state === 'caught' && !this.game.endSent)) this.game.update(rdt, false);
     else if (st === 'menu' || st === 'soon') this.game.update(rdt, true);
     if (st !== 'pause' && st !== 'ad') {
-      this.particles.update(rdt);
+      this.particles.update(rdt, this.camera);
       this.shake.update(rdt);
     }
     this.updateCamera(rdt);
@@ -1250,7 +1257,8 @@ class App {
     const x = c.getContext('2d');
     for (let j = 0; j < L.H; j++) for (let i = 0; i < L.W; i++) {
       const k = j * L.W + i, ch = L.ch[k];
-      x.fillStyle = ch === '#' ? '#1d2140' : !L.walk[k] && !L.outdoor[k] ? '#a7a3bd' : L.outdoor[k] ? (L.floor[k] === 'road' ? '#7d8596' : '#5fae4c') : '#efe9df';
+      const fl = L.floor[k];
+      x.fillStyle = ch === '#' ? '#1d2140' : !L.walk[k] && !L.outdoor[k] ? '#9a8cc0' : L.outdoor[k] ? (fl === 'road' ? '#7d8596' : '#5fae4c') : fl === 'wood' ? '#f0d3a6' : fl === 'carpet' ? '#d9dcf6' : '#f4f0e8';
       x.fillRect(i * S, j * S, S, S);
     }
     // vent grates: little dark slotted squares on the wall line

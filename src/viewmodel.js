@@ -19,7 +19,7 @@ export class ViewModel {
     this.scene.add(this.root);
 
     this.R = new Group();
-    this.R.position.set(0.2, -0.27, 0.0);
+    this.R.position.set(0.23, -0.29, 0.0);
     this.R.rotation.y = 0.16;
     this.root.add(this.R);
     this.L = new Group();
@@ -73,8 +73,8 @@ export class ViewModel {
     bar.box(0.02, -0.05, 0.022, 0.006, 0.3, 0.002, c.barHi, { faces: 16 });
     this.bar = new Mesh(bar.build(), mat);
     this.bar.position.set(0, -0.035, -0.57);
-    this.bar.scale.set(0.75, 0.95, 0.75);
-    this.bar.rotation.set(-0.35, 0, -0.25);
+    this.bar.scale.set(0.8, 0.88, 0.8);
+    this.bar.rotation.set(-0.72, 0.15, -0.5);
     this.R.add(this.bar);
     const armL = new Mesh(armGeo(true), mat);
     armL.scale.set(0.56, 0.6, 1);
