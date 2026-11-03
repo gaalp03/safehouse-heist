@@ -852,11 +852,29 @@ export function buildWorld(L) {
     piece(-0.5, -HX, y0, y1); piece(HX, 0.5, y0, y1);
     piece(-HX, HX, y0, Math.min(y1, HY0)); piece(-HX, HX, Math.max(y0, HY1), y1);
   };
+  // outer walls stand taller than the ceiling (solid parapet + coping), so the roof edge never looks paper-thin
+  const TOPH = WALL_H + 0.34;
+  const extW = (x, y) => !TRAIN && isWall(x, y) && (isOut(x + 1, y) || isOut(x - 1, y) || isOut(x, y + 1) || isOut(x, y - 1));
   const seeThrough = (x, y, dx, dy, out) => !TRAIN && !(L.def.skyline && !out);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x, c = ch[i];
     if (c === '#') {
-      B.plain.box(x + 0.5, WALL_H, y + 0.5, 1, 0, 1, 0x3a2f4a, { faces: PY });
+      const ext = extW(x, y);
+      B.plain.box(x + 0.5, ext ? TOPH : WALL_H, y + 0.5, 1, 0, 1, ext ? 0x4a3d5c : 0x3a2f4a, { faces: PY });
+      if (ext) {
+        // solid parapet: the outer wall rises above the ceiling, with a chunky overhanging coping on top
+        B.plain.box(x + 0.5, TOPH, y + 0.5, 1.0, 0.07, 1.0, 0x5c4c6e, { faces: PY });
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nb = x + dx, nz = y + dy, bit = dx > 0 ? PX : dx < 0 ? NX : dy > 0 ? PZ : NZ;
+          if (isWall(nb, nz) && extW(nb, nz)) continue;
+          const fx = x + 0.5 + dx * 0.5, fz = y + 0.5 + dy * 0.5;
+          if (isOut(nb, nz)) {
+            quad(B.brick, x, y, dx, dy, WALL_H, TOPH - WALL_H, 0xffffff, 2);
+            B.plain.box(fx + dx * 0.07, TOPH - 0.02, fz + dy * 0.07, dx ? 0.14 : 1.0, 0.1, dy ? 0.14 : 1.0, 0x5c4c6e, { faces: 63 & ~(dx > 0 ? NX : dx < 0 ? PX : dy > 0 ? NZ : PZ) });
+            B.plain.box(fx + dx * 0.06, TOPH - 0.1, fz + dy * 0.06, dx ? 0.12 : 1.0, 0.08, dy ? 0.12 : 1.0, 0x3a2f4a, { faces: NY | bit });
+          } else quad(B.plain, x, y, dx, dy, WALL_H, TOPH - WALL_H, 0x4a3d5c, 1);
+        }
+      }
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         if (isWall(x + dx, y + dy)) continue;
         const out = isOut(x + dx, y + dy);
@@ -951,6 +969,20 @@ export function buildWorld(L) {
     if (doorX || doorY) {
       const pal = palAt(x, y);
       B.plain.box(x + 0.5, 1.55, y + 0.5, 1, WALL_H - 1.55, 1, pal.wall, { faces: doorX ? (NY | PZ | NZ) : (NY | PX | NX) });
+      // doorway in the outer wall: the lintel + parapet are a solid block, brick outside, capped like the wall
+      const eDoor = doorX ? (extW(x - 1, y) && extW(x + 1, y)) : (extW(x, y - 1) && extW(x, y + 1));
+      if (eDoor && !TRAIN) {
+        for (const [dx, dy] of doorX ? [[0, 1], [0, -1]] : [[1, 0], [-1, 0]]) {
+          const o = isOut(x + dx, y + dy), fx = x + 0.5 + dx * 0.5, fz = y + 0.5 + dy * 0.5, bit = dx > 0 ? PX : dx < 0 ? NX : dy > 0 ? PZ : NZ;
+          if (o) {
+            B.brick.box(fx + dx * 0.001, 1.55, fz + dy * 0.001, dx ? 0 : 1, TOPH - 1.55, dy ? 0 : 1, 0xffffff, { faces: bit });
+            B.plain.box(fx + dx * 0.07, TOPH - 0.02, fz + dy * 0.07, dx ? 0.14 : 1.0, 0.1, dy ? 0.14 : 1.0, 0x5c4c6e, { faces: 63 & ~(dx > 0 ? NX : dx < 0 ? PX : dy > 0 ? NZ : PZ) });
+            B.plain.box(fx + dx * 0.06, TOPH - 0.1, fz + dy * 0.06, dx ? 0.12 : 1.0, 0.08, dy ? 0.12 : 1.0, 0x3a2f4a, { faces: NY | bit });
+          } else B.plain.box(fx, WALL_H, fz, dx ? 0 : 1, TOPH - WALL_H, dy ? 0 : 1, 0x4a3d5c, { faces: bit });
+        }
+        B.plain.box(x + 0.5, TOPH, y + 0.5, 1, 0, 1, 0x4a3d5c, { faces: PY });
+        B.plain.box(x + 0.5, TOPH, y + 0.5, 1.0, 0.07, 1.0, 0x5c4c6e, { faces: PY });
+      }
       B.plain.box(x + 0.5, 1.55, y + 0.5, doorX ? 1.04 : 1.12, 0.07, doorX ? 1.12 : 1.04, CROWN, { faces: 63 & ~PY });
       for (const s of [-1, 1]) B.plain.box(x + 0.5 + (doorX ? s * 0.48 : 0), 0, y + 0.5 + (doorY ? s * 0.48 : 0), doorX ? 0.07 : 1.12, 1.55, doorY ? 0.07 : 1.12, CROWN, { faces: 63 & ~NY & ~PY });
       // open door leaf resting against an adjacent wall (not for security doors)
