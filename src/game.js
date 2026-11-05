@@ -56,6 +56,7 @@ function makeStars() {
 }
 
 const fmt = (v) => '$' + Math.round(v).toLocaleString('en-US');
+const COIN_LINES = ['Huh? A coin?', 'Ooh, money!', 'Who dropped this?', 'Finders keepers...', 'Is that a quarter?'];
 const CALM = new Set(['patrol', 'wait', 'post']);
 const CHAT = [
   ['Quiet night, huh?', 'Too quiet.'],
@@ -68,6 +69,16 @@ const CHAT = [
   ['Saw a weird van outside earlier.', 'Probably the pizza guy.'],
   ['Remember the drill if the alarm goes?', 'Run toward it, right?'],
   ['Is it just me or is it cold in here?', 'It\'s you.'],
+  ['Why do we even have a vent that big?', 'Budget cuts.'],
+  ['I put a coin on the floor for luck.', 'That was YOU?'],
+  ['If I see a robber, I\'m calling my mom.', 'Call the police, Gary.'],
+  ['Who left the wardrobe open?', 'Wardrobes don\'t open themselves.'],
+  ['My cousin says the cameras are fake.', 'Your cousin says a lot.'],
+  ['I trained for this, you know.', 'Online course doesn\'t count.'],
+  ['Smell that? Smoke?', 'Kevin\'s microwaving fish again.'],
+  ['Night shift pays double, right?', '...Right?'],
+  ['Did the boss say anything about lasers?', 'Just don\'t walk into them.'],
+  ['I\'d never fall for the coin trick.', 'Famous last words.'],
 ];
 export class Game {
   constructor(app) {
@@ -1452,7 +1463,7 @@ export class Game {
       if (g.state === 'sleep') { this.wake(g, x, z); continue; }
       if (g.state !== 'investigate' && g.state !== 'suspicious') {
         this.app.audio.play('huh');
-        this.app.floaters.spawn(typeof lure === 'string' ? lure : lure ? 'Huh? A coin?' : '?', g.x, 1.9, g.z, 'say q', 0.9);
+        this.app.floaters.spawn(typeof lure === 'string' ? lure : lure ? COIN_LINES[(Math.random() * COIN_LINES.length) | 0] : '?', g.x, 1.9, g.z, 'say q', 0.9);
         if (lure === true) this.lures++;
         if (lure === 'Jackpot!?') this.slotLures++;
       }
