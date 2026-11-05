@@ -20,6 +20,10 @@ export const MUTATORS = [
   { id: 'butter', name: 'Butterfingers', desc: 'No coins this time', apply: (g) => { g.coinsLeft = 0; } },
   { id: 'rush', name: 'Rapid Response', desc: 'Police arrive in 20s', apply: (g) => { g.alarmTotal = 20; } },
   { id: 'hound', needs: 'dog', name: 'Hungry Hound', desc: 'The dog is 50% faster', apply: (g) => g.dogs.forEach((d) => { d.mul = 1.5; }) },
+  { id: 'smokeshow', name: 'Smoke Show', desc: '+3 smoke bombs, guards see 15% further', apply: (g) => { g.smokesLeft += 3; g.guards.forEach((x) => { x.range *= 1.15; }); } },
+  { id: 'insidejob', name: 'Inside Job', desc: 'You start in a guard uniform (30s)', apply: (g) => { g.disguiseT = 30; } },
+  { id: 'sleepy', name: 'Sleepy Shift', desc: 'Guards are 20% slower, police come in 25s', apply: (g) => { g.guards.forEach((x) => { x.speed *= 0.8; }); g.alarmTotal = 25; } },
+  { id: 'bounty', name: 'Big Bounty', desc: 'All loot worth 2x, guards are 15% faster', apply: (g) => { for (const it of g.loot) { g.lootTotal += it.value; it.value *= 2; } g.guards.forEach((x) => { x.speed *= 1.15; }); } },
 ];
 
 // levels: the heists this player has unlocked, as { idx, owner, dog } (the daily rotates through them)
