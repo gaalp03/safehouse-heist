@@ -8,6 +8,7 @@ export default {
   tutorial: true,
   night: true,
   lampScale: 1.0,
+  trucks: true,
   carpet: 0x3a4250,
   safeName: 'count room safe',
   safeScale: 1.3,

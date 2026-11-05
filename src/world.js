@@ -74,6 +74,24 @@ function furniture(L, f, B, rng, lights) {
 
   switch (f.type) {
     case 'crate': {
+      if (L.def.trucks && Math.max(W, D) >= 4) {
+        // armored cash truck: chassis, armored cargo box, cab with windscreen, wheels, hazard stripe, rear doors
+        const along = W >= D, Lg = along ? W : D, Wd = along ? D : W;
+        const bx = (x0, y, len, h, wid, col, o = {}) => along ? b(P, x0, y, 0, len, h, wid, col, o) : b(P, 0, y, x0, wid, h, len, col, o);
+        const AR = 0x55634f, AR2 = shade(AR, 0.8), front = Lg / 2 - 0.08;
+        bx(0, 0.18, Lg - 0.2, 0.22, Wd - 0.5, 0x22242f);                                       // chassis
+        bx(-0.55, 0.38, Lg - 1.4, 1.3, Wd - 0.35, AR, { top: shade(AR, 1.15) });                // cargo box
+        bx(-0.55, 1.1, Lg - 1.38, 0.12, Wd - 0.32, 0xf2c94c, { faces: 63 & ~4 & ~8 });          // hazard stripe
+        bx(-Lg / 2 + 0.13, 0.42, 0.02, 1.2, Wd - 0.5, AR2, { faces: along ? 2 : 32 });          // rear doors
+        bx(front - 0.55, 0.38, 1.0, 0.95, Wd - 0.4, AR, { top: shade(AR, 1.12) });              // cab
+        bx(front - 0.07, 0.85, 0.02, 0.4, Wd - 0.6, 0x2a3a5a, { faces: along ? 1 : 16 });       // windscreen
+        bx(front - 0.5, 0.88, 0.6, 0.34, Wd - 0.38, 0x2a3a5a, { faces: along ? (16 | 32) : (1 | 2) }); // side windows
+        bx(front - 0.03, 0.42, 0.04, 0.16, Wd - 0.5, 0xc8ccd4);                                 // bumper
+        for (const t of [-Lg / 2 + 0.75, -0.2, front - 0.5]) for (const sd of [-1, 1]) {
+          if (along) b(P, t, 0, sd * (Wd / 2 - 0.25), 0.5, 0.5, 0.22, 0x1a1b22); else b(P, sd * (Wd / 2 - 0.25), 0, t, 0.22, 0.5, 0.5, 0x1a1b22);
+        }
+        break;
+      }
       // stacked shipping crates (two high, the top one nudged/rotated), stencil band + corner posts
       const CR = [0xa8794a, 0x8f6a44, 0xb98a55, 0x7d6a52];
       for (let i = 0; i < W; i++) for (let j = 0; j < D; j++) {
