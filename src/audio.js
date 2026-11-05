@@ -294,6 +294,22 @@ export class Audio {
     }
   }
   // looping rain bed (muffled, we're indoors)
+  // night ambience: recorded cricket loop, louder outdoors, a faint hum through the walls inside
+  crickets(on, level = 0.1) {
+    if (!this.ctx) return;
+    const rec = on ? this.loopBuf('crickets') : null;
+    if (on && rec && !this.ck) {
+      const ctx = this.ctx, src = ctx.createBufferSource(), g = ctx.createGain();
+      src.buffer = rec; src.loop = true; g.gain.value = 0.0001;
+      src.connect(g).connect(this.sfx); src.start();
+      this.ck = { src, g, lv: -1 };
+    } else if (!on && this.ck) {
+      const c = this.ck, t = this.ctx.currentTime;
+      c.g.gain.setTargetAtTime(0.0001, t, 0.3); c.src.stop(t + 1.5); this.ck = null;
+      return;
+    }
+    if (this.ck && Math.abs(this.ck.lv - level) > 0.01) { this.ck.lv = level; this.ck.g.gain.setTargetAtTime(level, this.ctx.currentTime, 0.5); }
+  }
   rain(on) {
     if (!this.ctx || !this.noiseBuf) return;
     if (on && !this.rn) {

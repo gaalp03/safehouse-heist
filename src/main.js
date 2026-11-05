@@ -1362,6 +1362,9 @@ class App {
       const el = $('wet'); el.style.opacity = this.wetK.toFixed(2); el.classList.toggle('hidden', this.wetK < 0.02);
     }
     this.audio.rain(!!(this.level && this.level.rain) && (st === 'play' || st === 'pause' || st === 'busted'));
+    { const lv = this.level, g = this.game, on = !!(lv && lv.night && !lv.rain && !lv.train && !lv.skyline) && (st === 'play' || st === 'pause');
+      let k = 0.07; if (on && g && g.L) { const p = g.player, c = Math.floor(p.z) * g.L.W + Math.floor(p.x); if (g.L.outdoor[c]) k = 0.32; }
+      this.audio.crickets(on, st === 'pause' ? 0.03 : k); }
     this.audio.rumble(!!(this.level && this.level.train) && (st === 'play' || st === 'pause' || st === 'busted'));
     if (this.boltK > 0) { this.boltK = Math.max(0, this.boltK - rdt * 2.2); }
     this.renderer.toneMappingExposure = 1.15 + this.boltK * this.boltK * 1.6;
