@@ -43,7 +43,7 @@ lost.mp3	k1/Audio (295 files)/Digital sounds (60 sounds)/lowDown.ogg	Kenney Audi
 radioOk.mp3	k1/Audio (295 files)/Digital sounds (60 sounds)/twoTone1.ogg	Kenney Audio Pack (kenney.nl), CC0
 win.mp3	k1/Audio (295 files)/Jingle sounds (85 sounds)/jingles_SAX/jingles_SAX07.ogg	Kenney Audio Pack (kenney.nl), CC0
 unlock.mp3	k1/Audio (295 files)/Jingle sounds (85 sounds)/jingles_STEEL/jingles_STEEL01.ogg	Kenney Audio Pack (kenney.nl), CC0
-bust.mp3	k1/Audio (295 files)/Jingle sounds (85 sounds)/jingles_SAX/jingles_SAX01.ogg	Kenney Audio Pack (kenney.nl), CC0
+bust.mp3	oga/losetrumpet.wav	Game Over Trumpet SFX by 0new4y (opengameart.org/content/game-over-trumpet-sfx), CC0
 dash.mp3	sfx-kit/sounds/whooshes/whoosh-fast-medium.wav	wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0
 throw.mp3	sfx-kit/sounds/swishes-and-zips/swish-soft.wav	wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0
 gold.mp3	sfx-kit/sounds/money/money-coin-stack.wav	wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0
@@ -70,4 +70,6 @@ chopper.mp3	SimonePiervergili-SoundEffects/Plane/Helicopter.wav	Simone Piervergi
 engine.mp3	SimonePiervergili-SoundEffects/Car/Ford S Max CarStart.wav	Simone Piervergili Sound Effects (github.com/NeoSoundFonts/SimonePiervergili-SoundEffects), CC0
 alarm.mp3	sfx-kit/sounds/digital/digital-breach.wav	wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0
 siren.mp3	SimonePiervergili-SoundEffects/Misc/HouseAlarm.wav	Simone Piervergili Sound Effects (github.com/NeoSoundFonts/SimonePiervergili-SoundEffects), CC0
+huh.mp3	oga/huh.wav	Huh by tinyworlds (opengameart.org/content/huh), CC0
+beat.mp3	oga/heartbeat_slow_0.wav	Heartbeat Sounds by bart (opengameart.org/content/heartbeat-sounds), CC0
 rain.mp3	SimonePiervergili-SoundEffects/Nature/Rain_1.wav	Simone Piervergili Sound Effects (github.com/NeoSoundFonts/SimonePiervergili-SoundEffects), CC0

@@ -147,6 +147,7 @@ export class Audio {
       win: () => S('win', { vol: 0.55 }), bust: () => S('bust', { vol: 0.55 }), alarm: () => S('alarm', { vol: 0.5 }),
       thunder: () => S('thunder', { vol: 0.65, jitter: 0.08 }), vent: () => S('vent', { vol: 0.55 }), clank: () => S('clank', { vol: 0.55, jitter: 0.1 }),
       click: () => S('click', { vol: 0.5 }), star: () => S('star', { vol: 0.5, rate: semi([0, 4, 7][Math.min(2, p | 0)] || 0) }),
+      huh: () => S('huh', { vol: 0.5, jitter: 0.1 }), beat: () => S('beat', { vol: 0.6 }),
       throw: () => S('throw', { vol: 0.5, jitter: 0.1 }), swing: () => S('throw', { vol: 0.6, rate: 1.3, jitter: 0.12 }), clink: () => S('clink', { vol: 0.5 * Math.max(0.35, Math.min(1, p || 1)), jitter: 0.1 }),
       disarm: () => S('disarm', { vol: 0.5 }), contract: () => S('contract', { vol: 0.5 }), creak: () => S('creak', { vol: 0.5, jitter: 0.08 }),
       zap: () => S('zap', { vol: 0.5 }), powerdown: () => S('powerdown', { vol: 0.55 }), smoke: () => S('smoke', { vol: 0.55 }),
