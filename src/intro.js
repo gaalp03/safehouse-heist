@@ -14,7 +14,7 @@ export const INTRO = [
   { pos: [24.4, 7.6, 13.4], look: [20.3, 0, 6.0], title: 'WEAR HIS UNIFORM', text: 'Hold the button on a knocked-out guard to put on his uniform. While DISGUISED counts down, guards think you are one of them!',
     keys: [[['HOLD E', 'disguise']], [['HOLD HAND', 'disguise']]], act: 'disguise', dur: 4.5 },
   { pos: [14.6, 4.0, 8.4], look: [11.6, 0.3, 4.6], act: 'coin', title: 'LURE THEM AWAY', text: 'Throw a coin: the guard hears the clink and walks over to check. Sneak past while he looks away!',
-    keys: [[['Q', 'throw coin']], [['COIN', 'throw coin']]] },
+    keys: [[['HOLD Q', 'aim · release to throw']], [['HOLD COIN', 'aim · release to throw']]] },
   { pos: [15.6, 3.4, 7.6], look: [12.6, 0.4, 4.4], act: 'smoke', title: 'SMOKE BOMBS', text: "Spotted? Drop a smoke bomb: guards can't see into or through the cloud. Slip away inside it!",
     keys: [[['C', 'smoke bomb']], [['CLOUD', 'smoke bomb']]] },
   { pos: [7.4, 3.6, 7.9], look: [4.6, 0.2, 5.0], act: 'safe', dur: 4.4, title: 'CRACK IT & ESCAPE', text: 'Pick the lock, crack the safe, then crawl through the vent back to the van. Dashing is fast but LOUD!',
