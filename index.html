@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="6f672c73">
+<meta name="build" content="52603814">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=6f672c73">
+<link rel="modulepreload" href="./js/main.js?v=52603814">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -463,6 +463,8 @@ body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
 .confetti i{position:absolute;top:-24px;width:10px;height:14px;border-radius:2px;animation:conf 2.4s cubic-bezier(.3,.6,.6,1) forwards;box-shadow:0 0 0 1.5px rgba(28,19,48,.35)}
 .confetti i.bill{width:30px;height:15px;border-radius:3px;background:linear-gradient(90deg,#4fae5a,#9be39a 50%,#4fae5a);box-shadow:0 0 0 2px #2a6a34}
 @keyframes conf{0%{transform:translate(0,0) rotate(0deg);opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),108vh) rotate(var(--r));opacity:0}}
+/* small desktop embeds (e.g. 960x540): compact pins so 12 of them fit the city map */
+@media (max-height:620px) and (min-width:641px){.pin .art{width:30px;height:30px;font-size:14px;border-width:2px;box-shadow:0 3px 0 var(--ink)}.pin .art::after{bottom:-7px;border-width:5px;border-top-width:5px;margin-left:-5px}.pin b{font-size:10px;margin-top:1px}.pin .stars span{font-size:9px}#city .pin.on .art{transform:scale(1.12)}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -535,19 +537,20 @@ body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
       <g stroke="#3a4570" fill="none" style="stroke-width:6px" vector-effect="non-scaling-stroke">
         <path d="M0 21 H100 M0 63 H100 M0 83 H100 M20 0 V100 M44 0 V100 M62 0 V100 M80 0 V100" vector-effect="non-scaling-stroke"/>
       </g>
-      <path id="route" d="M16 74 L40 40 L64 52 L84 23 L88 54 L34 82 L56 83 L77 83 L56 24 L91 77" stroke="#ffc94a" fill="none" stroke-dasharray="2 2" vector-effect="non-scaling-stroke" style="stroke-width:3px;stroke-dasharray:8 7;opacity:.9"/>
+      <path id="route" d="M12 80 L22 50 L44 50 L58 20 L66 50 L36 80 L60 80 L84 80 L34 20 L88 50 L82 20" stroke="#ffc94a" fill="none" stroke-dasharray="2 2" vector-effect="non-scaling-stroke" style="stroke-width:3px;stroke-dasharray:8 7;opacity:.9"/>
     </svg>
-    <button class="pin" id="lvl1" style="left:16%;top:74%"><i class="art">🏠</i><b class="t">Safe House</b><span class="stars" id="lvl1stars"></span><span class="best" id="lvl1best">New!</span></button>
-    <button class="pin lock" id="lvl2" style="left:40%;top:40%"><i class="art" id="lvl2art">🔒</i><b class="t">The Bank</b><span class="stars" id="lvl2stars"></span><span class="best" id="lvl2best">Escape Safe House to unlock</span></button>
-    <button class="pin lock" id="lvl3" style="left:64%;top:52%"><i class="art" id="lvl3art">🔒</i><b class="t">Jewelry Store</b><span class="stars" id="lvl3stars"></span><span class="best" id="lvl3best">Escape the Bank to unlock</span></button>
-    <button class="pin lock" id="lvl4" style="left:84%;top:23%"><i class="art" id="lvl4art">🔒</i><b class="t">The Museum</b><span class="stars" id="lvl4stars"></span><span class="best" id="lvl4best">Escape the Jewelry Store to unlock</span></button>
-    <button class="pin lock" id="lvl6" style="left:34%;top:82%"><i class="art" id="lvl6art">🔒</i><b class="t">The Penthouse</b><span class="stars" id="lvl6stars"></span><span class="best" id="lvl6best">Escape the Casino to unlock</span></button>
-    <button class="pin lock" id="lvl7" style="left:56%;top:83%"><i class="art" id="lvl7art">🔒</i><b class="t">Night Train</b><span class="stars" id="lvl7stars"></span><span class="best" id="lvl7best">Escape the Penthouse to unlock</span></button>
-    <button class="pin lock" id="lvl8" style="left:77%;top:83%"><i class="art" id="lvl8art">🔒</i><b class="t">The Warehouse</b><span class="stars" id="lvl8stars"></span><span class="best" id="lvl8best">Escape the Night Train to unlock</span></button>
-    <button class="pin lock" id="lvl9" style="left:56%;top:24%"><i class="art" id="lvl9art">🔒</i><b class="t">Mansion Gala</b><span class="stars" id="lvl9stars"></span><span class="best" id="lvl9best">Escape the Warehouse to unlock</span></button>
-    <button class="pin lock" id="lvl10" style="left:91%;top:77%"><i class="art" id="lvl10art">🔒</i><b class="t">Diamonds</b><span class="stars" id="lvl10stars"></span><span class="best" id="lvl10best">Escape the Mansion Gala to unlock</span></button>
-    <button class="pin lock" id="lvl5" style="left:88%;top:54%"><i class="art" id="lvl5art">🔒</i><b class="t">The Casino</b><span class="stars" id="lvl5stars"></span><span class="best" id="lvl5best">Escape the Museum to unlock</span></button>
-    <button class="pin daily" id="daily" style="left:14%;top:26%"><i class="art" id="dArt"></i><b class="t">Daily</b><span class="best" id="dBest"></span><span class="hidden" id="dMut">—</span><span class="hidden" id="dDesc"></span></button>
+    <button class="pin" id="lvl1" style="left:12%;top:80%"><i class="art">🏠</i><b class="t">Safe House</b><span class="stars" id="lvl1stars"></span><span class="best" id="lvl1best">New!</span></button>
+    <button class="pin lock" id="lvl2" style="left:22%;top:50%"><i class="art" id="lvl2art">🔒</i><b class="t">The Bank</b><span class="stars" id="lvl2stars"></span><span class="best" id="lvl2best">Escape Safe House to unlock</span></button>
+    <button class="pin lock" id="lvl3" style="left:44%;top:50%"><i class="art" id="lvl3art">🔒</i><b class="t">Jewelry Store</b><span class="stars" id="lvl3stars"></span><span class="best" id="lvl3best">Escape the Bank to unlock</span></button>
+    <button class="pin lock" id="lvl4" style="left:58%;top:20%"><i class="art" id="lvl4art">🔒</i><b class="t">The Museum</b><span class="stars" id="lvl4stars"></span><span class="best" id="lvl4best">Escape the Jewelry Store to unlock</span></button>
+    <button class="pin lock" id="lvl6" style="left:36%;top:80%"><i class="art" id="lvl6art">🔒</i><b class="t">The Penthouse</b><span class="stars" id="lvl6stars"></span><span class="best" id="lvl6best">Escape the Casino to unlock</span></button>
+    <button class="pin lock" id="lvl7" style="left:60%;top:80%"><i class="art" id="lvl7art">🔒</i><b class="t">Night Train</b><span class="stars" id="lvl7stars"></span><span class="best" id="lvl7best">Escape the Penthouse to unlock</span></button>
+    <button class="pin lock" id="lvl8" style="left:84%;top:80%"><i class="art" id="lvl8art">🔒</i><b class="t">The Warehouse</b><span class="stars" id="lvl8stars"></span><span class="best" id="lvl8best">Escape the Night Train to unlock</span></button>
+    <button class="pin lock" id="lvl9" style="left:34%;top:20%"><i class="art" id="lvl9art">🔒</i><b class="t">Mansion Gala</b><span class="stars" id="lvl9stars"></span><span class="best" id="lvl9best">Escape the Warehouse to unlock</span></button>
+    <button class="pin lock" id="lvl10" style="left:88%;top:50%"><i class="art" id="lvl10art">🔒</i><b class="t">Diamonds</b><span class="stars" id="lvl10stars"></span><span class="best" id="lvl10best">Escape the Mansion Gala to unlock</span></button>
+    <button class="pin lock" id="lvl11" style="left:82%;top:20%"><i class="art" id="lvl11art">🔒</i><b class="t">Depot</b><span class="stars" id="lvl11stars"></span><span class="best" id="lvl11best">Escape the Diamond Exchange to unlock</span></button>
+    <button class="pin lock" id="lvl5" style="left:66%;top:50%"><i class="art" id="lvl5art">🔒</i><b class="t">The Casino</b><span class="stars" id="lvl5stars"></span><span class="best" id="lvl5best">Escape the Museum to unlock</span></button>
+    <button class="pin daily" id="daily" style="left:10%;top:29%"><i class="art" id="dArt"></i><b class="t">Daily</b><span class="best" id="dBest"></span><span class="hidden" id="dMut">—</span><span class="hidden" id="dDesc"></span></button>
     <div id="starTotal" class="o">★ 0/15</div><div id="rankChip" class="o"></div>
   </div>
   <div id="selInfo"><b id="selName">Safe House</b><span id="selStars" class="stars"></span><small id="selSub"></small><small id="selGoal"></small></div>
@@ -615,7 +618,7 @@ body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=6f672c73"></script>
+<script type="module" src="./js/main.js?v=52603814"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

@@ -12,6 +12,7 @@ export const OUTFITS = [
   { id: 'chain', name: 'Gold Chain', sleeve: 0x2a2c3d, glove: 0xe8b33a, bar: 0xffd75a, band: 0xe8b33a, ach: 'loyal' },
   { id: 'dock', name: 'Dockhand', sleeve: 0xc9562a, glove: 0x3a3f4a, bar: 0x5a6a7a, band: 0xf2c94c, ach: 'warehouse' },
   { id: 'ice', name: 'Ice Cold', sleeve: 0x1c2a4a, glove: 0xeaf6ff, bar: 0xbfe8ff, band: 0x3affff, ach: 'diamond' },
+  { id: 'armored', name: 'Armored', sleeve: 0x3a4a3a, glove: 0x22242f, bar: 0xf2c94c, band: 0xff8a2a, ach: 'depot' },
   { id: 'lucky', name: 'Lucky Cat', sleeve: 0xffc23a, glove: 0xf4f1ea, bar: 0xe8303e, band: 0xe8303e, ach: 'cats' },
   { id: 'royal', name: 'Royal', sleeve: 0x6a4ad8, glove: 0xd9b45a, bar: 0xe8b33a, band: 0xd9b45a, need: 6 },
   { id: 'golden', name: 'Golden Boy', sleeve: 0xe8b33a, glove: 0xf2d48a, bar: 0xffd75a, band: 0xffffff, need: 10 },
