@@ -23,6 +23,7 @@ export const ACH = [
   { id: 'loyal', icon: '📅', name: 'Loyal Crew', desc: 'Log in 7 days in a row', check: (s, r, save) => !!(save.login && save.login.n >= 7) },
   { id: 'photo', icon: '🚨', name: 'Photo Finish', desc: 'Escape with under 10 s left on the police timer', check: (s, r) => r.win && r.photo },
   { id: 'mansion', icon: '🥂', name: 'Party Crasher', desc: 'Escape from the Mansion Gala', check: (s, r) => r.win && r.level === 'mansion' },
+  { id: 'diamond', icon: '💎', name: 'Ice Cold', desc: 'Escape from the Diamond Exchange', check: (s, r) => r.win && r.level === 'diamond' },
   { id: 'courier', icon: '💼', name: 'Special Delivery', desc: 'Grab a golden briefcase', check: (s, r) => (r.briefs || 0) > 0 },
   { id: 'cats', icon: '🐱', name: 'Cat Collector', desc: 'Find all 9 hidden lucky cats', check: (s, r, save) => Object.keys(save.cats || {}).length >= 9 },
   { id: 'cat1', icon: '🐾', name: 'Curious', desc: 'Find a hidden lucky cat', check: (s, r, save) => Object.keys(save.cats || {}).length >= 1 },
