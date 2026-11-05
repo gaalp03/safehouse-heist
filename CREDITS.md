@@ -80,6 +80,7 @@ Sources:
 | `sfx/huh.mp3` | huh.wav ("Huh" by tinyworlds) | OpenGameArt (opengameart.org/content/huh), CC0 |
 | `sfx/beat.mp3` | heartbeat_slow_0.wav, first beat ("Heartbeat Sounds" by bart) | OpenGameArt (opengameart.org/content/heartbeat-sounds), CC0 |
 | `sfx/crickets.mp3` | crickets-oneloop.mp3, 6 s seamless loop ("Crickets Ambient Noise (Loopable)" by wolfgang) | OpenGameArt (opengameart.org/content/crickets-ambient-noise-loopable), CC0 |
+| `sfx/tvstatic.mp3` | ScatterNoise1.mp3, first 4 s ("Static" by xhunterko) | OpenGameArt (opengameart.org/content/static), CC0 |
 | `sfx/dash.mp3` | sfx-kit/sounds/whooshes/whoosh-fast-medium.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
 | `sfx/throw.mp3` | sfx-kit/sounds/swishes-and-zips/swish-soft.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
 | `sfx/gold.mp3` | sfx-kit/sounds/money/money-coin-stack.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
