@@ -290,7 +290,7 @@ class App {
     $('lvl9best').textContent = mnu ? (mnb ? 'Best ' + fmtMoney(mnb.score) : 'New!') : 'Escape the Warehouse to unlock';
     const du = this.diamondUnlocked(), dmb = this.save.best[diffKey('diamond', this.diff)];
     $('lvl10').classList.toggle('lock', !du);
-    $('lvl10art').textContent = du ? '💎' : '🔒';
+    $('lvl10art').textContent = du ? '🏢' : '🔒';
     $('lvl10stars').innerHTML = du ? this.starsHTML(dmb ? dmb.stars : 0) : '';
     $('lvl10best').textContent = du ? (dmb ? 'Best ' + fmtMoney(dmb.score) : 'New!') : 'Escape the Mansion Gala to unlock';
     const wu = this.warehouseUnlocked(), wb = this.save.best[diffKey('warehouse', this.diff)];
