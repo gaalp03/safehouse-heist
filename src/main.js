@@ -193,6 +193,7 @@ class App {
     click('bISkip', () => this.endIntro());
     click('bHint', () => this.showHintTip());
     click('bINext', () => this.nextIntro());
+    $('c').addEventListener('pointerdown', () => { if (this.state === 'intro' && this.introT > 0.6) this.nextIntro(); });
     $('tutSkip').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.game.tut) this.skipTutorial(); });
     click('bTrBack', () => this.showMenu());
     click('bPause', () => this.pause());
