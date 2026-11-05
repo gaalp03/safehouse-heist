@@ -27,7 +27,7 @@ export const ACH = [
   { id: 'depot', icon: '🚚', name: 'Cash in Transit', desc: 'Escape from the Depot', check: (s, r) => r.win && r.level === 'depot' },
   { id: 'auction', icon: '🖼️', name: 'Going, Going, Gone', desc: 'Escape from the Auction House', check: (s, r) => r.win && r.level === 'auction' },
   { id: 'courier', icon: '💼', name: 'Special Delivery', desc: 'Grab a golden briefcase', check: (s, r) => (r.briefs || 0) > 0 },
-  { id: 'cats', icon: '🐱', name: 'Cat Collector', desc: 'Find all 10 hidden lucky cats', check: (s, r, save) => Object.keys(save.cats || {}).length >= 10 },
+  { id: 'cats', icon: '🐱', name: 'Cat Collector', desc: 'Find 10 hidden lucky cats', check: (s, r, save) => Object.keys(save.cats || {}).length >= 10 },
   { id: 'stars30', icon: '🌟', name: 'Master Thief', desc: 'Earn 30 stars', check: (s, r, save) => { const m = {}; for (const [k, v] of Object.entries(save.best || {})) { const id = k.replace(/_(easy|hard|ironman)$/, ''); m[id] = Math.max(m[id] || 0, (v && v.stars) || 0); } return Object.values(m).reduce((a, b) => a + b, 0) >= 30; } },
   { id: 'cat1', icon: '🐾', name: 'Curious', desc: 'Find a hidden lucky cat', check: (s, r, save) => Object.keys(save.cats || {}).length >= 1 },
   { id: 'casino', icon: '🎰', name: 'High Roller', desc: 'Escape from the Casino', check: (s, r) => r.win && r.level === 'casino' },
