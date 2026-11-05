@@ -11,6 +11,7 @@ export const LEVELS = [
   { id: 'mansion', num: 9, name: 'Mansion Gala', unlock: 'warehouse', load: () => import('./level9-mansion.js') },
   { id: 'diamond', num: 10, dog: true, name: 'Diamond Exchange', unlock: 'mansion', load: () => import('./level10-diamond.js') },
   { id: 'depot', num: 11, dog: true, name: 'The Depot', unlock: 'diamond', load: () => import('./level11-depot.js') },
+  { id: 'auction', num: 12, name: 'Auction House', unlock: 'depot', load: () => import('./level12-auction.js') },
 ];
 
 const cache = {};

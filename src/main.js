@@ -149,7 +149,7 @@ class App {
   bindUI() {
     const click = (id, fn) => $(id).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); fn(); });
     click('bPlay', () => this.playSel());
-    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'lvl9', 'lvl10', 'lvl11', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
+    for (const k of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'lvl9', 'lvl10', 'lvl11', 'lvl12', 'daily']) $(k).addEventListener('click', (e) => { e.stopPropagation(); this.audio.unlock(); this.audio.play('click'); this.selectPin(k); });
     for (const el of document.querySelectorAll('#diff button')) {
       el.addEventListener('click', (e) => {
         e.stopPropagation(); this.audio.unlock(); this.audio.play('click');
@@ -308,7 +308,7 @@ class App {
     $('lvl9stars').innerHTML = mnu ? this.starsHTML(mnb ? mnb.stars : 0) : '';
     $('lvl9best').textContent = mnu ? (mnb ? 'Best ' + fmtMoney(mnb.score) : 'New!') : 'Escape the Warehouse to unlock';
     { // generic pins for heists 11+
-      const ICON = { depot: '🚚' };
+      const ICON = { depot: '🚚', auction: '🖼️' };
       for (let i = 10; i < LEVELS.length; i++) {
         const l = LEVELS[i], k = 'lvl' + (i + 1), el = $(k); if (!el) continue;
         const un = this.levelUnlocked(i), bb = this.save.best[diffKey(l.id, this.diff)];
@@ -423,7 +423,7 @@ class App {
     const bt = (id) => (s.best[id] != null ? fmtTime(s.best[id]) : '—');
     const rows = [['Heists', s.runs], ['Escapes', s.escapes], ['Busted', s.busts], ['Total loot', fmtMoney(s.loot)], ['Guards KO', s.kos],
       ['Contracts', s.contracts], ['Lucky cats', Object.keys(this.save.cats || {}).length + '/' + LEVELS.length], ['Best Safe House', bt('safehouse')], ['Best Bank', bt('bank')], ['Best Jewelry', bt('jewelry')],
-      ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')], ['Best Train', bt('train')], ['Best Warehouse', bt('warehouse')], ['Best Mansion', bt('mansion')], ['Best Diamond Exchange', bt('diamond')], ['Best Depot', bt('depot')]];
+      ['Best Museum', bt('museum')], ['Best Casino', bt('casino')], ['Best Penthouse', bt('penthouse')], ['Best Train', bt('train')], ['Best Warehouse', bt('warehouse')], ['Best Mansion', bt('mansion')], ['Best Diamond Exchange', bt('diamond')], ['Best Depot', bt('depot')], ['Best Auction House', bt('auction')]];
     $('trJobs').innerHTML = this.jobsHTML();
     $('jobsIn').textContent = `(new jobs in ${nextDailyIn()})`;
     for (let i = rows.length - 1; i >= 0; i--) if (String(rows[i][0]).startsWith('Best ') && rows[i][1] === '—') rows.splice(i, 1);
@@ -454,7 +454,7 @@ class App {
     $('rAch').classList.toggle('hidden', !list.length);
     if (list.length) setTimeout(() => this.audio.play('contract'), 1600);
   }
-  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : k === 'lvl6' ? !this.penthouseUnlocked() : k === 'lvl7' ? !this.trainUnlocked() : k === 'lvl8' ? !this.warehouseUnlocked() : k === 'lvl9' ? !this.mansionUnlocked() : k === 'lvl10' ? !this.diamondUnlocked() : k === 'lvl11' ? !this.levelUnlocked(10) : k === 'daily' ? !this.bankUnlocked() : false; }
+  pinLocked(k) { return k === 'lvl2' ? !this.bankUnlocked() : k === 'lvl3' ? !this.jewelryUnlocked() : k === 'lvl4' ? !this.museumUnlocked() : k === 'lvl5' ? !this.casinoUnlocked() : k === 'lvl6' ? !this.penthouseUnlocked() : k === 'lvl7' ? !this.trainUnlocked() : k === 'lvl8' ? !this.warehouseUnlocked() : k === 'lvl9' ? !this.mansionUnlocked() : k === 'lvl10' ? !this.diamondUnlocked() : k === 'lvl11' ? !this.levelUnlocked(10) : k === 'lvl12' ? !this.levelUnlocked(11) : k === 'daily' ? !this.bankUnlocked() : false; }
   selectPin(k) {
     this.sel = k; this.save.sel = k;
     if (this.pinLocked(k)) { const c = $(k); c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
@@ -464,7 +464,7 @@ class App {
     let k = this.sel || this.save.sel || 'lvl1';
     if (!$(k)) k = 'lvl1';
     this.sel = k;
-    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'lvl9', 'lvl10', 'lvl11', 'daily']) $(id).classList.toggle('on', id === k);
+    for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'lvl9', 'lvl10', 'lvl11', 'lvl12', 'daily']) $(id).classList.toggle('on', id === k);
     const el = $(k), locked = this.pinLocked(k);
     $('selName').textContent = k === 'daily' ? 'Daily: ' + $('dMut').textContent : el.querySelector('.t').textContent;
     const st = el.querySelector('.stars');
@@ -553,7 +553,7 @@ class App {
     SDK.gameplayStop();
     this.state = 'soon';
     $('soonName').textContent = 'More heists';
-    $('soonList').innerHTML = ['Armored truck ambush', 'Harbor yacht party', 'Airport cargo hold'].map((t) => `<li>${t}</li>`).join('');
+    $('soonList').innerHTML = ['Harbor yacht party', 'Airport cargo hold', 'Royal train'].map((t) => `<li>${t}</li>`).join('');
     this.screen('soon');
   }
   hotTarget() {
@@ -570,7 +570,7 @@ class App {
     return d;
   }
   levelUnlocked(i) {
-    return [() => true, () => this.bankUnlocked(), () => this.jewelryUnlocked(), () => this.museumUnlocked(), () => this.casinoUnlocked(), () => this.penthouseUnlocked(), () => this.trainUnlocked(), () => this.warehouseUnlocked(), () => this.mansionUnlocked(), () => this.diamondUnlocked(), () => this.genUnlocked(10)][i]?.() || false;
+    return [() => true, () => this.bankUnlocked(), () => this.jewelryUnlocked(), () => this.museumUnlocked(), () => this.casinoUnlocked(), () => this.penthouseUnlocked(), () => this.trainUnlocked(), () => this.warehouseUnlocked(), () => this.mansionUnlocked(), () => this.diamondUnlocked(), () => this.genUnlocked(10), () => this.genUnlocked(11)][i]?.() || false;
   }
   // later heists unlock generically: escape the previous one (any difficulty) or a debug/open flag
   genUnlocked(i) {

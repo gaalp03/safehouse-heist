@@ -17,6 +17,7 @@ const THEMES = [
   { prog: 0, tr: 0, bass: 0, k: 1 }, { prog: 1, tr: 2, bass: 1, k: 1.02 }, { prog: 2, tr: -3, bass: 2, k: 0.96 }, { prog: 3, tr: -5, bass: 0, k: 0.94 },
   { prog: 0, tr: 3, bass: 2, k: 1.08 }, { prog: 2, tr: 1, bass: 1, k: 1 }, { prog: 1, tr: -2, bass: 2, k: 1.1 }, { prog: 3, tr: 4, bass: 1, k: 1 },
   { prog: 1, tr: 5, bass: 0, k: 1.04 }, { prog: 2, tr: -1, bass: 1, k: 1.06 }, { prog: 3, tr: 2, bass: 2, k: 1.12 },
+  { prog: 0, tr: -2, bass: 1, k: 0.98 },
 ];
 export class Audio {
   constructor() {
