@@ -756,10 +756,10 @@ class App {
     const L = (this._introLook = this._introLook || this._f.clone());
     L.set(f.l.x + (s.look[0] - f.l.x) * e, f.l.y + (s.look[1] - f.l.y) * e, f.l.z + (s.look[2] - f.l.z) * e);
     cam.lookAt(L);
-    const bar = $('intro').querySelector('.ibar i'); bar.style.width = Math.min(100, (this.introT / SHOT_T) * 100) + '%';
+    const bar = $('intro').querySelector('.ibar i'); bar.style.width = Math.min(100, (this.introT / (s.dur || SHOT_T)) * 100) + '%';
     // little scripted actor scenes
     const g = this.game, gd = g.guards[2], t = this.introT;
-    if (s.act === 'sneak') g.actor(dt, 9.6 + Math.min(1, t / SHOT_T) * 5.8, 12.45, Math.PI / 2, 0.55, true);
+    if (s.act === 'sneak') g.actor(dt, 9.6 + Math.min(1, t / (s.dur || SHOT_T)) * 5.8, 12.45, Math.PI / 2, 0.55, true);
     else if (s.act === 'ko' && gd) {
       const bz = gd.z + 0.85;
       if (t < 1.9) g.actor(dt, gd.x, 6.6 - (t / 1.9) * (6.6 - bz), Math.PI, 0.6, true);
@@ -831,7 +831,7 @@ class App {
     }
     else if (g.actorOn) g.actorOff();
     if (s.act !== 'disguise') $('iDisg').classList.add('hidden');
-    if (this.introT >= SHOT_T) this.nextIntro();
+    if (this.introT >= (s.dur || SHOT_T)) this.nextIntro();
   }
   endIntro() {
     if (this.state !== 'intro') return;
