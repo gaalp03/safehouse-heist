@@ -186,3 +186,10 @@ Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` 
 ## Controls & training heist (update)
 - Left click (touch: red HIT button) swings the crowbar: knocks out a guard hit from behind; E / ✋ is use, grab, crack, hide, answer radio, wear uniform.
 - The Safe House is a training heist: no dog, four slow guards, one trick per room (dash, sneak behind cover, hide, knockout, radio, disguise, coin, smoke, lock pick, safe, vent). In the guided tutorial, getting spotted rewinds you to the last checkpoint instead of BUSTED, and alarms are off.
+
+## Heists 10–11 and audio additions
+- **10 · Diamond Exchange**: vault behind the night trader's keycard and a laser grid, panic-button trader, leashed dog, TV lure, vent. Unlocks after the Mansion Gala; achievement *Ice Cold*, outfit *Ice Cold*.
+- **11 · The Depot**: armored-truck yard (trucks block sight), count room behind keycard + laser, a leashed and a free-roaming dog. Achievement *Cash in Transit*, outfit *Armored*.
+- City map uses a 3-row layout with compact pins on small (≤620px tall) desktop embeds.
+- New CC0 sounds from OpenGameArt: bust sad-trumpet, guard "huh?", heartbeat, night crickets ambience, TV static (see CREDITS.md).
+- Daily mutators: Smoke Show, Inside Job, Sleepy Shift, Big Bounty. Achievement *Master Thief* for 30 stars.
