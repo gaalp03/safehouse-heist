@@ -16,7 +16,7 @@ export const TUT_STEPS = [
     done: (g) => g.kos > 0, at: { x: 20.5, z: 4.6, label: 'HIT FROM BEHIND' } },
   { text: ['His radio will call in! Stay next to him and HOLD E to answer', 'His radio will call in! Stay next to him and HOLD ✋ to answer'], done: (g) => g.radioFaked > 0 },
   { text: ['HOLD E on him to wear his uniform: guards won\'t spot you from afar', 'HOLD ✋ on him to wear his uniform: guards won\'t spot you from afar'], done: (g) => g.disguises > 0 },
-  { text: ['A guard blocks the lounge. HOLD Q to aim, release to throw a coin and lure him away', 'A guard blocks the lounge. Tap the coin to throw it and lure him away'],
+  { text: ['A guard blocks the lounge. HOLD Q to aim, release to throw a coin and lure him away', 'A guard blocks the lounge. HOLD the coin button to aim, release to throw and lure him away'],
     done: (g) => g.coinsThrown > 0, at: { x: 15.5, z: 4.5, label: 'LOUNGE' } },
   { text: ['SMOKE BOMB: press C to drop one. Guards can\'t see into or through the cloud!', 'SMOKE BOMB: tap the cloud button. Guards can\'t see into or through the cloud!'],
     done: (g) => g.smokesUsed > 0 && g.time - (g.smokeAt || 0) > 1.2, at: { x: 13.5, z: 4.5, label: 'DROP SMOKE HERE' } },

@@ -124,7 +124,7 @@ export class Input {
     btn(els.bAct, () => { this.act = true; this.actP = true; }, () => { this.act = false; });
     if (els.bHit) btn(els.bHit, () => { this.atkP = true; });
     btn(els.bDash, () => { this.dashP = true; });
-    btn(els.bThrow, () => { this.throwP = true; });
+    btn(els.bThrow, () => { this.aimQ = true; }, () => { if (this.aimQ) { this.aimQ = false; this.throwP = true; } });
     btn(els.bSmoke, () => { this.smokeP = true; });
     btn(els.bSneak, () => { this.crouchP = true; });
   }

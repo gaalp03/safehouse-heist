@@ -51,7 +51,7 @@ const HINTS = {
   heavy: ['Gold and paintings are HEAVY and slow you down. Walk back to the van to stash them', 'Gold and paintings are HEAVY and slow you down. Walk back to the van to stash them'],
   sneak: ['Z: crouch-sneak. Slower and quieter, and crouching behind counters or tables hides you', 'Tap 🦶 to sneak. Slower and quieter, and crouching behind low cover hides you'],
   smoke: ['C: drop a smoke bomb. Guards cannot see into or through the cloud!', 'Tap 💨 to drop a smoke bomb. Guards cannot see through it!'],
-  coin: ['Hold Q to aim, release to throw a coin and lure guards away', 'Tap the coin to lure guards away'],
+  coin: ['Hold Q to aim, release to throw a coin and lure guards away', 'Hold the coin button to aim, release to throw it and lure guards away'],
   alarm: ['ALARM! Escape or hold E at the keypad by the front door', 'ALARM! Escape or hold the hand at the keypad by the front door'],
 };
 
