@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="a4d545a1">
+<meta name="build" content="4b6d80b1">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=a4d545a1">
+<link rel="modulepreload" href="./js/main.js?v=4b6d80b1">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -465,6 +465,7 @@ body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
 @keyframes conf{0%{transform:translate(0,0) rotate(0deg);opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),108vh) rotate(var(--r));opacity:0}}
 /* small desktop embeds (e.g. 960x540): compact pins so 12 of them fit the city map */
 @media (max-height:620px) and (min-width:641px){.pin .art{width:30px;height:30px;font-size:14px;border-width:2px;box-shadow:0 3px 0 var(--ink)}.pin .art::after{bottom:-7px;border-width:5px;border-top-width:5px;margin-left:-5px}.pin b{font-size:10px;margin-top:1px}.pin .stars span{font-size:9px}#city .pin.on .art{transform:scale(1.12)}}
+.pin.fresh .art::before{content:'NEW';position:absolute;right:-16px;top:-10px;font-size:9px;font-family:var(--disp);background:#ff4f5e;color:#fff;border:2px solid var(--ink);border-radius:6px;padding:1px 4px 0;text-shadow:none;animation:unl .6s infinite alternate;line-height:1.2}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -619,7 +620,7 @@ body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=a4d545a1"></script>
+<script type="module" src="./js/main.js?v=4b6d80b1"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

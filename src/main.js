@@ -344,6 +344,8 @@ class App {
     $('lvl4stars').innerHTML = mu ? this.starsHTML(mb ? mb.stars : 0) : '';
     $('lvl4best').textContent = mu ? (mb ? 'Best ' + fmtMoney(mb.score) : 'New!') : 'Escape the Jewelry Store to unlock';
     $('lvl3best').textContent = ju ? (jb ? 'Best ' + fmtMoney(jb.score) : 'New!') : 'Escape the Bank to unlock';
+    // fresh unlocks that were never played get a pulsing NEW sticker on the map
+    LEVELS.forEach((l, i) => { const el = $('lvl' + (i + 1)); if (!el || i === 0) return; const played = ['', '_easy', '_hard', '_ironman'].some((x) => this.save.best[l.id + x]) || (this.save.played || {})[l.id]; el.classList.toggle('fresh', this.levelUnlocked(i) && !played); });
     this.renderSel();
     if (this.diff === 'ironman' && !this.ironUnlocked()) this.diff = 'normal';
     for (const el of document.querySelectorAll('#diff button')) { el.classList.toggle('on', el.dataset.d === this.diff); if (el.dataset.d === 'ironman') { el.classList.toggle('lock', !this.ironUnlocked()); el.title = this.ironUnlocked() ? 'Ironman: x2.5 score, 1 coin, no smoke, 15s police' : 'Escape any heist on Hard to unlock'; } }
@@ -662,6 +664,7 @@ class App {
     this.iris();
     this.input.requestLock();
     this.runs++;
+    if (this.level && this.mode === 'classic') { this.save.played = this.save.played || {}; this.save.played[this.level.id] = 1; }
     this.startT = this.time;
     this.screen(null);
     this.hQ.length = 0;
