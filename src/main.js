@@ -742,6 +742,7 @@ class App {
   beginIntro() {
     this.introSeen = true;
     this.state = 'intro'; this.introI = -1;
+    this.introHintSnap = new Set(this.hDone);
     this.floaters.minScale = 1.05;
     this.introKO = false; this.introCoin = this.introLured = this.introSafe = this.introDirty = this.introSmoke = this.introCough = this.introDisg = this.introNod = this.introR1 = this.introR2 = this.introMe = false;
     for (const g of this.game.guards) { g.cone.material.opacity = 3.2; g.cone.material.color.setHex(0xffc400); }
@@ -860,6 +861,8 @@ class App {
     this.game.actorOff();
     for (const g of this.game.guards) { g.cone.material.opacity = 1; g.cone.material.color.setHex(0xffe14d); }
     if (this.introKO || this.introDirty) { this.game.reset(); this.introKO = this.introDirty = false; }
+    this.onCoins(this.game.coinsLeft); this.onSmoke(this.game.smokesLeft); this.onDisguise(this.game.disguiseT);
+    for (const id of this.introHintSnap ? [...this.hDone].filter((x) => !this.introHintSnap.has(x)) : []) this.hDone.delete(id);
     this.floaters.clear(); this.particles.clear(); this.floaters.minScale = 0;
     this.state = 'play';
     this.input.clear();

@@ -430,6 +430,7 @@ export class Game {
   }
 
   reset() {
+    if (this.aimPts) this.aimPts.visible = this.aimRing.visible = false;
     const L = this.L, def = this.def;
     this.state = 'play';
     this.time = 0; this.lootGot = 0; this.spotted = false; this.kos = 0;
@@ -863,6 +864,10 @@ export class Game {
         app.particles.burst(k.x + 0.5, 0.8, k.y + 0.5, { count: 12, colors: [0x2f7ae8, 0xffffff, 0xf2c94c], speed: 2, up: 2, size: 0.04, life: 0.6 }); app.particles.flash(k.x + 0.5, 0.9, k.y + 0.5, 0x6fb0ff, 1.6);
       }
     }
+    // coins + smoke work everywhere (interaction prompts below return early)
+    this.updateAim(inp.aimQ && this.coinsLeft > 0);
+    if (inp.consumeThrow()) this.throwCoin();
+    if (inp.consumeSmoke()) this.dropSmoke();
     let nearDoor = null;
     for (const d of this.doors) {
       if (d.open) continue;
@@ -1018,9 +1023,6 @@ export class Game {
       }
     }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
-    this.updateAim(inp.aimQ && this.coinsLeft > 0);
-    if (inp.consumeThrow()) this.throwCoin();
-    if (inp.consumeSmoke()) this.dropSmoke();
     this.checkContracts(false);
     this.updateObjective();
 
@@ -2343,6 +2345,7 @@ export class Game {
 
   // ---------- endings ----------
   escape() {
+    if (this.aimPts) this.aimPts.visible = this.aimRing.visible = false;
     const app = this.app;
     this.checkContracts(true);
     this.state = 'escape'; this.endT = 0; this.endSent = false; this.cineInit = false; this.whooshed = false;
@@ -2500,6 +2503,7 @@ export class Game {
     app.announce('Spotted! Back to the checkpoint. Try again: stay out of the yellow cones');
   }
   bust(g) {
+    if (this.aimPts) this.aimPts.visible = this.aimRing.visible = false;
     if (this.tut && this.state === 'play') { this.tutRetry(g); return; }
     this.mark('caught', this.player.x, this.player.z);
     // remember why, so the busted screen can give a tip that actually helps

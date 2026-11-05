@@ -14,7 +14,7 @@ export const TUT_STEPS = [
   { text: ['Wait until he walks away, then press E to step out', 'Wait until he walks away, then tap ✋ to step out'], done: (g) => !g.player.hiding },
   { text: ['Sneak up BEHIND the guard upstairs and CLICK to hit him', 'Sneak up BEHIND the guard upstairs and tap HIT'],
     done: (g) => g.kos > 0, at: { x: 20.5, z: 4.6, label: 'HIT FROM BEHIND' } },
-  { text: ['His radio will call in! Stay next to him and HOLD E to answer', 'His radio will call in! Stay next to him and HOLD ✋ to answer'], done: (g) => g.radioFaked > 0 },
+  { text: ['His radio will call in! Stay next to him and HOLD E to answer', 'His radio will call in! Stay next to him and HOLD ✋ to answer'], done: (g) => g.radioFaked > 0 || g.guards.some((x) => x.radioCall === 3) },
   { text: ['HOLD E on him to wear his uniform: guards won\'t spot you from afar', 'HOLD ✋ on him to wear his uniform: guards won\'t spot you from afar'], done: (g) => g.disguises > 0 },
   { text: ['A guard blocks the lounge. HOLD Q to aim, release to throw a coin and lure him away', 'A guard blocks the lounge. HOLD the coin button to aim, release to throw and lure him away'],
     done: (g) => g.coinsThrown > 0, at: { x: 15.5, z: 4.5, label: 'LOUNGE' } },

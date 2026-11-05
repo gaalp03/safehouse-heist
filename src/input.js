@@ -118,13 +118,13 @@ export class Input {
 
     const btn = (el, down, up) => {
       el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); el.classList.add('down'); down(); });
-      const u = () => { el.classList.remove('down'); up && up(); };
-      el.addEventListener('pointerup', u); el.addEventListener('pointercancel', u); el.addEventListener('pointerleave', u);
+      const u = (cancel) => { el.classList.remove('down'); up && up(cancel); };
+      el.addEventListener('pointerup', () => u()); el.addEventListener('pointercancel', () => u(true)); el.addEventListener('pointerleave', () => u());
     };
     btn(els.bAct, () => { this.act = true; this.actP = true; }, () => { this.act = false; });
     if (els.bHit) btn(els.bHit, () => { this.atkP = true; });
     btn(els.bDash, () => { this.dashP = true; });
-    btn(els.bThrow, () => { this.aimQ = true; }, () => { if (this.aimQ) { this.aimQ = false; this.throwP = true; } });
+    btn(els.bThrow, () => { this.aimQ = true; }, (cancel) => { if (this.aimQ) { this.aimQ = false; if (!cancel) this.throwP = true; } });
     btn(els.bSmoke, () => { this.smokeP = true; });
     btn(els.bSneak, () => { this.crouchP = true; });
   }
@@ -167,5 +167,5 @@ export class Input {
   consumeCrouch() { const v = this.crouchP; this.crouchP = false; return v; }
   consumeSmoke() { const v = this.smokeP; this.smokeP = false; return v; }
   consumeThrow() { const v = this.throwP; this.throwP = false; return v; }
-  clear() { this.atkP = false; this.actP = false; this.dashP = false; this.throwP = false; this.smokeP = false; this.lx = 0; this.ly = 0; }
+  clear() { this.aimQ = false; this.atkP = false; this.actP = false; this.dashP = false; this.throwP = false; this.smokeP = false; this.lx = 0; this.ly = 0; }
 }
