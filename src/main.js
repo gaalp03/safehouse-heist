@@ -904,6 +904,8 @@ class App {
     this.sens = 0.0024 * s.sens; this.invertY = s.invert; this.fovBase = s.fov;
     this.audio.setVolumes(s.music, s.sfx);
     this.shake.scale = s.shake ? 1 : 0;
+    this.calm = !s.shake;   // 'Shake & flashes' off: no alarm strobe / siren edge flashes either
+    document.body.classList.toggle('calm', this.calm);
   }
   showSettings() {
     this.setFrom = this.state === 'pause' ? 'pause' : 'menu';

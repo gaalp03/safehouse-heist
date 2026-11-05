@@ -2414,7 +2414,7 @@ export class Game {
       this.panel.led.material.color.setHex(this.alarm ? (on ? 0xff2a3a : 0x5a0a10) : 0x3ddc84);
     }
     { // whole-level emergency strobe (cheap: one color uniform per world material)
-      const want = this.alarm && this.state === 'play' ? 1 : 0;
+      const want = this.alarm && this.state === 'play' && !this.app.calm ? 1 : 0;
       this.alarmTint += (want - this.alarmTint) * Math.min(1, dt * 4);
       if (this.alarmTint > 0.004 || this.alarmTintOn) {
         this.alarmTintOn = this.alarmTint > 0.004;
