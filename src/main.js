@@ -221,6 +221,24 @@ class App {
     this.updateMuteIcon();
   }
 
+  // win celebration: a burst of paper confetti + bills over the result screen (DOM, auto-removed)
+  confetti(n) {
+    const box = document.createElement('div'); box.className = 'confetti';
+    const cols = ['#ffd23a', '#ff5a6a', '#4fe0a0', '#7fd8ff', '#c77dff', '#fff6e8'];
+    for (let i = 0; i < n; i++) {
+      const e = document.createElement('i'), bill = Math.random() < 0.25;
+      e.className = bill ? 'bill' : '';
+      e.style.left = (Math.random() * 100) + '%';
+      e.style.background = bill ? '' : cols[(Math.random() * cols.length) | 0];
+      e.style.animationDelay = (Math.random() * 0.6) + 's';
+      e.style.animationDuration = (1.8 + Math.random() * 1.6) + 's';
+      e.style.setProperty('--dx', ((Math.random() - 0.5) * 220) + 'px');
+      e.style.setProperty('--r', ((Math.random() - 0.5) * 1440) + 'deg');
+      box.appendChild(e);
+    }
+    document.body.appendChild(box);
+    setTimeout(() => box.remove(), 4500);
+  }
   // cartoon iris-open reveal when a heist starts
   iris() {
     const e = $('iris'); if (!e) return;
@@ -1235,6 +1253,7 @@ class App {
     SDK.gameplayStop();
     SDK.happytime();
     const nStars = res.stars.filter(Boolean).length;
+    setTimeout(() => { if (this.state === 'result') this.confetti(14 + nStars * 16); }, 450);
     let prev, newBest, bestScore;
     if (res.daily) {
       const k = this.daily.key, dd = (this.save.daily = this.save.daily || {});

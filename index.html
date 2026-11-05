@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="4907979b">
+<meta name="build" content="050674f1">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=4907979b">
+<link rel="modulepreload" href="./js/main.js?v=050674f1">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -458,6 +458,11 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 @media (max-height:480px){#mm{width:110px}}
 body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
 #iDisg{position:absolute;left:50%;top:calc(9vh + 14px);translate:-50% 0;font-size:16px;color:#9fc4ff;padding:6px 14px;white-space:nowrap;animation:objp .4s cubic-bezier(.2,1.8,.4,1)}
+/* win confetti */
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:7;overflow:hidden}
+.confetti i{position:absolute;top:-24px;width:10px;height:14px;border-radius:2px;animation:conf 2.4s cubic-bezier(.3,.6,.6,1) forwards;box-shadow:0 0 0 1.5px rgba(28,19,48,.35)}
+.confetti i.bill{width:30px;height:15px;border-radius:3px;background:linear-gradient(90deg,#4fae5a,#9be39a 50%,#4fae5a);box-shadow:0 0 0 2px #2a6a34}
+@keyframes conf{0%{transform:translate(0,0) rotate(0deg);opacity:1}85%{opacity:1}100%{transform:translate(var(--dx),108vh) rotate(var(--r));opacity:0}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -610,7 +615,7 @@ body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=4907979b"></script>
+<script type="module" src="./js/main.js?v=050674f1"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>
