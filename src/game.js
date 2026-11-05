@@ -773,6 +773,7 @@ export class Game {
     p.pitch = clamp(p.pitch - _lk.y * sens * (app.invertY ? -1 : 1), -1.25, 1.2);
     p.face = p.yaw + Math.PI;
     const atk = inp.consumeAtk();
+    if (this.aimPts && (p.hiding || p.venting || this.picking)) this.updateAim(false);
     if (p.hiding) { this.updateHiding(dt, inp); return; }
     if (p.venting) { this.updateVent(dt, inp); return; }
     if (this.picking) { this.updatePicking(dt, inp); return; }
@@ -1017,6 +1018,7 @@ export class Game {
       }
     }
     if (this.comboT > 0) { this.comboT -= dt; if (this.comboT <= 0) this.combo = 0; }
+    this.updateAim(inp.aimQ && this.coinsLeft > 0);
     if (inp.consumeThrow()) this.throwCoin();
     if (inp.consumeSmoke()) this.dropSmoke();
     this.checkContracts(false);
@@ -1377,6 +1379,35 @@ export class Game {
     this.app.onInSmoke(this.state === 'play' && this.inSmoke(this.player.x, this.player.z));
   }
 
+  // coin aim preview (hold Q): dotted arc + landing ring, same physics as the real throw
+  updateAim(on) {
+    if (!this.aimPts) {
+      const N = 26, geo = new BufferGeometry(); geo.setAttribute('position', new BufferAttribute(new Float32Array(N * 3), 3));
+      this.aimPts = new Points(geo, new PointsMaterial({ map: textures().glow, size: 0.16, color: 0xffd23a, transparent: true, depthWrite: false, opacity: 0.95 }));
+      this.aimPts.frustumCulled = false; this.aimPts.renderOrder = 9;
+      this.aimRing = new Mesh(new RingGeometry(0.22, 0.32, 24).rotateX(-Math.PI / 2), new MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: 0.85, depthWrite: false }));
+      this.app.scene.add(this.aimPts, this.aimRing);
+    }
+    this.aimPts.visible = this.aimRing.visible = !!on;
+    if (!on) return;
+    const p = this.player, fx = Math.sin(p.face), fz = Math.cos(p.face), cp = Math.cos(p.pitch), sp = Math.sin(p.pitch), v = 7.5;
+    let x = p.x + fx * 0.35, y = 0.95, z = p.z + fz * 0.35, vx = fx * cp * v + p.vx * 0.5, vy = sp * v + 2.6, vz = fz * cp * v + p.vz * 0.5;
+    const arr = this.aimPts.geometry.attributes.position.array, N = arr.length / 3, dt = 0.035;
+    let n = 0, lx = x, lz = z;
+    for (let i = 0; i < 80 && n < N; i++) {
+      const ox = x, oz = z;
+      vy -= 16 * dt; x += vx * dt; y += vy * dt; z += vz * dt;
+      const cx = Math.floor(x), cz = Math.floor(z);
+      if (!this.walkable(cx, cz) && (this.opaqueAt(cx, cz) || y < 0.9)) { lx = ox; lz = oz; break; }
+      if (y <= 0.03) { lx = x; lz = z; break; }
+      lx = x; lz = z;
+      if (i % 2 === 0) { arr[n * 3] = x; arr[n * 3 + 1] = y; arr[n * 3 + 2] = z; n++; }
+    }
+    for (let k = n; k < N; k++) { arr[k * 3] = lx; arr[k * 3 + 1] = 0.05; arr[k * 3 + 2] = lz; }
+    this.aimPts.geometry.attributes.position.needsUpdate = true;
+    this.aimRing.position.set(lx, 0.04, lz);
+    const s = 1 + Math.sin(this.t * 8) * 0.12; this.aimRing.scale.set(s, 1, s);
+  }
   throwCoin() {
     const p = this.player, app = this.app;
     if (this.coinsLeft <= 0) { app.audio.play('nope'); app.floaters.spawn('No coins!', p.x + Math.sin(p.face) * 1.5, 1.2, p.z + Math.cos(p.face) * 1.5, 'warn', 0.9); return; }

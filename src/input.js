@@ -26,7 +26,7 @@ export class Input {
       if (e.code === 'Escape' || e.code === 'KeyP') this.emit('pause');
       if (e.code === 'KeyR') this.emit('restart');
       if (e.code === 'KeyM') this.emit('mute');
-      if (e.code === 'KeyQ' || e.code === 'KeyG') this.throwP = true;
+      if (e.code === 'KeyQ' || e.code === 'KeyG') this.aimQ = true;   // hold to aim (arc preview), release to throw
       if (e.code === 'KeyC' || e.code === 'KeyX') this.smokeP = true;
       if (e.code === 'KeyZ' || e.code === 'ControlRight') this.crouchP = true;
       this.emit('key', e.code);
@@ -34,8 +34,9 @@ export class Input {
     addEventListener('keyup', (e) => {
       if (MOVE[e.code]) this.k[MOVE[e.code]] = 0;
       if (e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') this.act = false;
+      if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.aimQ) { this.aimQ = false; this.throwP = true; }
     });
-    addEventListener('blur', () => { this.k = {}; this.act = false; this.joyEnd(); this.look.id = -1; });
+    addEventListener('blur', () => { this.k = {}; this.act = false; this.aimQ = false; this.joyEnd(); this.look.id = -1; });
 
     // ---- mouse ----
     const cv = els.canvas;
