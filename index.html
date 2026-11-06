@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="bf99856a">
+<meta name="build" content="9b8cba4d">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=bf99856a">
+<link rel="modulepreload" href="./js/main.js?v=9b8cba4d">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -467,6 +467,28 @@ body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
 @media (max-height:620px) and (min-width:641px){.pin .art{width:30px;height:30px;font-size:14px;border-width:2px;box-shadow:0 3px 0 var(--ink)}.pin .art::after{bottom:-7px;border-width:5px;border-top-width:5px;margin-left:-5px}.pin b{font-size:10px;margin-top:1px}.pin .stars span{font-size:9px}#city .pin.on .art{transform:scale(1.12)}}
 .pin.fresh .art::before{content:'NEW';position:absolute;right:-16px;top:-10px;font-size:9px;font-family:var(--disp);background:#ff4f5e;color:#fff;border:2px solid var(--ink);border-radius:6px;padding:1px 4px 0;text-shadow:none;animation:unl .6s infinite alternate;line-height:1.2}
 body.calm #siren.on{animation:none;opacity:.5}
+/* touch layout v2: right-hand controls on a tidy arc around GRAB, nothing overlaps; minimap moves out of the thumb zone */
+body.touch #bAct{left:auto;right:calc(env(safe-area-inset-right) + 20px);bottom:calc(env(safe-area-inset-bottom) + 24px);width:92px;height:92px}
+body.touch #bHit{left:auto;right:calc(env(safe-area-inset-right) + 138px);bottom:calc(env(safe-area-inset-bottom) + 37px);width:66px;height:66px}
+body.touch #bDash{left:auto;right:calc(env(safe-area-inset-right) + 108px);bottom:calc(env(safe-area-inset-bottom) + 120px);width:64px;height:64px}
+body.touch #bThrow{left:auto;right:calc(env(safe-area-inset-right) + 36px);bottom:calc(env(safe-area-inset-bottom) + 148px);width:60px;height:60px}
+body.touch #bSneak{left:auto;right:calc(env(safe-area-inset-right) + 228px);bottom:calc(env(safe-area-inset-bottom) + 42px);width:56px;height:56px}
+body.touch #bSmoke{left:auto;right:calc(env(safe-area-inset-right) + 207px);bottom:calc(env(safe-area-inset-bottom) + 140px);width:56px;height:56px}
+@media (orientation:portrait){
+body.touch #bAct{left:auto;right:calc(env(safe-area-inset-right) + 17px);bottom:calc(env(safe-area-inset-bottom) + 20px);width:77px;height:77px}
+body.touch #bHit{left:auto;right:calc(env(safe-area-inset-right) + 116px);bottom:calc(env(safe-area-inset-bottom) + 31px);width:55px;height:55px}
+body.touch #bDash{left:auto;right:calc(env(safe-area-inset-right) + 90px);bottom:calc(env(safe-area-inset-bottom) + 100px);width:54px;height:54px}
+body.touch #bThrow{left:auto;right:calc(env(safe-area-inset-right) + 30px);bottom:calc(env(safe-area-inset-bottom) + 124px);width:50px;height:50px}
+body.touch #bSneak{left:auto;right:calc(env(safe-area-inset-right) + 192px);bottom:calc(env(safe-area-inset-bottom) + 35px);width:47px;height:47px}
+body.touch #bSmoke{left:auto;right:calc(env(safe-area-inset-right) + 174px);bottom:calc(env(safe-area-inset-bottom) + 117px);width:47px;height:47px}
+}
+body.touch #touch button span{font-size:10px;letter-spacing:.3px;margin-top:1px}
+body.touch #touch button .ico{width:26px;height:26px}
+body.touch #touch #bAct .ico{width:38px;height:38px}
+body.touch #touch #bAct span{font-size:12px}
+@media (orientation:landscape){body.touch #mm{top:140px;bottom:auto;width:110px}}
+@media (orientation:portrait){body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 14px);width:88px}}
+body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2px 0 var(--ink),1.5px 0 0 var(--ink),-1.5px 0 0 var(--ink),0 -1.5px 0 var(--ink),1px 1px 0 var(--ink),-1px 1px 0 var(--ink);-webkit-text-stroke:0}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -621,7 +643,7 @@ body.calm #siren.on{animation:none;opacity:.5}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=bf99856a"></script>
+<script type="module" src="./js/main.js?v=9b8cba4d"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

@@ -43,7 +43,25 @@ export class Audio {
       this.decodeSamples();
       this.timer = setInterval(() => this.sched(), 40);
     }
-    if (this.ctx.state === 'suspended' && !this.hidden && !this.adMuted) this.ctx.resume();
+    // iOS: 'interrupted' after calls / app switches; resume on the next gesture too
+    if ((this.ctx.state === 'suspended' || this.ctx.state === 'interrupted') && !this.hidden && !this.adMuted) this.ctx.resume().catch(() => {});
+    this.iosKick();
+  }
+  // iPhone ringer switch silences Web Audio unless the page's audio session is 'playback':
+  // ask for it (Safari 16.4+), and on older iOS keep a silent looping <audio> element playing (started from a gesture)
+  iosKick() {
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (_) {}
+    if (this.kick || !/iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent) || !('ontouchend' in document)) return;
+    try {
+      const sr = 8000, n = sr / 2, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+      const w = (o, str) => { for (let i = 0; i < str.length; i++) v.setUint8(o + i, str.charCodeAt(i)); };
+      w(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+      v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 2, true);
+      const el = new window.Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })));
+      el.loop = true; el.setAttribute('playsinline', ''); el.preload = 'auto';
+      const pr = el.play(); this.kick = el;
+      if (pr && pr.catch) pr.catch(() => { this.kick = null; });
+    } catch (_) { this.kick = null; }
   }
   apply() {
     if (!this.ctx) return;
@@ -69,7 +87,8 @@ export class Audio {
   setHidden(h) {
     this.hidden = h;
     if (!this.ctx) return;
-    if (h) this.ctx.suspend(); else if (!this.adMuted) this.ctx.resume();
+    if (h) this.ctx.suspend(); else if (!this.adMuted) this.ctx.resume().catch(() => {});
+    if (this.kick) { if (h) this.kick.pause(); else { const pr = this.kick.play(); if (pr && pr.catch) pr.catch(() => {}); } }
   }
 
   tone(f, dur, o = {}) {

@@ -78,8 +78,12 @@ class App {
     this.diff = DIFFS[this.save.diff] ? this.save.diff : 'normal';
 
     const mobile = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
-    this.maxDpr = mobile ? 1.25 : 1.75;
-    this.dpr = Math.min(devicePixelRatio || 1, this.maxDpr);
+    // phones: render near native resolution (retina screens looked blurry at 1.25x); desktop unchanged
+    const ndpr = devicePixelRatio || 1;
+    this.mobile = mobile;
+    this.maxDpr = mobile ? Math.min(ndpr, 2.25) : 1.75;
+    this.minDpr = mobile ? Math.min(ndpr, 1.5) : 0.6;
+    this.dpr = Math.min(ndpr, this.maxDpr);
     const r = (this.renderer = new WebGLRenderer({ canvas: this.els.canvas, antialias: !mobile, powerPreference: 'high-performance', stencil: false }));
     // phones can drop the GPU context (app switch / low memory): keep progress, show a note, reload when it comes back
     this.els.canvas.addEventListener('webglcontextlost', (e) => {
@@ -214,6 +218,8 @@ class App {
     this.input.on('lock', () => { if (this.state !== 'play') this.input.exitLock(); });
     this.input.on('unlock', () => { if (this.state === 'play' && this.game.state === 'play' && !this.input.touch) this.pause(); });
     addEventListener('pointerdown', () => this.audio.unlock(), { capture: true });
+    // iOS Safari only treats touchend/click as a user gesture for starting audio
+    for (const ev of ['touchend', 'click']) addEventListener(ev, () => this.audio.unlock(), { capture: true, passive: true });
     addEventListener('keydown', () => this.audio.unlock(), { capture: true });
     addEventListener('blur', () => { if (this.state === 'play') this.pause(); });
     document.addEventListener('visibilitychange', () => {
@@ -1601,8 +1607,10 @@ class App {
     const avg = this.frameAcc / this.frameN;
     this.frameAcc = 0; this.frameN = 0;
     if (document.hidden) return;
-    if (avg > 1 / 45 && this.dpr > 0.6) { this.dpr = Math.max(0.6, this.dpr - 0.15); this.goodWin = 0; }
-    else if (avg < 1 / 57) { if (++this.goodWin >= 3 && this.dpr < Math.min(devicePixelRatio || 1, this.maxDpr)) { this.dpr = Math.min(this.maxDpr, this.dpr + 0.1); this.goodWin = 0; } else return; }
+    // phones often run at a capped 30fps (low power mode): only shed resolution when it's genuinely struggling
+    const slow = this.mobile ? 1 / 26 : 1 / 45;
+    if (avg > slow && this.dpr > this.minDpr) { this.dpr = Math.max(this.minDpr, this.dpr - 0.15); this.goodWin = 0; }
+    else if (avg < (this.mobile ? 1 / 29 : 1 / 57)) { if (++this.goodWin >= 3 && this.dpr < Math.min(devicePixelRatio || 1, this.maxDpr)) { this.dpr = Math.min(this.maxDpr, this.dpr + 0.1); this.goodWin = 0; } else return; }
     else return;
     this.renderer.setPixelRatio(this.dpr);
     this.renderer.setSize(this.w, this.h, false);
