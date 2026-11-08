@@ -1282,7 +1282,7 @@ export class Game {
       }
     }
     this.ventsUsed++;
-    p.venting = { t: 0, from: v, to: v.other, dur: 1.7, moved: false };
+    p.venting = { t: 0, from: v, to: v.other, dur: 2.5, moved: false, sx: p.x, sz: p.z, syaw: p.yaw, spitch: p.pitch, tapT: 0.7, tapN: 0 };
     p.vx = p.vz = 0; p.crouch = true; app.onCrouch(true);
     app.audio.play('vent'); app.setPrompt('');
     app.hintDone('vent');
@@ -1293,14 +1293,21 @@ export class Game {
     p.inv = 0.5; p.moving = 0; p.crack = false; p.crouchK = 1;
     inp.consumeDash(); inp.consumeThrow(); inp.consumeAct(); inp.consumeSmoke();
     const k = v.t / v.dur;
-    v.from.flap.rotation.x = Math.min(1.3, v.t * 6) * (k < 0.5 ? 1 : Math.max(0, 1 - (k - 0.5) * 6));
-    v.to.flap.rotation.x = k > 0.55 ? Math.min(1.3, (k - 0.55) * 8) * Math.max(0, 1 - Math.max(0, k - 0.85) * 7) : 0;
+    // entry grate swings down as you reach it, exit grate pops open as you crawl out (then settles shut)
+    const ease = (u) => u * u * (3 - 2 * u), cl = (u) => Math.max(0, Math.min(1, u));
+    v.from.flap.rotation.x = 1.45 * ease(cl((k - 0.04) / 0.1)) * (1 - ease(cl((k - 0.3) / 0.12)));
+    const ok = cl((k - 0.8) / 0.07);
+    v.to.flap.rotation.x = 1.5 * Math.sin(ok * Math.PI * 0.5) * (1 - ease(cl((k - 0.93) / 0.07)));
+    if (!v.dusted && k > 0.83) { v.dusted = true; app.particles.puff(v.to.gx, 0.3, v.to.gz, { count: 7, color: 0xcfc6b4, size: 0.32, speed: 1.2, up: 0.6, life: 0.9 }); app.audio.play('vent'); }
+    // hands-and-knees taps on the duct metal while crawling (alternating left / right)
+    if (k > 0.22 && k < 0.8) { v.tapT -= dt; if (v.tapT <= 0) { v.tapT = 0.27; v.tapN++; app.audio.stepSound('tile', 0.55, v.tapN % 2 ? -0.5 : 0.5); } }
     if (!v.moved && k >= 0.5) {
       v.moved = true;
       p.x = v.to.cx; p.z = v.to.cz; p.yaw = v.to.out - Math.PI; p.pitch = -0.1;
       if (this.trail) this.trail.push([p.x, p.z, 0]);
     }
-    app.ventFx(k < 0.22 ? k / 0.22 : k > 0.78 ? (1 - k) / 0.22 : 1);
+    v.k = k;
+    app.ventFx(k < 0.16 ? 0 : k < 0.24 ? (k - 0.16) / 0.08 : k > 0.86 ? 0 : k > 0.79 ? (0.86 - k) / 0.07 : 1, k);
     if (k >= 1) {
       p.venting = null; p.inv = 0.4;
       v.from.flap.rotation.x = 0; v.to.flap.rotation.x = 0;
@@ -2307,6 +2314,25 @@ export class Game {
       cam.position.x += (v.x - 1.5 - cam.position.x) * Math.min(1, dt * 1.2);
       cam.lookAt(v.x + 0.3, 0.7, v.z);
       this.fovKick = 0;
+      return;
+    }
+    if (p.venting) {
+      // vent transition: duck and push into the grate, (duct overlay), then crawl out of the far grate
+      const v = p.venting, k = v.k || 0, ease = (u) => u * u * (3 - 2 * u), cl = (u) => Math.max(0, Math.min(1, u));
+      const lo = 0.3, crouchY = EYE - 0.42;
+      if (k < 0.5) {
+        const f = v.from, inF = f.out + Math.PI, ix = Math.sin(inF), iz = Math.cos(inF);
+        const u = ease(cl(k / 0.24)), tx = f.gx - ix * (0.55 - 0.3 * ease(cl((k - 0.12) / 0.12))), tz = f.gz - iz * (0.55 - 0.3 * ease(cl((k - 0.12) / 0.12)));
+        cam.position.set(v.sx + (tx - v.sx) * u, crouchY + (lo - crouchY) * u + Math.sin(k * 40) * 0.01 * u, v.sz + (tz - v.sz) * u);
+        const yaw = v.syaw + angDiff(v.syaw, f.out) * ease(cl(k / 0.16));
+        cam.rotation.set(v.spitch + (-0.32 - v.spitch) * ease(cl(k / 0.14)) + 0.27 * ease(cl((k - 0.14) / 0.1)), yaw, 0);
+      } else {
+        const t = v.to, oF = t.out, ox = Math.sin(oF), oz = Math.cos(oF);
+        const u = ease(cl((k - 0.8) / 0.2)), sx = t.gx - ox * 0.08, sz = t.gz - oz * 0.08;
+        cam.position.set(sx + (t.cx - sx) * u, lo + (crouchY - lo) * u, sz + (t.cz - sz) * u);
+        cam.rotation.set(-0.05 - 0.05 * u, oF - Math.PI, 0);
+      }
+      this.fovKick = damp(this.fovKick, k > 0.12 && k < 0.3 ? 8 : 0, 6, dt);
       return;
     }
     if (p.hiding) {

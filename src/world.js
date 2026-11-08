@@ -1363,6 +1363,13 @@ export function buildVent() {
   const flap = new Group();
   flap.add(new Mesh(g.build(), new MeshLambertMaterial({ vertexColors: true })));
   const grp = new Group();
+  // the duct mouth behind the grate: a dark recess with a lit metal rim, seen when the grate swings down
+  const hole = new GeoBuilder();
+  hole.box(0, 0.03, -0.03, 0.66, 0.4, 0.01, 0x07080c, { faces: 16 });
+  hole.box(0, 0.03, -0.028, 0.7, 0.025, 0.04, 0x5a6272, { faces: 16 | 4 });
+  hole.box(0, 0.415, -0.028, 0.7, 0.025, 0.04, 0x5a6272, { faces: 16 | 8 });
+  for (const sx of [-0.34, 0.34]) hole.box(sx, 0.03, -0.028, 0.025, 0.41, 0.04, 0x4a5262, { faces: 16 });
+  grp.add(new Mesh(hole.build(), new MeshBasicMaterial({ vertexColors: true })));
   grp.add(flap);
   return { group: grp, flap };
 }

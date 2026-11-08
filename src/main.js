@@ -1140,8 +1140,14 @@ class App {
     el.classList.toggle('cool', pk.cool > 0);
   }
   onKey(on) { $('key').classList.toggle('hidden', !on); if (on) { const k = $('key'); k.classList.remove('punch'); void k.offsetWidth; k.classList.add('punch'); } }
-  ventFx(a) {
+  ventFx(a, k = 0) {
     const el = $('ventfx'); el.style.opacity = a.toFixed(3); el.classList.toggle('hidden', a <= 0);
+    if (a <= 0) return;
+    // exit glow grows as you near the far grate; the duct bobs with each crawl step
+    const ex = Math.max(0, Math.min(1, (k - 0.58) / 0.22));
+    el.style.setProperty('--ex', (ex * ex).toFixed(3));
+    el.style.setProperty('--bob', (Math.sin(k * 58) * 6).toFixed(1) + 'px');
+    el.style.setProperty('--sway', (Math.sin(k * 29) * 1.2).toFixed(2) + 'deg');
   }
   onHide(on) {
     $('slats').classList.toggle('hidden', !on);
@@ -1430,7 +1436,7 @@ class App {
     this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
     if (st === 'outfits') { this.vm.mat.color.setRGB(1.05, 1.0, 0.95); this.vm.update(rdt, { move: 0, bob: 0, lookX: 0, lookY: 0, punch: 0, crack: false, grab: 0, dash: false, busted: false }); }
-    this.vm.visible = st === 'outfits' || (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding;
+    this.vm.visible = st === 'outfits' || (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding && !(this.game.player.venting && (this.game.player.venting.k || 0) > 0.12);
     this.vm.render(this.renderer);
     this.adaptRes(rdt);
   }
