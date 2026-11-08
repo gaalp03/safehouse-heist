@@ -545,6 +545,11 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
 #swap b{position:absolute;left:50%;top:44%;translate:-50% -50%;font:400 46px/1 var(--disp);color:#9fc4ff;letter-spacing:2px;text-shadow:0 4px 0 var(--ink),3px 0 0 var(--ink),-3px 0 0 var(--ink),0 -3px 0 var(--ink);border:5px solid #9fc4ff;border-radius:12px;padding:6px 16px 2px;box-shadow:0 0 0 4px var(--ink);rotate:-6deg;opacity:0;animation:swaps 1s .28s cubic-bezier(.2,1.8,.4,1) both}
 @keyframes swaps{0%{opacity:0;scale:2.2}25%{opacity:1;scale:.92}35%{scale:1}80%{opacity:1}100%{opacity:0;scale:1.04}}
 @media (max-width:640px){#swap b{font-size:30px}}
+/* overlay screens: frosted blur of the frozen game behind them, tinted by mood */
+.screen.solid{background:rgba(20,22,48,.62);-webkit-backdrop-filter:blur(6px) saturate(1.2);backdrop-filter:blur(6px) saturate(1.2)}
+#busted.screen.solid{background:radial-gradient(ellipse at 50% 45%,rgba(120,16,32,.45) 0%,rgba(30,8,20,.86) 75%)}
+#result.screen.solid{background:radial-gradient(ellipse at 50% 35%,rgba(255,200,80,.22) 0%,rgba(20,22,48,.82) 70%)}
+#pause.screen.solid{background:rgba(16,18,40,.58)}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
