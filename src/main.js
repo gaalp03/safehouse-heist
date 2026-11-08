@@ -1258,6 +1258,16 @@ class App {
   lightning() {
     this.boltK = 1; this.flash('bolt');
   }
+  // comic impact word (POW!, SMASH!, ...) in a jagged burst anchored to a world point
+  comicBurst(x, y, z, text, kind = 'pow') {
+    const v = this._d.set(x, y, z).project(this.camera);
+    if (v.z > 1) return;
+    const el = document.createElement('div'); el.className = 'cb ' + kind;
+    el.innerHTML = '<i></i><b></b>'; el.lastChild.textContent = text;
+    el.style.left = (((v.x + 1) / 2) * this.w) + 'px'; el.style.top = (((1 - v.y) / 2) * this.h) + 'px';
+    el.style.setProperty('--rot', ((Math.random() - 0.5) * 24).toFixed(1) + 'deg');
+    document.body.appendChild(el); setTimeout(() => el.remove(), 900);
+  }
   // spotted: a jagged comic burst pops at the screen edge on the guard's side (or over him if he's in view)
   spottedFx(g) {
     const el = $('spot'); if (!el) return;

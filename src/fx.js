@@ -45,6 +45,8 @@ export class Particles {
   }
   flash(x, y, z, col = 0xffffff, size = 1.6, life = 0.28) { this.fx.add('flash', x, y, z, { c: col, s: size, life }); }
   ring(x, y, z, col = 0xffffff, size = 2.6, life = 0.45) { this.fx.add('ring', x, Math.max(0.04, y), z, { c: col, s: size, life }); }
+  // camera-facing expanding ring (bark / shout sound waves); delay staggers several
+  wave(x, y, z, col = 0xffffff, size = 1.2, life = 0.5, delay = 0) { this.fx.add('ring', x, y, z, { c: col, s: size, life, bb: true, t: -delay }); }
   puff(x, y, z, o = {}) {
     const n = o.count ?? 6;
     for (let i = 0; i < n; i++) {
@@ -76,7 +78,7 @@ export class Particles {
         g: o.gravity ?? 9, life: rand(0.6, 1) * (o.life ?? 0.7), t: 0,
         s: rand(0.6, 1.1) * (o.size ?? 0.12), c: cols[(Math.random() * cols.length) | 0],
         rx: rand(0, 6), rs: rand(-10, 10) * (o.spin ?? 1), drag: o.drag ?? 1.5,
-        kx: o.shape === 'bill' ? 1.7 : 1, ky: o.shape === 'bill' ? 0.08 : 1, kz: o.shape === 'bill' ? 0.85 : 1, flut: o.shape === 'bill' ? rand(2, 5) : 0,
+        kx: o.shape === 'bill' ? 1.7 : o.shape === 'shard' ? rand(0.6, 1.4) : 1, ky: o.shape === 'bill' ? 0.08 : o.shape === 'shard' ? 0.05 : 1, kz: o.shape === 'bill' ? 0.85 : o.shape === 'shard' ? rand(0.4, 1.1) : 1, flut: o.shape === 'bill' ? rand(2, 5) : 0,
       });
     }
   }
@@ -138,6 +140,7 @@ class Sprites {
     const L = this.list, n = { spark: 0, star: 0, ring: 0, puff: 0 };
     for (let i = L.length - 1; i >= 0; i--) { const p = L[i]; p.t += dt; if (p.t >= p.life) { L[i] = L[L.length - 1]; L.pop(); } }
     for (const p of L) {
+      if (p.t < 0) continue;
       const u = p.t / p.life, d = Math.exp(-p.drag * dt);
       p.vx *= d; p.vz *= d; p.vy = p.vy * d - p.g * dt;
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
@@ -151,7 +154,7 @@ class Sprites {
       const key = p.k === 'flash' ? 'spark' : p.k, mesh = this.m[key], j = n[key];
       if (j >= mesh.instanceMatrix.count) continue;
       _q.position.set(p.x, p.y, p.z);
-      if (p.k === 'ring') _q.rotation.set(-Math.PI / 2, 0, 0); else { _q.quaternion.copy(cam.quaternion); if (p.k !== 'spark' && p.k !== 'flash') _q.rotateZ(p.rot + p.t * (p.k === 'star' ? 3 : 0.8)); }
+      if (p.k === 'ring' && !p.bb) _q.rotation.set(-Math.PI / 2, 0, 0); else if (p.bb) _q.quaternion.copy(cam.quaternion); else { _q.quaternion.copy(cam.quaternion); if (p.k !== 'spark' && p.k !== 'flash') _q.rotateZ(p.rot + p.t * (p.k === 'star' ? 3 : 0.8)); }
       s *= near; _q.scale.set(s, s, s); _q.updateMatrix();
       mesh.setMatrixAt(j, _q.matrix);
       if (p.k === 'puff') { const sh = 0.82 + 0.18 * (1 - u); mesh.setColorAt(j, _c.setHex(p.c).multiplyScalar(sh)); }

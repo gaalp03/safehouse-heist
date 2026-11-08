@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="c437e946">
+<meta name="build" content="effb1ef9">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=c437e946">
+<link rel="modulepreload" href="./js/main.js?v=effb1ef9">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -572,6 +572,14 @@ body.calm #mug.go em{animation:none}
 #spot b{position:absolute;left:-30px;top:-34px;width:60px;text-align:center;font:400 54px/1 var(--disp);color:#fff;text-shadow:0 4px 0 #1c1330,3px 0 0 #1c1330,-3px 0 0 #1c1330,0 -3px 0 #1c1330;animation:spotb .8s .04s cubic-bezier(.2,1.8,.4,1) forwards}
 @keyframes spotb{0%{scale:0;rotate:-30deg;opacity:1}30%{scale:1.15;rotate:6deg}45%{scale:1;rotate:0}80%{opacity:1}100%{opacity:0;scale:1.05}}
 @media (max-width:640px){#spot i{left:-44px;top:-44px;width:88px;height:88px}#spot b{font-size:40px;top:-26px}}
+/* comic impact bursts */
+.cb{position:fixed;width:0;height:0;z-index:3;pointer-events:none;rotate:var(--rot,0deg)}
+.cb i{position:absolute;left:-74px;top:-58px;width:148px;height:116px;background:#1c1330;clip-path:polygon(50% 0,60% 22%,84% 4%,78% 32%,100% 34%,82% 54%,98% 78%,70% 72%,64% 100%,48% 80%,30% 98%,28% 72%,2% 80%,16% 56%,0 32%,24% 30%,16% 4%,40% 22%);animation:cbp .85s cubic-bezier(.2,1.8,.4,1) forwards}
+.cb i::after{content:'';position:absolute;inset:7px;background:linear-gradient(180deg,#fff27a,#ffd23a 50%,#ff9a1c);clip-path:inherit}
+.cb b{position:absolute;left:-80px;top:-22px;width:160px;text-align:center;font:400 34px/1 var(--disp);color:#ff3b4e;letter-spacing:1px;text-shadow:0 3px 0 #1c1330,2px 0 0 #1c1330,-2px 0 0 #1c1330,0 -2px 0 #1c1330,3px 3px 0 #fff;animation:cbp .85s .03s cubic-bezier(.2,1.8,.4,1) forwards}
+.cb.glass i::after{background:linear-gradient(180deg,#ffffff,#bfefff 50%,#5fd0ff)}.cb.glass b{color:#1f6fd0}
+@keyframes cbp{0%{scale:0;opacity:1}28%{scale:1.2}42%{scale:.95}55%{scale:1}82%{opacity:1}100%{opacity:0;scale:1.08;translate:0 -10px}}
+@media (max-width:640px){.cb i{left:-52px;top:-41px;width:104px;height:82px}.cb b{font-size:24px;top:-15px}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -726,7 +734,7 @@ body.calm #mug.go em{animation:none}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=c437e946"></script>
+<script type="module" src="./js/main.js?v=effb1ef9"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

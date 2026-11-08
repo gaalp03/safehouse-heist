@@ -1149,7 +1149,7 @@ export class Game {
     app.audio.play('swing');
     app.audio.play('ko');
     app.particles.burst(g.x, 1.0, g.z, { count: 14, colors: [0xffd23f, 0xffffff, 0xff9f1c], speed: 3.5, up: 4, size: 0.13, life: 0.7 }); app.particles.flash(g.x, 1.3, g.z, 0xffe680, 1.6); app.particles.ring(g.x, 0.05, g.z, 0xffd23f, 2.2);
-    app.floaters.spawn('KO!', g.x, 1.7, g.z, 'ko', 0.9);
+    if (app.comicBurst) app.comicBurst(g.x, 1.05, g.z, ['POW!', 'BONK!', 'WHAM!', 'KO!'][(this.kos + (this.koStreak || 0)) % 4], 'pow'); else app.floaters.spawn('KO!', g.x, 1.7, g.z, 'ko', 0.9);
     this.makeNoise(g.x, g.z, 2.5, g);
     app.hintDone('ko');
   }
@@ -1689,6 +1689,7 @@ export class Game {
     const app = this.app;
     app.audio.play('woof');
     app.floaters.spawn('WOOF!', d.x, 1.0, d.z, 'say woof', 0.7);
+    { const hx = d.x + Math.sin(d.face || 0) * 0.45, hz = d.z + Math.cos(d.face || 0) * 0.45; for (let i = 0; i < 3; i++) app.particles.wave(hx, 0.62, hz, 0xffb35a, 0.9 + i * 0.25, 0.45, i * 0.12); }
     d.m.sq = 1.3; d.m.sqv = 0;
     this.makeNoise(nx, nz, r, null);
   }
@@ -2884,7 +2885,8 @@ export class Game {
     app.audio.play('glass');
     app.shake.add(0.28);
     this.hitstop = 0.06; this.juice(0, 1, -4, -0.06, (Math.random() - 0.5) * 0.08);
-    app.particles.burst(c.cx, 1.05, c.cz, { count: 26, colors: [0xdff4ff, 0xbfe6ff, 0xffffff], speed: 3.2, up: 3, size: 0.07, life: 0.9, spin: 2 }); app.particles.flash(c.cx, 1.1, c.cz, 0xdff4ff, 1.8);
+    app.particles.burst(c.cx, 1.05, c.cz, { count: 30, colors: [0xdff4ff, 0xbfe6ff, 0xffffff, 0x9fdcff], speed: 3.4, up: 3, size: 0.14, life: 1.4, spin: 3, shape: 'shard', drag: 1.2 });
+    if (app.comicBurst) app.comicBurst(c.cx, 1.2, c.cz, 'SMASH!', 'glass'); app.particles.flash(c.cx, 1.1, c.cz, 0xdff4ff, 1.8);
     app.particles.burst(c.cx, 0.95, c.cz, { count: 8, colors: [0x4cdcff, 0xff4f7a, 0xffd75a], speed: 1.5, up: 2.5, size: 0.05, life: 0.7 });
     this.makeNoise(c.cx, c.cz, 3.6, null);
     for (let i = 0; i < this.caseLoot; i++) {
@@ -2892,7 +2894,7 @@ export class Game {
       this.loot.push({ type: 'jewel', x: c.cx, y: 1.0, z: c.cz, vx: Math.sin(a) * rand(1.5, 2.4), vy: rand(3.5, 5), vz: Math.cos(a) * rand(1.5, 2.4),
         st: 'fly', t: 0, value: v.jewel, ph: i, ms: 0, s: 1, rot: i });
     }
-    app.floaters.spawn('SMASH!', c.cx, 1.6, c.cz, 'ko', 0.8);
+
   }
 
   // ---------- lockpicking minigame ----------
