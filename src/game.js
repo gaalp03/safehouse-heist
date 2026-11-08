@@ -862,7 +862,7 @@ export class Game {
       const hl = k.m.userData.halo; if (hl) { hl.position.y = -0.76 - Math.sin(this.t * 3) * 0.06; hl.material.opacity = 0.75 + Math.sin(this.t * 4) * 0.25; hl.rotation.z = -this.t * 2; }
       if (Math.hypot(p.x - (k.x + 0.5), p.z - (k.y + 0.5)) < 0.85) {
         k.m.visible = false; this.hasKey = true;
-        app.audio.play('gold'); app.onKey(true); app.hint('door');
+        app.audio.play('gold'); app.onKey(true); app.hint('door'); app.lootFly && app.lootFly('key', k.x + 0.5, 0.85, k.y + 0.5, 'key');
         app.floaters.spawn('KEYCARD!', k.x + 0.5, 1.3, k.y + 0.5, 'big', 1.2);
         app.particles.burst(k.x + 0.5, 0.8, k.y + 0.5, { count: 12, colors: [0x2f7ae8, 0xffffff, 0xf2c94c], speed: 2, up: 2, size: 0.04, life: 0.6 }); app.particles.flash(k.x + 0.5, 0.9, k.y + 0.5, 0x6fb0ff, 1.6);
       }
@@ -1178,6 +1178,7 @@ export class Game {
     g.koT = Math.max(g.koT, 6);
     app.audio.play('creak'); app.audio.play('pick', 6);
     app.floaters.spawn('Uniform on!', g.x, 1.4, g.z, 'big', 1.2);
+    app.costumeSwap && app.costumeSwap();
     app.onDisguise(this.disguiseT);
     app.hintDone('uniform');
   }
@@ -2767,6 +2768,7 @@ export class Game {
         for (const k of this.keyMeshes) k.m.visible = false;
         app.onKey(true); app.hint('door');
       }
+      app.lootFly && app.lootFly('key', g.x, 0.9, g.z, 'key');
       app.floaters.spawn('SPARE KEYCARD!', g.x, 1.6, g.z, 'big', 1.2);
       app.audio.play('gold');
     }
@@ -2777,6 +2779,7 @@ export class Game {
       app.floaters.spawn('+$' + v + ' WALLET', p.x + fx * 1.2, 1.1, p.z + fz * 1.2, 'cash', 1.0);
       app.particles.burst(p.x + fx * 0.9, 1.0, p.z + fz * 0.9, { count: 5, colors: [0x6fcf7a, 0x9be39a], speed: 1.2, up: 1.4, size: 0.09, life: 1.0, shape: 'bill', gravity: 3, drag: 2.5 });
       app.audio.play('pick', 8);
+      app.lootFly && app.lootFly('wallet', g.x, 0.75, g.z);
       app.onLoot(false);
     }
     p.grabT = 1;

@@ -1064,11 +1064,18 @@ class App {
     o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop');
   }
   // picked-up loot flies from where it was into the cash counter (screen space, DOM icons)
-  lootFly(type, x, y, z) {
+  // quick-change: a navy fabric wipe sweeps the screen while the sleeves swap, DISGUISED stamp pops
+  costumeSwap() {
+    const el = $('swap'); if (!el) return;
+    el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+    clearTimeout(this.swapT); this.swapT = setTimeout(() => el.classList.remove('go'), 1100);
+    this.shake.add(0.08);
+  }
+  lootFly(type, x, y, z, target = 'loot') {
     const v = this._d.set(x, y, z).project(this.camera);
     if (v.z > 1) return;
     const sx = ((v.x + 1) / 2) * this.w, sy = ((1 - v.y) / 2) * this.h;
-    const tg = $('loot').getBoundingClientRect(), tx = tg.left + 34, ty = tg.top + tg.height / 2;
+    const te = $(target) || $('loot'), tg = te.getBoundingClientRect(), tx = tg.left + (target === 'loot' ? 34 : tg.width / 2), ty = tg.top + tg.height / 2;
     const n = type === 'cash' ? 3 : 1;
     for (let i = 0; i < n; i++) {
       const el = document.createElement('i'); el.className = 'lf ' + type; document.body.appendChild(el);
@@ -1079,7 +1086,7 @@ class App {
         { transform: `translate(${mx}px,${my}px) scale(1.3) rotate(${jx * 4}deg)`, opacity: 1, offset: 0.55 },
         { transform: `translate(${tx}px,${ty}px) scale(.45) rotate(${jx * 8}deg)`, opacity: 0.9 },
       ], { duration: 650 + i * 90, delay: i * 70, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'backwards' });
-      an.onfinish = () => { el.remove(); const l = $('loot'); l.classList.remove('punch'); void l.offsetWidth; l.classList.add('punch'); };
+      an.onfinish = () => { el.remove(); const l = te; l.classList.remove('punch'); void l.offsetWidth; l.classList.add('punch'); };
     }
   }
   onLoot(big, silent) {

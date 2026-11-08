@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="066b4758">
+<meta name="build" content="2a6e30fe">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=066b4758">
+<link rel="modulepreload" href="./js/main.js?v=2a6e30fe">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -533,6 +533,18 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
 /* trophies: the sticky BACK button sits on a fade so it never prints over the cards */
 .panel.tr #bTrBack{margin-top:6px;box-shadow:inset 0 4px 0 rgba(255,255,255,.65),inset 0 -7px 0 rgba(150,60,0,.28),0 7px 0 var(--ink),0 -26px 30px 24px #2a1e44}
 #trAch{padding-bottom:14px}
+.lf.key{width:28px;height:18px;border-radius:3px;background:linear-gradient(180deg,#7fb6ff,#2f6ae8);box-shadow:0 0 0 2px #142a6a,0 0 12px rgba(111,176,255,.9)}
+.lf.key::after{content:'';position:absolute;left:3px;right:3px;top:5px;height:4px;background:#ffd23a;border-radius:1px}
+.lf.wallet{width:24px;height:18px;border-radius:4px;background:linear-gradient(180deg,#a8743e,#6a4422);box-shadow:0 0 0 2px #3a2210}
+.lf.wallet::after{content:'';position:absolute;left:4px;right:4px;top:-4px;height:6px;border-radius:2px;background:#9be39a;box-shadow:0 0 0 1.5px #1f5a2a}
+/* uniform quick-change wipe */
+#swap{position:fixed;inset:0;z-index:6;pointer-events:none;display:none;overflow:hidden}
+#swap.go{display:block}
+#swap i{position:absolute;top:-20%;bottom:-20%;left:-60%;width:55%;background:repeating-linear-gradient(90deg,#24366e 0 18px,#2b3f7a 18px 36px);box-shadow:0 0 0 8px #f2c94c,0 0 40px 10px rgba(0,0,0,.4);transform:skewX(-14deg);animation:swapw .55s cubic-bezier(.6,0,.4,1) forwards}
+@keyframes swapw{0%{left:-60%}100%{left:130%}}
+#swap b{position:absolute;left:50%;top:44%;translate:-50% -50%;font:400 46px/1 var(--disp);color:#9fc4ff;letter-spacing:2px;text-shadow:0 4px 0 var(--ink),3px 0 0 var(--ink),-3px 0 0 var(--ink),0 -3px 0 var(--ink);border:5px solid #9fc4ff;border-radius:12px;padding:6px 16px 2px;box-shadow:0 0 0 4px var(--ink);rotate:-6deg;opacity:0;animation:swaps 1s .28s cubic-bezier(.2,1.8,.4,1) both}
+@keyframes swaps{0%{opacity:0;scale:2.2}25%{opacity:1;scale:.92}35%{scale:1}80%{opacity:1}100%{opacity:0;scale:1.04}}
+@media (max-width:640px){#swap b{font-size:30px}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -687,11 +699,12 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=066b4758"></script>
+<script type="module" src="./js/main.js?v=2a6e30fe"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>
 </div>
+<div id="swap"><i></i><b>DISGUISED</b></div>
 <div id="iris"></div>
 <div id="ctxlost" class="screen solid hidden" style="z-index:9"><div class="panel"><div class="big o" style="font-size:34px">HOLD ON...</div><p class="sub">Your device paused the graphics. Your progress is saved.</p><button class="btn" onclick="location.reload()">RELOAD</button></div></div>
 </body>
