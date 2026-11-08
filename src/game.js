@@ -1,7 +1,7 @@
 // Gameplay: player, guards (vision cones, suspicion, chase, noise), loot, safe, escape, scoring.
 import {
   Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, InstancedMesh, BufferGeometry, BufferAttribute, CircleGeometry, RingGeometry,
-  CylinderGeometry, PlaneGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial, ConeGeometry, AdditiveBlending,
+  CylinderGeometry, PlaneGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial, ConeGeometry, AdditiveBlending, CanvasTexture,
 } from 'three';
 import { textures } from './textures.js';
 import { GeoBuilder } from './geo.js';
@@ -114,6 +114,7 @@ export class Game {
     this.safe.group.position.set(L.safe.x + 0.5, 0, L.safe.y + 0.5);
     this.safeScale = def.safeScale || 1;
     this.safe.group.scale.setScalar(this.safeScale);
+    this.safeGlow = this.buildSafeGlow(); this.safe.group.add(this.safeGlow.group);
     // security doors + keycards
     const isW = (x, y) => L.ch[y * L.W + x] === '#';
     this.doors = L.doors.map((d) => {
@@ -1050,6 +1051,33 @@ export class Game {
   }
 
   // game-feel: slow-motion window, FOV punch (negative = zoom in) and camera kick
+  // golden light spilling out of the opened safe: fanned additive shafts, inner glow, floor pool
+  buildSafeGlow() {
+    const c = document.createElement('canvas'); c.width = 64; c.height = 128;
+    const x = c.getContext('2d'), gv = x.createLinearGradient(0, 128, 0, 0);
+    gv.addColorStop(0, 'rgba(255,255,255,1)'); gv.addColorStop(0.35, 'rgba(255,255,255,.45)'); gv.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = gv; x.fillRect(0, 0, 64, 128);
+    x.globalCompositeOperation = 'destination-in';
+    const gh = x.createLinearGradient(0, 0, 64, 0); gh.addColorStop(0, 'rgba(0,0,0,0)'); gh.addColorStop(0.5, 'rgba(0,0,0,1)'); gh.addColorStop(1, 'rgba(0,0,0,0)');
+    x.fillStyle = gh; x.fillRect(0, 0, 64, 128);
+    const tex = new CanvasTexture(c);
+    const mat = new MeshBasicMaterial({ map: tex, color: 0xffd36a, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, side: DoubleSide, toneMapped: false, fog: false });
+    const group = new Group(); group.position.set(0, 0.55, 0.44); group.visible = false;
+    const rays = [];
+    for (const [ry, tilt, w, len] of [[-0.55, 0.1, 0.32, 1.9], [-0.22, 0.28, 0.4, 2.4], [0.08, 0.05, 0.46, 2.7], [0.36, 0.22, 0.36, 2.2], [0.62, 0.02, 0.3, 1.8]]) {
+      const r = new Group(); r.rotation.set(-tilt, ry, 0);
+      for (const flat of [false, true]) {
+        const m = new Mesh(new PlaneGeometry(w, len), mat); m.position.z = len / 2;
+        m.rotation.x = Math.PI / 2; if (!flat) m.rotation.y = Math.PI / 2;
+        r.add(m);
+      }
+      group.add(r); rays.push(r);
+    }
+    const glowMat = new MeshBasicMaterial({ map: textures().glow, color: 0xffe08a, transparent: true, opacity: 0, blending: AdditiveBlending, depthWrite: false, toneMapped: false, fog: false });
+    const glow = new Mesh(new PlaneGeometry(1.4, 1.2), glowMat); glow.position.z = -0.05; group.add(glow);
+    const pool = new Mesh(new PlaneGeometry(2.6, 2.0).rotateX(-Math.PI / 2), glowMat.clone()); pool.position.set(0, -0.53, 0.9); group.add(pool);
+    return { group, mat, glowMat, pool: pool.material, rays };
+  }
   juice(slow, slowK, fov, kickP, kickR) {
     if (slow > 0 && (!this.slowT || this.slowT < slow)) { this.slowT = slow; this.slowK = slowK; }
     const sc = this.app.shake.scale ?? 1;
@@ -2264,6 +2292,16 @@ export class Game {
         const u = Math.max(0, (d.t - 0.18) / 0.82), r = 1 - Math.pow(1 - u, 3);
         d.m.group.position.y = r * (WALL_H - 0.12) + (d.t < 0.18 ? Math.sin(d.t * 140) * 0.012 * (1 - d.t / 0.18) : 0);
       }
+    }
+    if (this.safeGlow) {
+      const sg = this.safeGlow, on = this.safeOpen;
+      sg.group.visible = on;
+      if (on) {
+        this.glowT = (this.glowT || 0) + dt;
+        const t = this.glowT, burst = Math.min(1, t / 0.35) * (1 - Math.min(1, Math.max(0, t - 0.5) / 2.5) * 0.7), sh = 0.92 + Math.sin(this.t * 7) * 0.05 + Math.sin(this.t * 13.3) * 0.03;
+        sg.mat.opacity = 0.8 * burst * sh; sg.glowMat.opacity = 0.9 * burst; sg.pool.opacity = 0.5 * burst * sh;
+        sg.rays.forEach((r, i) => { r.scale.z = 0.6 + 0.4 * Math.min(1, t / 0.45) + Math.sin(this.t * 2 + i) * 0.04; });
+      } else this.glowT = 0;
     }
     if (this.safeOpen && this.doorT < 1) {
       this.doorT = Math.min(1, this.doorT + dt * 3);
