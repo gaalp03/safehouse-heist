@@ -1150,8 +1150,17 @@ class App {
     el.style.setProperty('--sway', (Math.sin(k * 29) * 1.2).toFixed(2) + 'deg');
   }
   onHide(on) {
-    $('slats').classList.toggle('hidden', !on);
+    const el = $('slats');
+    if (!on && el.classList.contains('hidden')) return;
+    clearTimeout(this.slatT);
     $('xh').classList.toggle('hidden', on);
+    if (on) {
+      // doors start open around you and swing shut
+      el.classList.add('open'); el.classList.remove('hidden'); void el.offsetWidth; el.classList.remove('open');
+    } else {
+      // push the doors open and step out
+      el.classList.add('open'); this.slatT = setTimeout(() => { el.classList.add('hidden'); el.classList.remove('open'); }, 380);
+    }
   }
   foundCat(sc) {
     sc.mesh.visible = false; sc.got = true;

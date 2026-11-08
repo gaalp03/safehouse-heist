@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="43432c1c">
+<meta name="build" content="35f900a9">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=43432c1c">
+<link rel="modulepreload" href="./js/main.js?v=35f900a9">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -498,6 +498,17 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
 @keyframes duct{0%{transform:scale(.06);opacity:0}25%{opacity:.9}100%{transform:scale(3.4);opacity:1}}
 #ventfx .exitg{position:absolute;left:50%;top:50%;width:46vmin;height:30vmin;margin:-15vmin 0 0 -23vmin;border-radius:1vmin;background:radial-gradient(ellipse at 50% 50%,#fff6dc 0%,#ffd99a 45%,rgba(255,190,110,.0) 75%);transform:scale(calc(.05 + var(--ex,0) * 3.6));opacity:calc(var(--ex,0) * 1.6);box-shadow:0 0 6vmin 2vmin rgba(255,214,150,calc(var(--ex,0) * .8))}
 #ventfx span{position:relative;z-index:1;font-size:16px;color:rgba(255,226,180,.8);text-shadow:0 2px 0 #000}
+/* ---------- wardrobe: louvred doors swing shut around you, peek out through the slats ---------- */
+#slats{background:none;box-shadow:none;z-index:2;perspective:900px}
+#slats::after{display:none}
+#slats i{position:absolute;top:-2%;bottom:-2%;width:51%;box-sizing:border-box;border:2.4vmin solid #5e3a22;border-top-width:4vmin;border-bottom-width:4vmin;
+  background:repeating-linear-gradient(180deg,#3a2214 0 1.1vmin,#8a5a34 1.1vmin 1.45vmin,#4a2c18 1.45vmin 1.75vmin,rgba(20,10,6,.18) 1.75vmin 4vmin);
+  box-shadow:inset 0 0 6vmin 2vmin rgba(10,5,2,.85),inset 0 0 0 .5vmin #8a5a34;transition:transform .38s cubic-bezier(.3,1.35,.5,1)}
+#slats .dl{left:0;transform-origin:0 50%;border-right-width:1.2vmin}
+#slats .dr{right:0;transform-origin:100% 50%;border-left-width:1.2vmin}
+#slats.open .dl{transform:rotateY(78deg)}
+#slats.open .dr{transform:rotateY(-78deg)}
+#slats .dr::before{content:'';position:absolute;left:-1.6vmin;top:44%;width:1vmin;height:7vmin;border-radius:.5vmin;background:linear-gradient(90deg,#c9a24a,#ffe08a,#a07a2a);box-shadow:0 0 0 .3vmin #3a2214}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -505,7 +516,7 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
 <canvas id="c" tabindex="-1"></canvas>
 <div id="vignette"></div><div id="wet" class="hidden"></div><div id="ventfx" class="hidden"><div class="duct"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><b class="exitg"></b></div><span>crawling through the vent…</span></div>
 <div id="smokeov"></div>
-<div id="slats" class="hidden"></div>
+<div id="slats" class="hidden"><i class="dl"></i><i class="dr"></i></div>
 <div id="siren"></div>
 <div id="fxl"></div>
 <div id="flash"></div>
@@ -652,7 +663,7 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=43432c1c"></script>
+<script type="module" src="./js/main.js?v=35f900a9"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

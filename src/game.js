@@ -2337,7 +2337,9 @@ export class Game {
     }
     if (p.hiding) {
       const h = p.hiding;
-      cam.position.set(h.cx + Math.sin(h.face) * 0.12, EYE - 0.06, h.cz + Math.cos(h.face) * 0.12);
+      // step back into the wardrobe (short ease) instead of teleporting
+      const u = Math.min(1, (p.hideT || 0) / 0.3), e = u * u * (3 - 2 * u), ix = h.cx + Math.sin(h.face) * 0.12, iz = h.cz + Math.cos(h.face) * 0.12;
+      cam.position.set(h.ex + (ix - h.ex) * e, EYE - 0.06 * e, h.ez + (iz - h.ez) * e);
       cam.rotation.set(p.pitch + app.shake.y * 0.06, p.yaw + app.shake.x * 0.06, 0);
       this.fovKick = damp(this.fovKick, -6, 6, dt);
       return;
