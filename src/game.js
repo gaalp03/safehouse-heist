@@ -2198,6 +2198,7 @@ export class Game {
     app.particles.burst(p.x + fx * 1.4, 0.8, p.z + fz * 1.4, { count: it.type === 'cash' ? 4 : 10, colors: cols, speed: 1.4, up: 1.6, size: 0.03, life: 0.5 });
     if (it.type === 'cash') app.particles.burst(p.x + fx * 1.0, 1.0, p.z + fz * 1.0, { count: 6, colors: [0x6fcf7a, 0x9be39a, 0x4fae5a], speed: 1.4, up: 1.6, size: 0.1, life: 1.1, shape: 'bill', gravity: 3, drag: 2.5 });
     else app.particles.burst(p.x + fx * 1.5, 1.0, p.z + fz * 1.5, { count: 8, colors: [0xffffff, 0xfff1a8], speed: 1.2, up: 1, size: 0.025, life: 0.6, gravity: 0 });
+    app.lootFly && app.lootFly(it.type, it.x, (it.y || 0.6) + 0.2, it.z);
     app.audio.play(it.type === 'cash' ? 'pick' : it.type, this.combo);
     this.player.bagV += 4; this.juice(0, 1, it.type === 'cash' ? -1.2 : -3, it.type === 'cash' ? 0 : -0.015, 0);
     squash(this.player.c, 1.12);
@@ -2249,10 +2250,14 @@ export class Game {
 
   updateProps(dt) {
     for (const d of this.doors) if (d.open && d.t < 1) {
-      d.t = Math.min(1, d.t + dt * 1.6);
+      d.t = Math.min(1, d.t + dt * (d.type === 'lock' ? 1.6 : 1.1));
       const e = 1 - Math.pow(1 - d.t, 3);
       if (d.type === 'lock') d.m.group.rotation.y = (d.alongX ? 1 : -1) * 1.55 * (e + Math.sin(d.t * Math.PI) * 0.12);
-      else d.m.group.position.y = e * (WALL_H - 0.12);
+      else {
+        // heavy security door: unlock clunk (shudder), short pause, then a smooth rise into the frame
+        const u = Math.max(0, (d.t - 0.18) / 0.82), r = 1 - Math.pow(1 - u, 3);
+        d.m.group.position.y = r * (WALL_H - 0.12) + (d.t < 0.18 ? Math.sin(d.t * 140) * 0.012 * (1 - d.t / 0.18) : 0);
+      }
     }
     if (this.safeOpen && this.doorT < 1) {
       this.doorT = Math.min(1, this.doorT + dt * 3);

@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="35f900a9">
+<meta name="build" content="b08e32b4">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=35f900a9">
+<link rel="modulepreload" href="./js/main.js?v=b08e32b4">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -509,6 +509,13 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
 #slats.open .dl{transform:rotateY(78deg)}
 #slats.open .dr{transform:rotateY(-78deg)}
 #slats .dr::before{content:'';position:absolute;left:-1.6vmin;top:44%;width:1vmin;height:7vmin;border-radius:.5vmin;background:linear-gradient(90deg,#c9a24a,#ffe08a,#a07a2a);box-shadow:0 0 0 .3vmin #3a2214}
+/* loot flying into the HUD */
+.lf{position:fixed;left:0;top:0;z-index:4;pointer-events:none;margin:-10px 0 0 -14px;display:block}
+.lf.cash{width:28px;height:15px;border-radius:3px;background:linear-gradient(90deg,#3e9e4c,#9be39a 50%,#3e9e4c);box-shadow:0 0 0 2px #1f5a2a,0 3px 0 rgba(0,0,0,.35)}
+.lf.cash::after{content:'$';position:absolute;left:0;right:0;top:-1px;text-align:center;font:400 12px/15px var(--disp);color:#1f5a2a}
+.lf.gold{width:30px;height:14px;border-radius:2px;background:linear-gradient(180deg,#fff3a8,#ffd23a 45%,#c98a12);box-shadow:0 0 0 2px #7a5208,0 0 12px rgba(255,210,58,.8);clip-path:polygon(12% 0,88% 0,100% 100%,0 100%)}
+.lf.jewel{width:18px;height:18px;margin:-9px 0 0 -9px;background:linear-gradient(135deg,#ffffff,#7ff3ff 40%,#2ab8d8);box-shadow:0 0 0 2px #106a80,0 0 14px rgba(127,243,255,.9);clip-path:polygon(50% 0,100% 40%,50% 100%,0 40%)}
+.lf.art{width:26px;height:20px;background:linear-gradient(180deg,#8ec8f0 0 55%,#5fae4c 55%);border:3px solid #c89a3a;box-shadow:0 0 0 2px #5a3a1a}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -663,7 +670,7 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=35f900a9"></script>
+<script type="module" src="./js/main.js?v=b08e32b4"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

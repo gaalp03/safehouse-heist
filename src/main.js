@@ -1063,6 +1063,25 @@ class App {
     o.textContent = t;
     o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop');
   }
+  // picked-up loot flies from where it was into the cash counter (screen space, DOM icons)
+  lootFly(type, x, y, z) {
+    const v = this._d.set(x, y, z).project(this.camera);
+    if (v.z > 1) return;
+    const sx = ((v.x + 1) / 2) * this.w, sy = ((1 - v.y) / 2) * this.h;
+    const tg = $('loot').getBoundingClientRect(), tx = tg.left + 34, ty = tg.top + tg.height / 2;
+    const n = type === 'cash' ? 3 : 1;
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('i'); el.className = 'lf ' + type; document.body.appendChild(el);
+      const jx = (Math.random() - 0.5) * 40, jy = (Math.random() - 0.5) * 30, mx = (sx + tx) / 2 + jx * 2, my = Math.min(sy, ty) - 60 - Math.random() * 50;
+      const an = el.animate([
+        { transform: `translate(${sx + jx}px,${sy + jy}px) scale(.4) rotate(0deg)`, opacity: 0 },
+        { transform: `translate(${sx + jx}px,${sy + jy - 20}px) scale(1.6) rotate(${jx}deg)`, opacity: 1, offset: 0.18 },
+        { transform: `translate(${mx}px,${my}px) scale(1.3) rotate(${jx * 4}deg)`, opacity: 1, offset: 0.55 },
+        { transform: `translate(${tx}px,${ty}px) scale(.45) rotate(${jx * 8}deg)`, opacity: 0.9 },
+      ], { duration: 650 + i * 90, delay: i * 70, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'backwards' });
+      an.onfinish = () => { el.remove(); const l = $('loot'); l.classList.remove('punch'); void l.offsetWidth; l.classList.add('punch'); };
+    }
+  }
   onLoot(big, silent) {
     const g = this.game;
     // rolling cash counter: the shown value climbs toward the real one in updateHud; a "+$X" pops beside it
