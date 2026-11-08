@@ -82,7 +82,7 @@ export class Particles {
   }
   update(dt, camera) {
     if (camera) this.fx.update(dt, camera);
-    const L = this.list;
+    const L = this.list, cp = camera && camera.position;
     let n = 0;
     for (let i = L.length - 1; i >= 0; i--) {
       const p = L[i];
@@ -96,7 +96,9 @@ export class Particles {
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       if (p.y < 0.03) { p.y = 0.03; p.vy *= -0.4; p.vx *= 0.7; p.vz *= 0.7; }
       p.rx += p.rs * dt;
-      const k = 1 - p.t / p.life, s = p.s * Math.min(1, k * 2.5);
+      // never let a particle fill the screen: shrink it away as it nears the lens
+      const near = cp ? Math.min(1, Math.max(0, (Math.hypot(p.x - cp.x, p.y - cp.y, p.z - cp.z) - 0.35) / 0.6)) : 1;
+      const k = 1 - p.t / p.life, s = p.s * Math.min(1, k * 2.5) * near;
       _o.position.set(p.x, p.y, p.z);
       _o.rotation.set(p.flut ? Math.sin(p.rx) * 0.8 : p.rx, p.rx * 0.7, p.flut ? Math.cos(p.rx * 0.7) * 0.6 : 0);
       _o.scale.set(s * p.kx, s * p.ky, s * p.kz);
@@ -141,6 +143,7 @@ class Sprites {
       p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
       if (p.y < 0.03) { p.y = 0.03; p.vy *= -0.3; }
       let s = p.s, fade = 1;
+      const near = Math.min(1, Math.max(0, (Math.hypot(p.x - cam.position.x, p.y - cam.position.y, p.z - cam.position.z) - 0.3) / 0.6));
       if (p.k === 'flash') { s = p.s * (0.5 + u * 0.9); fade = (1 - u) * (1 - u); }
       else if (p.k === 'ring') { s = p.s * (0.15 + Math.sqrt(u) * 0.85); fade = 1 - u; }
       else if (p.k === 'puff') { s = p.s * (u < 0.25 ? 0.4 + u * 2.4 : 1 - (u - 0.25) * 1.1); }
@@ -149,7 +152,7 @@ class Sprites {
       if (j >= mesh.instanceMatrix.count) continue;
       _q.position.set(p.x, p.y, p.z);
       if (p.k === 'ring') _q.rotation.set(-Math.PI / 2, 0, 0); else { _q.quaternion.copy(cam.quaternion); if (p.k !== 'spark' && p.k !== 'flash') _q.rotateZ(p.rot + p.t * (p.k === 'star' ? 3 : 0.8)); }
-      _q.scale.set(s, s, s); _q.updateMatrix();
+      s *= near; _q.scale.set(s, s, s); _q.updateMatrix();
       mesh.setMatrixAt(j, _q.matrix);
       if (p.k === 'puff') { const sh = 0.82 + 0.18 * (1 - u); mesh.setColorAt(j, _c.setHex(p.c).multiplyScalar(sh)); }
       else mesh.setColorAt(j, _c.setHex(p.c).multiplyScalar(fade));

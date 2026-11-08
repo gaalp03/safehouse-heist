@@ -2150,7 +2150,7 @@ export class Game {
     for (let i = 0; i < v.bundles; i++) {
       const a = -0.9 + (1.8 * i) / (v.bundles - 1);
       this.loot.push({
-        type: 'cash', x: sx, y: 0.7, z: sz + 0.4 * this.safeScale + 0.1, vx: Math.sin(a) * rand(2, 3.2), vy: rand(5, 7), vz: Math.cos(a) * rand(1.5, 3),
+        type: 'cash', x: sx, y: 0.7, z: sz + 0.4 * this.safeScale + 0.1, vx: Math.sin(a) * rand(2.4, 3.4), vy: rand(5.5, 7.5), vz: Math.cos(a) * rand(0.6, 1.4),
         st: 'fly', t: 0, value: v.bundle, ph: i, ms: 0, s: 1, rot: i, bundle: true,
       });
     }
@@ -2237,7 +2237,9 @@ export class Game {
       const s = it.st === 'mag' ? Math.max(0.4, 1 - it.ms * 0.02) : 1 + (it.type === 'art' ? 0 : Math.sin(this.t * 6 + it.ph) * 0.06);
       _o.position.set(it.x, it.y, it.z);
       _o.rotation.set(0, it.rot, 0);
-      _o.scale.setScalar(s * (it.type === 'jewel' ? 1.5 : 1.25));
+      // loot flying at the lens (safe bundles, magnet pull) shrinks away instead of filling the screen
+      const cp = this.app.camera.position, near = Math.min(1, Math.max(0.05, (Math.hypot(it.x - cp.x, it.y - cp.y, it.z - cp.z) - 0.3) / 0.7));
+      _o.scale.setScalar(s * (it.type === 'jewel' ? 1.5 : 1.25) * near);
       _o.updateMatrix();
       m.setMatrixAt(n[it.type]++, _o.matrix);
     }
@@ -2315,9 +2317,12 @@ export class Game {
     }
     if (this.state === 'escape') {
       const v = this.van.group.position, ex = this.L.exit;
-      if (!this.cineInit) { this.cineInit = true; cam.position.set(ex.x - 2.5, 1.6, ex.z + 5); }
-      cam.position.x += (v.x - 1.5 - cam.position.x) * Math.min(1, dt * 1.2);
-      cam.lookAt(v.x + 0.3, 0.7, v.z);
+      // getaway shot from the far lane of the road (never inside the houses / trees across the street)
+      if (!this.cineInit) { this.cineInit = true; cam.position.set(ex.x - 3.2, 1.25, v.z + 1.6); }
+      cam.position.x += (v.x - 2.2 - cam.position.x) * Math.min(1, dt * 1.1);
+      cam.position.y += (1.45 - cam.position.y) * Math.min(1, dt);
+      cam.position.z += (v.z + 1.7 - cam.position.z) * Math.min(1, dt * 2);
+      cam.lookAt(v.x + 0.6, 0.75, v.z - 0.2);
       this.fovKick = 0;
       return;
     }
@@ -2378,6 +2383,7 @@ export class Game {
 
   // ---------- endings ----------
   escape() {
+    if (this.exitRing) this.exitRing.visible = this.exitBeam.visible = false;
     if (this.aimPts) this.aimPts.visible = this.aimRing.visible = false;
     const app = this.app;
     this.checkContracts(true);
@@ -2553,7 +2559,7 @@ export class Game {
     app.flash('red');
     app.audio.play('bust');
     app.audio.siren(false);
-    app.floaters.spawn('BUSTED!', g.x, 1.5, g.z, 'alert big', 1.2); app.particles.ring(g.x, 0.05, g.z, 0xff3b4e, 3); app.particles.flash(g.x, 1.4, g.z, 0xff5a6a, 1.8);
+    app.floaters.spawn('BUSTED!', g.x, 1.05, g.z, 'alert big', 1.2); app.particles.ring(g.x, 0.05, g.z, 0xff3b4e, 3); app.particles.flash(g.x, 1.4, g.z, 0xff5a6a, 1.8);
     app.setPrompt('');
   }
   revive() {
