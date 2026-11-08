@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="b421e77f">
+<meta name="build" content="5422d84f">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=b421e77f">
+<link rel="modulepreload" href="./js/main.js?v=5422d84f">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -589,10 +589,19 @@ body.calm #mug.go em{animation:none}
 #ctoast.card-ctr .ct,#ctoast.card-star .ct{font-size:24px;line-height:1.1;max-width:min(420px,78vw)}
 #ctoast.card-ctr b,#ctoast.card-star b{color:#2f9e5a;font-size:22px;text-shadow:0 2px 0 rgba(28,19,48,.15)}
 #ctoast.card-star b{color:#7a4a00;font-size:15px}
-#ctoast.card-ctr em{position:absolute;right:-30px;top:-20px;font:400 26px/1 var(--disp);font-style:normal;color:#e8333f;border:4px solid #e8333f;border-radius:8px;padding:4px 10px 1px;rotate:14deg;opacity:0;animation:stampin .35s .35s cubic-bezier(.2,1.6,.4,1) forwards;mix-blend-mode:multiply}
+#ctoast.card-ctr em{position:absolute;right:-22px;bottom:-16px;background:rgba(255,246,232,.85);font:400 26px/1 var(--disp);font-style:normal;color:#e8333f;border:4px solid #e8333f;border-radius:8px;padding:4px 10px 1px;rotate:14deg;opacity:0;animation:stampin .35s .35s cubic-bezier(.2,1.6,.4,1) forwards}
 @keyframes slipin{0%{translate:0 40px;opacity:0;rotate:6deg}100%{translate:0 0;opacity:1;rotate:-2deg}}
 @keyframes stampin{0%{opacity:0;scale:2.4}60%{opacity:.95;scale:.92}100%{opacity:.9;scale:1}}
 @media (max-width:640px){#ctoast.card-ctr .ct,#ctoast.card-star .ct{font-size:18px}#ctoast.card-ctr,#ctoast.card-star{padding:18px 20px 10px}#ctoast.card-ctr em{font-size:20px;right:-10px}}
+/* city map entrance */
+#city.drop .pin{animation:pindrop .55s var(--d,0s) cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pindrop{0%{translate:0 -60px;opacity:0;scale:.6}60%{opacity:1}100%{translate:0 0;opacity:1;scale:1}}
+#city.drop #route{animation:routein 1.1s .15s cubic-bezier(.4,0,.2,1) both}
+@keyframes routein{0%{clip-path:inset(0 100% 0 0)}100%{clip-path:inset(0 0 0 0)}}
+#route{animation:ants 1.6s linear infinite}
+@keyframes ants{to{stroke-dashoffset:-30}}
+/* result star sparkles */
+.spk{position:fixed;left:0;top:0;width:20px;height:20px;margin:-10px 0 0 -10px;z-index:8;pointer-events:none;background:#ffe066;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);filter:drop-shadow(0 0 4px rgba(255,210,58,.9))}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -747,7 +756,7 @@ body.calm #mug.go em{animation:none}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=b421e77f"></script>
+<script type="module" src="./js/main.js?v=5422d84f"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

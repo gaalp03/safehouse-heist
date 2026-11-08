@@ -229,6 +229,15 @@ class App {
     this.updateMuteIcon();
   }
 
+  // a ring of little gold sparkles flies out of a freshly earned star
+  starSparkle(el) {
+    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    for (let k = 0; k < 10; k++) {
+      const s = document.createElement('i'); s.className = 'spk'; document.body.appendChild(s);
+      const a = (k / 10) * Math.PI * 2 + Math.random() * 0.3, d = 46 + Math.random() * 30;
+      s.animate([{ transform: `translate(${cx}px,${cy}px) scale(.3) rotate(0deg)`, opacity: 1 }, { transform: `translate(${cx + Math.cos(a) * d}px,${cy + Math.sin(a) * d}px) scale(1) rotate(180deg)`, opacity: 1, offset: 0.6 }, { transform: `translate(${cx + Math.cos(a) * d * 1.25}px,${cy + Math.sin(a) * d * 1.25 + 10}px) scale(.2) rotate(260deg)`, opacity: 0 }], { duration: 650, easing: 'cubic-bezier(.2,.8,.4,1)' }).onfinish = () => s.remove();
+    }
+  }
   // win celebration: a burst of paper confetti + bills over the result screen (DOM, auto-removed)
   confetti(n) {
     const box = document.createElement('div'); box.className = 'confetti';
@@ -364,6 +373,11 @@ class App {
     $('lvl3best').textContent = ju ? (jb ? 'Best ' + fmtMoney(jb.score) : 'New!') : 'Escape the Bank to unlock';
     // fresh unlocks that were never played get a pulsing NEW sticker on the map
     LEVELS.forEach((l, i) => { const el = $('lvl' + (i + 1)); if (!el || i === 0) return; const played = ['', '_easy', '_hard', '_ironman'].some((x) => this.save.best[l.id + x]) || (this.save.played || {})[l.id]; el.classList.toggle('fresh', this.levelUnlocked(i) && !played); });
+    // city map entrance: pins drop in one by one, the route line draws itself
+    { const city = $('city'), pins = [...city.querySelectorAll('.pin')];
+      pins.sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left)).forEach((el, i) => el.style.setProperty('--d', (0.05 + i * 0.045).toFixed(2) + 's'));
+      city.classList.remove('drop'); void city.offsetWidth; city.classList.add('drop');
+      clearTimeout(this.dropT); this.dropT = setTimeout(() => city.classList.remove('drop'), 1500); }
     this.renderSel();
     if (this.diff === 'ironman' && !this.ironUnlocked()) this.diff = 'normal';
     for (const el of document.querySelectorAll('#diff button')) { el.classList.toggle('on', el.dataset.d === this.diff); if (el.dataset.d === 'ironman') { el.classList.toggle('lock', !this.ironUnlocked()); el.title = this.ironUnlocked() ? 'Ironman: x2.5 score, 1 coin, no smoke, 15s police' : 'Escape any heist on Hard to unlock'; } }
@@ -1444,6 +1458,7 @@ class App {
       setTimeout(() => {
         if (this.state !== 'result') return;
         stars[i].classList.add('on', 'pop');
+        this.starSparkle(stars[i]);
         this.audio.play('star', i);
         this.shake.add(0.12);
       }, 450 + i * 380);
