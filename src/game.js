@@ -1,7 +1,7 @@
 // Gameplay: player, guards (vision cones, suspicion, chase, noise), loot, safe, escape, scoring.
 import {
   Group, Mesh, MeshBasicMaterial, MeshLambertMaterial, InstancedMesh, BufferGeometry, BufferAttribute, CircleGeometry, RingGeometry,
-  CylinderGeometry, PlaneGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial, ConeGeometry, AdditiveBlending, CanvasTexture,
+  CylinderGeometry, PlaneGeometry, Object3D, Vector3, DoubleSide, BoxGeometry, Points, PointsMaterial, ConeGeometry, AdditiveBlending, CanvasTexture, SRGBColorSpace,
 } from 'three';
 import { textures } from './textures.js';
 import { GeoBuilder } from './geo.js';
@@ -25,6 +25,17 @@ const shadowMat = new MeshBasicMaterial({ color: 0x000000, transparent: true, op
 
 const ARR_T = 0.95, _arrP = new Vector3(), _arrO = new Object3D(), _arrQ = new Object3D().quaternion;
 const CAM_R = 4.2; // security camera view distance (short, pale red cone)
+// cartoon smoke-bomb puff: chunky lit ball with a soft shaded underside and a thin ink rim
+let _puffTex = null;
+function smokePuffTex() {
+  if (_puffTex) return _puffTex;
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+  const g = x.createRadialGradient(24, 22, 2, 32, 32, 31);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(240,238,248,1)'); g.addColorStop(0.82, 'rgba(214,210,230,1)'); g.addColorStop(0.92, 'rgba(206,202,224,.75)'); g.addColorStop(1, 'rgba(206,202,224,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+  _puffTex = new CanvasTexture(c); _puffTex.colorSpace = SRGBColorSpace;
+  return _puffTex;
+}
 function makeCone() {
   const g = new BufferGeometry();
   const pos = new Float32Array((CONE_N + 2) * 3), col = new Float32Array((CONE_N + 2) * 4);
@@ -355,7 +366,7 @@ export class Game {
     for (let i = 0; i < 2; i++) {
       const N = 46, geo = new BufferGeometry();
       geo.setAttribute('position', new BufferAttribute(new Float32Array(N * 3), 3));
-      const pts = new Points(geo, new PointsMaterial({ map: textures().glow, size: 1.5, color: 0xd9d4e2, transparent: true, opacity: 0, depthWrite: false }));
+      const pts = new Points(geo, new PointsMaterial({ map: smokePuffTex(), size: 1.5, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false }));
       pts.frustumCulled = false; pts.renderOrder = 8; pts.visible = false;
       const off = new Float32Array(N * 4);
       for (let k = 0; k < N; k++) { const a = Math.random() * 6.28, r = Math.sqrt(Math.random()); off.set([Math.cos(a) * r, Math.random(), Math.sin(a) * r, Math.random() * 6.28], k * 4); }
@@ -1409,8 +1420,8 @@ export class Game {
         pos[k * 3 + 2] = c.z + f.off[o + 2] * c.r + sw;
       }
       f.geo.attributes.position.needsUpdate = true;
-      f.pts.material.opacity = 0.55 * fade * grow;
-      f.pts.material.size = 1.2 + grow * 0.6;
+      f.pts.material.opacity = 0.95 * Math.min(1, fade * 1.4) * Math.min(1, grow * 2);
+      f.pts.material.size = (0.5 + grow * 0.75) * (0.7 + 0.3 * fade);
       // guards caught inside cough and lose their bearings
       for (const g of this.guards) {
         if (g.coughT > 0) g.coughT -= dt;
