@@ -516,6 +516,16 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
 .lf.gold{width:30px;height:14px;border-radius:2px;background:linear-gradient(180deg,#fff3a8,#ffd23a 45%,#c98a12);box-shadow:0 0 0 2px #7a5208,0 0 12px rgba(255,210,58,.8);clip-path:polygon(12% 0,88% 0,100% 100%,0 100%)}
 .lf.jewel{width:18px;height:18px;margin:-9px 0 0 -9px;background:linear-gradient(135deg,#ffffff,#7ff3ff 40%,#2ab8d8);box-shadow:0 0 0 2px #106a80,0 0 14px rgba(127,243,255,.9);clip-path:polygon(50% 0,100% 40%,50% 100%,0 40%)}
 .lf.art{width:26px;height:20px;background:linear-gradient(180deg,#8ec8f0 0 55%,#5fae4c 55%);border:3px solid #c89a3a;box-shadow:0 0 0 2px #5a3a1a}
+/* lockpick minigame: brass lock plate, steel pick, tumbler pins that pop up when set */
+#lockpick{background:linear-gradient(180deg,#ffe39a 0%,#e8b54a 55%,#c08a24 100%);border:4px solid var(--ink);border-radius:18px;padding:12px 18px 10px;box-shadow:inset 0 3px 0 rgba(255,255,255,.55),inset 0 -5px 0 rgba(120,70,0,.3),0 6px 0 var(--ink),0 12px 18px rgba(0,0,0,.35);gap:9px}
+#lockpick .lp-bar{height:26px;border:3px solid var(--ink);border-radius:13px;background:linear-gradient(180deg,#1c1330,#2e2448);box-shadow:inset 0 4px 6px rgba(0,0,0,.5)}
+#lockpick .lp-zone{background:linear-gradient(180deg,#b8ffdc,#3fcf8e 60%,#22a86a);box-shadow:0 0 12px rgba(63,207,142,.9);animation:lpz .5s ease-in-out infinite alternate}
+@keyframes lpz{to{filter:brightness(1.25)}}
+#lockpick .lp-needle{width:8px;margin-left:-4px;top:-8px;bottom:-8px;border-radius:4px;background:linear-gradient(90deg,#9aa4b4,#ffffff 50%,#9aa4b4);box-shadow:0 0 0 2px var(--ink),0 0 8px #fff}
+#lockpick .lp-pins{gap:10px}
+#lockpick .lp-pins b{width:13px;height:24px;border-radius:7px;border:3px solid var(--ink);background:linear-gradient(90deg,#6a7484,#c9d2dc 50%,#6a7484);transition:transform .18s cubic-bezier(.2,2,.4,1),background .18s}
+#lockpick .lp-pins b.on{background:linear-gradient(90deg,#c08a24,#fff1a8 50%,#c08a24);transform:translateY(-6px);box-shadow:0 0 10px rgba(255,214,90,.9)}
+#lockpick.cool{animation:shakeX .3s}#lockpick.cool .lp-bar{border-color:#ff3b4e}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
