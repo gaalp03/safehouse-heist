@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="0d565525">
+<meta name="build" content="b421e77f">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=0d565525">
+<link rel="modulepreload" href="./js/main.js?v=b421e77f">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -583,6 +583,16 @@ body.calm #mug.go em{animation:none}
 .cb.coin i::after{background:linear-gradient(180deg,#fff8c8,#ffe066 50%,#e8b020)}.cb.coin b{color:#7a4a00;font-size:24px}.cb.coin i{left:-52px;top:-40px;width:104px;height:80px}.cb.coin b{left:-52px;width:104px;top:-14px}
 .cb.zap i::after{background:linear-gradient(180deg,#e8fbff,#7fd8ff 50%,#2a8ae8)}.cb.zap b{color:#fff;text-shadow:0 3px 0 #1c1330,2px 0 0 #1c1330,-2px 0 0 #1c1330,0 -2px 0 #1c1330,0 0 12px #7fd8ff}
 .cb.coin i,.cb.coin b{animation-duration:.6s}
+/* contract / loot-star toast: a paper job slip slides in, a red DONE stamp slams onto it */
+#ctoast.card-ctr,#ctoast.card-star{background:var(--paper);color:var(--ink);border:4px solid var(--ink);border-radius:14px;padding:22px 30px 12px;box-shadow:5px 6px 0 var(--ink);rotate:-2deg;gap:4px;text-shadow:none;animation:slipin .5s cubic-bezier(.2,1.5,.4,1)}
+#ctoast.card-ctr small,#ctoast.card-star small{position:absolute;top:-14px;left:50%;translate:-50% 0;rotate:2deg}
+#ctoast.card-ctr .ct,#ctoast.card-star .ct{font-size:24px;line-height:1.1;max-width:min(420px,78vw)}
+#ctoast.card-ctr b,#ctoast.card-star b{color:#2f9e5a;font-size:22px;text-shadow:0 2px 0 rgba(28,19,48,.15)}
+#ctoast.card-star b{color:#7a4a00;font-size:15px}
+#ctoast.card-ctr em{position:absolute;right:-30px;top:-20px;font:400 26px/1 var(--disp);font-style:normal;color:#e8333f;border:4px solid #e8333f;border-radius:8px;padding:4px 10px 1px;rotate:14deg;opacity:0;animation:stampin .35s .35s cubic-bezier(.2,1.6,.4,1) forwards;mix-blend-mode:multiply}
+@keyframes slipin{0%{translate:0 40px;opacity:0;rotate:6deg}100%{translate:0 0;opacity:1;rotate:-2deg}}
+@keyframes stampin{0%{opacity:0;scale:2.4}60%{opacity:.95;scale:.92}100%{opacity:.9;scale:1}}
+@media (max-width:640px){#ctoast.card-ctr .ct,#ctoast.card-star .ct{font-size:18px}#ctoast.card-ctr,#ctoast.card-star{padding:18px 20px 10px}#ctoast.card-ctr em{font-size:20px;right:-10px}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -737,7 +747,7 @@ body.calm #mug.go em{animation:none}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=0d565525"></script>
+<script type="module" src="./js/main.js?v=b421e77f"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

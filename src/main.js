@@ -703,7 +703,7 @@ class App {
     clearTimeout(this.whyT); $('alarmwhy').classList.add('hidden');
     if (this.mode === 'daily') {
       const t = $('ctoast');
-      t.innerHTML = `<small>DAILY CHALLENGE · ${this.daily.label}</small>${this.daily.mutator.name}<b>${this.daily.mutator.desc}</b>`;
+      t.className = 'o card-daily'; t.innerHTML = `<small>DAILY CHALLENGE · ${this.daily.label}</small>${this.daily.mutator.name}<b>${this.daily.mutator.desc}</b>`;
       t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 3200);
     } else if (fresh && this.mode === 'classic' && this.save.tutDone) {
@@ -911,7 +911,7 @@ class App {
     if ((d.clerks || []).length) it.push(`🙋 ${d.clerks.length} panic-button witness${d.clerks.length > 1 ? 'es' : ''}`);
     it.push(d.heli ? '🚁 Roof extraction' : L.van ? '🚐 Van out front' : '🪜 Roof hatch exit');
     const t = $('ctoast');
-    t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small>${d.brief ? `<span class="brief">${d.brief}</span>` : ''}<span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span><span class="stargoal">★ Escape · ★ Grab 70% loot · ★ Never get spotted</span>`;
+    t.className = 'o card-intel'; t.innerHTML = `<small>INTEL · ${d.name.toUpperCase()}</small>${d.brief ? `<span class="brief">${d.brief}</span>` : ''}<span class="intel">${it.map((x) => `<i>${x}</i>`).join('')}</span><span class="stargoal">★ Escape · ★ Grab 70% loot · ★ Never get spotted</span>`;
     t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
     clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 5200);
   }
@@ -1129,7 +1129,7 @@ class App {
       // second star earned mid-run: tell the player right away
       this.lootStar = true;
       const t = $('ctoast');
-      t.innerHTML = `<small>LOOT STAR EARNED</small>★ 70% grabbed<b>Every extra dollar still counts!</b>`;
+      t.className = 'o card-star'; t.innerHTML = `<small>LOOT STAR EARNED</small><span class="ct">★ 70% grabbed</span><b>Every extra dollar still counts!</b>`;
       t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 2000);
       this.audio.play('star', 1); this.shake.add(0.12);
@@ -1163,7 +1163,7 @@ class App {
     if (c.st === 'ok' && this.game.state === 'play') {
       this.audio.play('contract');
       const t = $('ctoast');
-      t.innerHTML = `<small>CONTRACT COMPLETE</small>${c.text}<b>+${fmtMoney(c.bonus)}</b>`;
+      t.className = 'o card-ctr'; t.innerHTML = `<small>CONTRACT COMPLETE</small><span class="ct">${c.text}</span><b>+${fmtMoney(c.bonus)}</b><em>DONE</em>`;
       t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 2200);
       this.shake.add(0.1);
