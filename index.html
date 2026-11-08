@@ -526,6 +526,11 @@ body.touch #touch button span{color:#fff;font-family:var(--disp);text-shadow:0 2
 #lockpick .lp-pins b{width:13px;height:24px;border-radius:7px;border:3px solid var(--ink);background:linear-gradient(90deg,#6a7484,#c9d2dc 50%,#6a7484);transition:transform .18s cubic-bezier(.2,2,.4,1),background .18s}
 #lockpick .lp-pins b.on{background:linear-gradient(90deg,#c08a24,#fff1a8 50%,#c08a24);transform:translateY(-6px);box-shadow:0 0 10px rgba(255,214,90,.9)}
 #lockpick.cool{animation:shakeX .3s}#lockpick.cool .lp-bar{border-color:#ff3b4e}
+/* keep controls, prompts and floating text above the wardrobe slats */
+#slats{z-index:1}
+#touch{z-index:4}
+#prompt,#ctoast,#fxl{z-index:3}
+@media (orientation:landscape){body.touch #prompt{left:40%;max-width:46vw}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
