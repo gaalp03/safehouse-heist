@@ -253,8 +253,19 @@ class App {
     e.classList.remove('go'); void e.offsetWidth; e.classList.add('go');
     clearTimeout(this.irisT); this.irisT = setTimeout(() => e.classList.remove('go'), 850);
   }
+  // busted: police camera flash, the frozen frame goes black-and-white over a booking height chart
+  mugshot() {
+    const m = $('mug'); if (!m) return;
+    this.audio.play('shutter');
+    const n = 1000 + ((this.runs * 7919 + (this.level ? this.level.id.length : 0) * 131) % 9000);
+    m.querySelector('b').textContent = `CASE #${n} · ${(this.level ? this.level.name : '').toUpperCase()}`;
+    m.classList.remove('hidden', 'go'); void m.offsetWidth; m.classList.add('go');
+    this.els.canvas.classList.add('mug');
+  }
+  clearMug() { const m = $('mug'); if (m) m.classList.add('hidden'); this.els.canvas.classList.remove('mug'); }
   screen(id) {
     for (const s of document.querySelectorAll('.screen')) s.classList.toggle('hidden', s.id !== id);
+    if (id !== 'busted') this.clearMug();
     const inGame = this.state === 'play';
     this.input.active = inGame;
     if (!inGame) this.input.exitLock();
@@ -978,6 +989,7 @@ class App {
     await SDK.ad('midgame');
   }
   async reviveAd() {
+    this.clearMug();
     if (this.freeRevOk && !this.game.revived) {
       if (this.preBust) { const keep = JSON.parse(this.preBust); for (const k of Object.keys(this.save)) delete this.save[k]; Object.assign(this.save, keep); }
       this.save.freeRev = dayKeyNow(); this.freeRevOk = false; SDK.store(this.save);

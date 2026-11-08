@@ -74,4 +74,5 @@ huh.mp3	oga/huh.wav	Huh by tinyworlds (opengameart.org/content/huh), CC0
 beat.mp3	oga/heartbeat_slow_0.wav	Heartbeat Sounds by bart (opengameart.org/content/heartbeat-sounds), CC0
 crickets.mp3	oga/crickets-oneloop.mp3	Crickets Ambient Noise (Loopable) by wolfgang (opengameart.org/content/crickets-ambient-noise-loopable), CC0
 tvstatic.mp3	oga/ScatterNoise1.mp3	Static by xhunterko (opengameart.org/content/static), CC0
+shutter.mp3	sfx-kit/sounds/mechanical/mechanical-shutter-light.wav	wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0
 rain.mp3	SimonePiervergili-SoundEffects/Nature/Rain_1.wav	Simone Piervergili Sound Effects (github.com/NeoSoundFonts/SimonePiervergili-SoundEffects), CC0

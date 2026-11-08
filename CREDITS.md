@@ -83,6 +83,7 @@ Sources:
 | `sfx/tvstatic.mp3` | ScatterNoise1.mp3, first 4 s ("Static" by xhunterko) | OpenGameArt (opengameart.org/content/static), CC0 |
 | `sfx/dash.mp3` | sfx-kit/sounds/whooshes/whoosh-fast-medium.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
 | `sfx/throw.mp3` | sfx-kit/sounds/swishes-and-zips/swish-soft.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
+| `sfx/shutter.mp3` | sfx-kit/sounds/mechanical/mechanical-shutter-light.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
 | `sfx/gold.mp3` | sfx-kit/sounds/money/money-coin-stack.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
 | `sfx/jewel.mp3` | sfx-kit/sounds/shimmers/shimmer-short-sparkle.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |
 | `sfx/art.mp3` | sfx-kit/sounds/shimmers/shimmer-medium-bright.wav | wyzowl/sfx-kit (github.com/wyzowl/sfx-kit), CC0 |

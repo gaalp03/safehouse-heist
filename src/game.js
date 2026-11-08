@@ -776,6 +776,7 @@ export class Game {
     if (this.state === 'escape') this.updateEscape(dt);
     if (this.state === 'caught') {
       this.endT += rdt;
+      if (this.endT > 0.85 && !this.mugT && !this.policeBusted) { this.mugT = true; this.app.mugshot && this.app.mugshot(); }
       if (this.endT > 1.2 && !this.endSent) { this.endSent = true; this.app.onBusted(); }
     }
   }
@@ -2706,7 +2707,7 @@ export class Game {
       : t - (this.lastBark ?? -99) < 6 ? 'dog' : t - (g.alertAt ?? t) > 3 ? 'los' : 'cone';
     const app = this.app;
     if (this.picking) this.stopPick();
-    this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = g;
+    this.state = 'caught'; this.endT = 0; this.endSent = false; this.catcher = g; this.mugT = false;
     g.face = Math.atan2(this.player.x - g.x, this.player.z - g.z);
     squash(this.player.c, 0.55);
     this.hitstop = 0.15; this.juice(0.5, 0.3, -14, 0.06, -0.04);
