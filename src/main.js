@@ -1258,6 +1258,17 @@ class App {
   lightning() {
     this.boltK = 1; this.flash('bolt');
   }
+  // spotted: a jagged comic burst pops at the screen edge on the guard's side (or over him if he's in view)
+  spottedFx(g) {
+    const el = $('spot'); if (!el) return;
+    const v = this._d.set(g.x, 1.6, g.z).project(this.camera);
+    let x = v.x, y = v.y; const behind = v.z > 1; if (behind) { x = -x; y = -y; }
+    const off = behind || Math.abs(x) > 0.85 || Math.abs(y) > 0.8;
+    if (off) { const k = 0.82 / Math.max(Math.abs(x), Math.abs(y), 0.001); x *= k; y *= k; }
+    el.style.left = (((x + 1) / 2) * this.w) + 'px'; el.style.top = (((1 - y) / 2) * this.h) + 'px';
+    el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+    clearTimeout(this.spotT); this.spotT = setTimeout(() => el.classList.remove('go'), 900);
+  }
   flash(kind) {
     const f = $('flash');
     f.className = ''; void f.offsetWidth; f.className = kind;

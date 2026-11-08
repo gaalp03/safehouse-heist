@@ -1806,6 +1806,7 @@ export class Game {
     if (this.smokesLeft > 0) this.app.hint('smoke');
     this.app.shake.add(0.15);
     squash(g.c, 1.3);
+    if (this.state === 'play' && this.time - (this.spotFxT ?? -9) > 2.5) { this.spotFxT = this.time; this.juice(0.22, 0.35, -4, 0, 0); this.app.spottedFx && this.app.spottedFx(g); }
   }
 
   baseState(g) {
