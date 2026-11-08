@@ -105,7 +105,7 @@ export class Game {
     const world = buildWorld(L);
     this.root.add(world);
     // world materials get a red/blue strobe tint while the alarm is ringing
-    this.worldMats = []; world.traverse((o) => { if (o.isMesh && o.material && o.material.vertexColors && !o.material.blending) this.worldMats.push(o.material); });
+    this.worldMats = []; world.traverse((o) => { if (o.isMesh && o.material && o.material.vertexColors && !o.material.transparent && !this.worldMats.includes(o.material)) this.worldMats.push(o.material); });
     this.alarmTint = 0;
     this.trainMats = world.userData.trainMats || null; this.clackT = 0; this.sway = 0;
 
@@ -440,7 +440,7 @@ export class Game {
     this.time = 0; this.lootGot = 0; this.spotted = false; this.kos = 0;
     this.hasKey = false; this.objText = ''; this.crackNoiseT = 0;
     for (const b of this.buttons || []) b.btn.material.color.setHex(0xff2a3a);
-    this.powerOff = false; this.breakProg = 0; this.lasersTripped = 0;
+    this.powerOff = false; this.breakProg = 0; this.lasersTripped = 0; this.cutT = null; this.pwT = 0;
     if (this.breaker) { this.breaker.lever.rotation.x = 0; this.breaker.led.material.color.setHex(0xff2a3a); }
     for (const l of this.lasers || []) l.group.visible = true;
     this.spotHit = false;
@@ -2607,11 +2607,19 @@ export class Game {
     { // whole-level emergency strobe (cheap: one color uniform per world material)
       const want = this.alarm && this.state === 'play' && !this.app.calm ? 1 : 0;
       this.alarmTint += (want - this.alarmTint) * Math.min(1, dt * 4);
-      if (this.alarmTint > 0.004 || this.alarmTintOn) {
-        this.alarmTintOn = this.alarmTint > 0.004;
+      // power cut: room lights stutter, black out for a beat, then settle to dim blue emergency light
+      let pw = 1, pb = 1;
+      if (this.powerOff) {
+        this.pwT = (this.pwT || 0) + dt;
+        const k = this.pwT, flick = k < 0.6 ? (((k * 18) | 0) % 2 ? 0.35 : 1) : k < 0.9 ? 0.18 : 0.18 + Math.min(1, (k - 0.9) / 0.8) * 0.52;
+        pw = flick; pb = k < 0.9 ? flick : flick + 0.12 * Math.min(1, (k - 0.9) / 0.8);
+      } else this.pwT = 0;
+      const dim = pw < 0.999;
+      if (this.alarmTint > 0.004 || this.alarmTintOn || dim || this.dimOn) {
+        this.alarmTintOn = this.alarmTint > 0.004; this.dimOn = dim;
         const a = this.alarmTintOn ? this.alarmTint : 0, w = Math.max(0, Math.sin(this.t * 7)), v = Math.max(0, -Math.sin(this.t * 7));
         const r = 1 - a * (0.05 + 0.12 * v), gg = 1 - a * (0.2 * w + 0.12 * v), b = 1 - a * (0.24 * w);
-        for (const m of this.worldMats) m.color.setRGB(r, gg, b);
+        for (const m of this.worldMats) m.color.setRGB(r * pw, gg * pw, b * pb);
       }
     }
     const pc = this.police;
@@ -2693,8 +2701,7 @@ export class Game {
     this.powerOff = true; this.breakProg = 0;
     this.breaker.lever.rotation.x = -2.2;
     this.breaker.led.material.color.setHex(0x3ddc84);
-    for (const l of this.lasers) l.group.visible = false;
-    for (const sp of this.spots) { sp.pool.visible = sp.cone.visible = false; }
+    this.cutT = 0;   // lasers + searchlights sputter out over ~0.7s (see updateLasers), lights flicker then dim
     app.audio.play('powerdown');
     app.shake.add(0.2);
     app.particles.burst(bp.x, bp.y + 0.3, bp.z, { count: 24, colors: [0xfff1a8, 0x7fd8ff, 0xffffff], speed: 3, up: 3, size: 0.04, life: 0.6 }); app.particles.flash(bp.x, bp.y + 0.3, bp.z, 0x7fd8ff, 1.8);
@@ -2739,7 +2746,21 @@ export class Game {
     }
   }
   updateLasers(dt, playing) {
-    if (this.powerOff) return;
+    if (this.powerOff) {
+      if (this.cutT == null || this.cutT > 1) return;
+      this.cutT += dt;
+      const k = this.cutT, live = k < 0.75 && ((k * 22) | 0) % 3 !== 0 && Math.random() > k;
+      for (const l of this.lasers) {
+        l.group.visible = live || k < 0.08; l.mat.opacity = 0.9 * (1 - k);
+        if (live && Math.random() < dt * 14) {
+          const mid = (l.lo + l.hi) / 2, x = l.alongX ? mid : l.line, z = l.alongX ? l.line : mid;
+          this.app.particles.burst(x + rand(-0.8, 0.8), rand(0.3, 1.4), z, { count: 3, colors: [0xff5a6a, 0xffffff], speed: 1.5, up: 1.5, size: 0.03, life: 0.4 });
+        }
+      }
+      for (const sp of this.spots) sp.pool.visible = sp.cone.visible = live;
+      if (k >= 0.75) { for (const l of this.lasers) l.group.visible = false; for (const sp of this.spots) sp.pool.visible = sp.cone.visible = false; this.cutT = 2; }
+      return;
+    }
     const p = this.player, app = this.app;
     for (const l of this.lasers) {
       const d = l.def, per = d.on + d.off, ph = (this.t + (d.phase || 0)) % per;
