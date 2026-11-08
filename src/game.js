@@ -1502,6 +1502,7 @@ export class Game {
             this.makeNoise(c.x, c.z, 4.6, null, true);
             app.audio.play('clink', 1);
             app.particles.burst(c.x, 0.06, c.z, { count: 6, colors: [0xffe680, 0xffffff], speed: 1.5, up: 1.5, size: 0.04, life: 0.4 });
+            if (app.comicBurst) app.comicBurst(c.x, 0.35, c.z, 'CLINK!', 'coin');
           } else app.audio.play('clink', 0.3);
           c.bounces++;
           c.vy = Math.abs(c.vy) * 0.35; c.vx *= 0.5; c.vz *= 0.5;
@@ -1517,6 +1518,7 @@ export class Game {
             c.vx *= -0.3; c.vz *= -0.3; c.vy = 1;
             app.audio.play('zap'); app.shake.add(0.1);
             app.particles.burst(cp.x, cp.y, cp.z, { count: 16, colors: [0xfff1a8, 0x7fd8ff, 0xffffff], speed: 2.5, up: 2, size: 0.04, life: 0.6 });
+            if (app.comicBurst) app.comicBurst(cp.x, cp.y, cp.z, 'BZZT!', 'zap');
             app.floaters.spawn('CAMERA DOWN', cp.x, cp.y + 0.5, cp.z, 'big', 1.2);
             app.hintDone('camhit');
           }
@@ -2591,6 +2593,7 @@ export class Game {
       van.scale.set(1.08, 0.88, 1.08);
       app.audio.play('engine');
       app.shake.add(0.3);
+      if (app.comicBurst) app.comicBurst(van.position.x + 1.6, 0.7, van.position.z, 'VROOM!', 'pow');
     }
     van.scale.x += (1 - van.scale.x) * Math.min(1, dt * 10);
     van.scale.y += (1 - van.scale.y) * Math.min(1, dt * 10);
@@ -2805,6 +2808,7 @@ export class Game {
         if (!this.laserHitT || this.t - this.laserHitT > 1.5) {
           this.laserHitT = this.t; this.lasersTripped++;
           app.audio.play('zap'); app.flash('red'); app.shake.add(0.3);
+          if (app.comicBurst) app.comicBurst(p.x + Math.sin(p.face) * 1.2, 0.9, p.z + Math.cos(p.face) * 1.2, 'ZAP!', 'zap');
           app.particles.burst(p.x, 0.8, p.z, { count: 14, colors: [0xff3040, 0xffffff], speed: 2.5, up: 2, size: 0.04, life: 0.5 });
           this.spotted = true;
           this.triggerAlarm('You tripped a laser!');
@@ -2950,6 +2954,7 @@ export class Game {
     if (d.type === 'lock') {
       app.audio.play('creak');
       app.hintDone('pick');
+      if (app.comicBurst) app.comicBurst(d.x + 0.5, 0.95, d.y + 0.5, 'CLICK!', 'coin');
       app.floaters.spawn('UNLOCKED!', d.x + 0.5, 1.5, d.y + 0.5, 'big', 1.2);
       app.particles.burst(d.x + 0.5, 0.75, d.y + 0.5, { count: 10, colors: [0xd9b45a, 0xffffff], speed: 1.5, up: 1.5, size: 0.03, life: 0.5 });
       return;

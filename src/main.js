@@ -1264,7 +1264,8 @@ class App {
     if (v.z > 1) return;
     const el = document.createElement('div'); el.className = 'cb ' + kind;
     el.innerHTML = '<i></i><b></b>'; el.lastChild.textContent = text;
-    el.style.left = (((v.x + 1) / 2) * this.w) + 'px'; el.style.top = (((1 - v.y) / 2) * this.h) + 'px';
+    // keep clear of the top HUD strip (objective note, timer) and the screen edges
+    el.style.left = Math.max(70, Math.min(this.w - 70, ((v.x + 1) / 2) * this.w)) + 'px'; el.style.top = Math.max(this.h * 0.24, Math.min(this.h - 90, ((1 - v.y) / 2) * this.h)) + 'px';
     el.style.setProperty('--rot', ((Math.random() - 0.5) * 24).toFixed(1) + 'deg');
     document.body.appendChild(el); setTimeout(() => el.remove(), 900);
   }
