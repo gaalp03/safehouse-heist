@@ -746,6 +746,7 @@ class App {
   }
   // ---- intro cutscene (tutorial only) ----
   beginIntro() {
+    this.game.arrT = null;
     this.introSeen = true;
     this.state = 'intro'; this.introI = -1;
     this.introHintSnap = new Set(this.hDone);
@@ -863,6 +864,7 @@ class App {
   }
   endIntro() {
     if (this.state !== 'intro') return;
+    this.game.arrT = 0; this.game.arrFrom = null;
     $('intro').classList.add('hidden'); $('iDisg').classList.add('hidden');
     this.game.actorOff();
     for (const g of this.game.guards) { g.cone.material.opacity = 1; g.cone.material.color.setHex(0xffe14d); }
@@ -1471,7 +1473,7 @@ class App {
     this.renderer.clear();
     this.renderer.render(this.scene, this.camera);
     if (st === 'outfits') { this.vm.mat.color.setRGB(1.05, 1.0, 0.95); this.vm.update(rdt, { move: 0, bob: 0, lookX: 0, lookY: 0, punch: 0, crack: false, grab: 0, dash: false, busted: false }); }
-    this.vm.visible = st === 'outfits' || (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding && !(this.game.player.venting && (this.game.player.venting.k || 0) > 0.12);
+    this.vm.visible = st === 'outfits' || (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding && !(this.game.player.venting && (this.game.player.venting.k || 0) > 0.12) && !(this.game.arrT != null && this.game.arrT < 0.6);
     this.vm.render(this.renderer);
     this.adaptRes(rdt);
   }

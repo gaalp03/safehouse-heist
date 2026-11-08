@@ -23,6 +23,7 @@ const turnTo = turn;
 const shadowGeo = new CircleGeometry(0.36, 12).rotateX(-Math.PI / 2);
 const shadowMat = new MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false });
 
+const ARR_T = 0.95, _arrP = new Vector3(), _arrO = new Object3D(), _arrQ = new Object3D().quaternion;
 const CAM_R = 4.2; // security camera view distance (short, pale red cone)
 function makeCone() {
   const g = new BufferGeometry();
@@ -431,6 +432,7 @@ export class Game {
   }
 
   reset() {
+    this.arrT = 0; this.arrFrom = null;
     if (this.roofCover) this.roofCover.visible = false;
     if (this.heli && this.heli.ladder) this.heli.ladder.visible = false;
     if (this.actorOn) this.actorOff();
@@ -2418,6 +2420,22 @@ export class Game {
     const sh = app.shake, drop = this.state === 'caught' ? 0.3 * Math.min(1, this.endT * 3) : 0;
     cam.position.set(p.x + rx * bobX, EYE - (p.crouchK || 0) * 0.42 + bobY * (1 - (p.crouchK || 0) * 0.5) - drop, p.z + rz * bobX);
     cam.rotation.set(p.pitch + sh.y * 0.06 + (this.kickP || 0), p.yaw + sh.x * 0.06, p.roll + sh.x * 0.02 + (this.kickR || 0) + this.sway);
+    // heist arrival: swoop down from a high establishing view behind you into your own eyes
+    if (this.arrT != null && this.arrT < ARR_T && this.state === 'play') {
+      this.arrT += dt;
+      const u = Math.min(1, this.arrT / ARR_T), e = 1 - Math.pow(1 - u, 3);
+      if (!this.arrFrom) {
+        const fx = Math.sin(p.face), fz = Math.cos(p.face);
+        _arrP.set(p.x - fx * 4.5, 7.5, p.z - fz * 4.5);
+        // Object3D.lookAt aims +z; a camera looks down -z, so aim at the mirrored point
+        _arrO.position.copy(_arrP); _arrO.lookAt(2 * _arrP.x - (p.x + fx * 2), 2 * _arrP.y - 0.4, 2 * _arrP.z - (p.z + fz * 2));
+        this.arrFrom = { p: _arrP.clone(), q: _arrO.quaternion.clone() };
+      }
+      _arrQ.copy(cam.quaternion);
+      cam.position.lerpVectors(this.arrFrom.p, cam.position, e);
+      cam.quaternion.copy(this.arrFrom.q).slerp(_arrQ, e);
+      this.fovKick = (1 - e) * 10;
+    }
   }
 
   updateNoiseRings(dt) {
