@@ -1283,8 +1283,14 @@ export function buildHeli() {
   beam.position.set(1.5, -3.3, 0); grp.add(beam);
   const blink = new Mesh(new BoxGeometry(0.1, 0.1, 0.1), new MeshBasicMaterial({ color: 0xff2a3a }));
   blink.position.set(-2.8, 0.95, 0); grp.add(blink);
+  // rope ladder dropped for the extraction (two ropes + wooden rungs)
+  const lg = new GeoBuilder();
+  for (const z of [-0.22, 0.22]) lg.box(-0.1, -2.75, z, 0.035, 2.3, 0.035, 0xc9b48a, { faces: 63 });
+  for (let k = 0; k < 8; k++) lg.box(-0.1, -2.7 + k * 0.29, 0, 0.06, 0.05, 0.5, 0x8a5a34, { faces: 63 });
+  const ladder = new Mesh(lg.build(), new MeshLambertMaterial({ vertexColors: true }));
+  ladder.visible = false; grp.add(ladder);
   grp.visible = false;
-  return { group: grp, rotor, tail, beam, blink };
+  return { group: grp, rotor, tail, beam, blink, ladder };
 }
 
 export function buildPolice() {

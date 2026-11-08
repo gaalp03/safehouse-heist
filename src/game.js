@@ -8,7 +8,7 @@ import { GeoBuilder } from './geo.js';
 import { parseLevel } from './level.js';
 import { buildWorld, buildSafe, buildVan, lootGeometries, lootMat, buildPolice, buildPanel, buildSecDoor, buildWoodDoor, buildKeycard, buildLaser, buildBreaker, buildHeli, buildVent, propBack, WALL_H } from './world.js';
 import { makeCharacter, animateChar, squash, probe, makeDog, animateDog } from './chars.js';
-import { clamp, damp, angDiff, rand } from './util.js';
+import { clamp, damp, angDiff, rand, shade } from './util.js';
 import { pickContracts } from './contracts.js';
 import { DIFFS } from './difficulty.js';
 import { mulberry32 } from './util.js';
@@ -98,7 +98,7 @@ export class Game {
       const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
       for (const m of mats) { if (shared.has(m)) continue; if (m.map && !m.map.userData.keep) m.map.dispose(); m.dispose(); }
     });
-    this.root.clear(); this.disgC = null;
+    this.root.clear(); this.disgC = null; this.roofCover = null;
     for (const g of this.guards || []) g.badge.remove();
     this.def = def;
     const L = (this.L = parseLevel(def));
@@ -430,6 +430,9 @@ export class Game {
   }
 
   reset() {
+    if (this.roofCover) this.roofCover.visible = false;
+    if (this.heli && this.heli.ladder) this.heli.ladder.visible = false;
+    if (this.actorOn) this.actorOff();
     if (this.aimPts) this.aimPts.visible = this.aimRing.visible = false;
     const L = this.L, def = this.def;
     this.state = 'play';
@@ -1054,12 +1057,12 @@ export class Game {
   }
   mark(t, x, z) { this.marks.push({ t, x, z }); }
   // intro cutscene: drive the thief's third-person body as an actor
-  actor(dt, x, z, face, move, crouch, swing, disg) {
+  actor(dt, x, z, face, move, crouch, swing, disg, y = 0) {
     if (disg && !this.disgC) { this.disgC = makeCharacter('guard'); if (this.disgC.beam) this.disgC.beam.visible = false; this.root.add(this.disgC.root); }
     if (this.disgC) this.disgC.root.visible = false;
     if (disg) this.player.c.root.visible = false;
     const c = disg ? this.disgC : this.player.c; this.actorOn = true;
-    c.root.visible = true; c.root.position.set(x, 0, z); c.root.rotation.set(0, face, 0);
+    c.root.visible = true; c.root.position.set(x, y, z); c.root.rotation.set(0, face, 0);
     c.root.scale.set(1, crouch ? 0.72 : 1, 1);
     c.armOverride = swing != null;
     animateChar(c, dt, move, this.t);
@@ -2309,9 +2312,18 @@ export class Game {
     }
     if (this.state === 'escape' && !this.L.van) {
       // rooftop escape: climb the hatch and rise above the store
-      const ex = this.L.exit, t = this.endT, k = Math.min(1, Math.max(0, (t - 0.3) / 2.0)), e = k * k * (3 - 2 * k);
-      cam.position.set(ex.x, EYE + e * 9, ex.z + e * 3.5);
-      cam.rotation.set(-0.1 - e * 1.0, Math.PI + e * 0.5, 0);
+      // climb the ladder through the hatch (first person), then a chase-crane follows you across the roof
+      const ex = this.L.exit, t = this.endT, dir = this.roofDir || 1;
+      if (t < 0.85) {
+        const k = Math.min(1, t / 0.85), e = k * k * (3 - 2 * k);
+        cam.position.set(ex.x, EYE + e * (WALL_H + 0.7 - EYE), ex.z);
+        cam.rotation.set(0.9 - e * 0.95, dir > 0 ? -Math.PI / 2 : Math.PI / 2, 0);
+      } else {
+        const rx = this.roofX ?? ex.x, tx = rx - dir * 3.2, ty = WALL_H + 2.4, tz = ex.z + 3.4;
+        const f = Math.min(1, dt * 3.2);
+        cam.position.x += (tx - cam.position.x) * f; cam.position.y += (ty - cam.position.y) * f; cam.position.z += (tz - cam.position.z) * f;
+        cam.lookAt(rx + dir * 0.8, WALL_H + 0.7, ex.z);
+      }
       this.fovKick = 0;
       return;
     }
@@ -2387,7 +2399,7 @@ export class Game {
     if (this.aimPts) this.aimPts.visible = this.aimRing.visible = false;
     const app = this.app;
     this.checkContracts(true);
-    this.state = 'escape'; this.endT = 0; this.endSent = false; this.cineInit = false; this.whooshed = false;
+    this.state = 'escape'; this.endT = 0; this.endSent = false; this.cineInit = false; this.whooshed = false; this.roofDir = null; this.leapFx = false;
     const p = this.player;
     p.sx = p.x; p.sz = p.z;
     app.setPrompt('');
@@ -2402,10 +2414,72 @@ export class Game {
     }
     app.onEscapeStart();
   }
+  // rooftop getaway set: a gravel roof over the building (only shown for this shot), hatch frame, AC units, skylights
+  buildRoofCover() {
+    const L = this.L, W = L.W, H = L.H, ex = this.L.exit, g = new GeoBuilder(), u = new GeoBuilder();
+    const night = !!this.def.night, base = night ? 0x30343d : 0x7d828c;
+    const hx = Math.floor(ex.x), hz = Math.floor(ex.z);
+    const ext = (x, y) => L.ch[y * W + x] === '#' && [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const nx = x + dx, ny = y + dy; return nx < 0 || ny < 0 || nx >= W || ny >= H || L.outdoor[ny * W + nx]; });
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (L.outdoor[i] || ext(x, y) || (x === hx && y === hz)) continue;
+      const v = ((x * 7 + y * 13) % 5) / 5;
+      g.box(x + 0.5, WALL_H + 0.02, y + 0.5, 1, 0, 1, shade(base, 0.92 + v * 0.14), { faces: 4 });
+    }
+    // hatch: raised curb + lid flipped open
+    for (const [dx, dz, w, d] of [[0, -0.5, 1.1, 0.1], [0, 0.5, 1.1, 0.1], [-0.5, 0, 0.1, 1.1], [0.5, 0, 0.1, 1.1]]) g.box(hx + 0.5 + dx, WALL_H, hz + 0.5 + dz, w, 0.22, d, 0x6a7484, { faces: 63 & ~8 });
+    g.box(hx + 0.5, WALL_H + 0.22, hz - 0.08, 1.0, 0.9, 0.05, 0x7a8496, { faces: 63 });
+    // AC units + skylights scattered away from the run row
+    const rng = mulberry32(W * 31 + H), spots = [];
+    for (let k = 0; k < 40 && spots.length < 6; k++) {
+      const x = 2 + ((rng() * (W - 4)) | 0), y = 2 + ((rng() * (H - 4)) | 0), i = y * W + x;
+      if (L.outdoor[i] || Math.abs(y - hz) < 2 || spots.some(([a, b]) => Math.abs(a - x) + Math.abs(b - y) < 3)) continue;
+      spots.push([x, y]);
+    }
+    spots.forEach(([x, y], n) => {
+      if (n % 2 === 0) {
+        g.box(x + 0.5, WALL_H, y + 0.5, 0.9, 0.55, 0.7, 0x9aa3ae, { faces: 63 & ~8, top: 0xb8c0ca });
+        g.box(x + 0.5, WALL_H + 0.55, y + 0.5, 0.5, 0.02, 0.5, 0x22242f, { faces: 4 });
+        g.box(x + 0.15, WALL_H + 0.1, y + 0.5 + 0.36, 0.08, 0.08, 0.6, 0x6a7484, { faces: 63 });
+      } else {
+        g.box(x + 0.5, WALL_H, y + 0.5, 1.0, 0.18, 1.0, 0x6a7484, { faces: 63 & ~8 });
+        u.box(x + 0.5, WALL_H + 0.19, y + 0.5, 0.86, 0, 0.86, night ? 0xffd99a : 0xbfe6ff, { faces: 4 });
+      }
+    });
+    const grp = new Group();
+    grp.add(new Mesh(g.build(), new MeshBasicMaterial({ vertexColors: true })));
+    if (!u.empty) grp.add(new Mesh(u.build(), new MeshBasicMaterial({ vertexColors: true, toneMapped: false })));
+    this.root.add(grp);
+    return grp;
+  }
+  // rooftop run: climb out of the hatch, sprint across the roof in the rain and leap to the next building
+  updateRoofRun(dt) {
+    const ex = this.L.exit, t = this.endT, hx = ex.x, hz = ex.z;
+    if (!this.roofCover) this.roofCover = this.buildRoofCover();
+    this.roofCover.visible = true;
+    if (this.roofDir == null) {
+      // run toward the nearer side edge, along the hatch row
+      this.roofDir = hx < this.L.W / 2 ? -1 : 1;
+      const edge = this.roofDir < 0 ? 1.2 : this.L.W - 1.2;
+      this.roofDist = Math.min(7, Math.abs(edge - hx));
+    }
+    const dir = this.roofDir, face = dir > 0 ? Math.PI / 2 : -Math.PI / 2, D = this.roofDist;
+    if (t < 0.55) return;
+    if (t < 1.0) { const u = (t - 0.55) / 0.45; this.actor(dt, hx, hz, face, 0.4, false, null, false, WALL_H - 1.1 + u * 1.12); return; }
+    const runT = Math.max(0, t - 1.0), dist = Math.min(D, runT * 4.2), x = hx + dir * dist;
+    if (dist < D) { this.actor(dt, x, hz, face, 1, false, null, false, WALL_H + 0.02); this.roofX = x; return; }
+    // leap off the far edge
+    const lt = runT - D / 4.2, ly = WALL_H + 0.02 + Math.sin(Math.min(1, lt / 0.6) * Math.PI) * 0.9 - Math.max(0, lt - 0.6) * 3;
+    this.actor(dt, x + dir * lt * 4.2, hz, face, 1, false, null, false, ly);
+    this.roofX = x + dir * lt * 4.2;
+    if (lt > 0.12 && !this.leapFx) { this.leapFx = true; this.app.audio.play('dash'); this.app.floaters.spawn('LEAP!', this.roofX, WALL_H + 1.4, hz, 'big', 1.0); }
+  }
   // helicopter extraction: hover over the hatch, then lift off and bank away over the city
   updateHeli(dt) {
     const h = this.heli, g = h.group, ex = this.L.exit, t = this.endT;
     if (!g.visible) { g.visible = true; this.heliV = 0; g.position.set(ex.x, 4.4, ex.z - 1.2); g.rotation.set(0, 0, 0); }
+    if (!this.roofCover) this.roofCover = this.buildRoofCover();
+    this.roofCover.visible = true;
     h.rotor.rotation.y += dt * 32; h.tail.rotation.x += dt * 40;
     h.blink.visible = (t * 2.5) % 1 < 0.4;
     h.beam.rotation.z = Math.sin(t * 1.3) * 0.25;
@@ -2417,6 +2491,11 @@ export class Game {
       g.rotation.x += (-0.12 - g.rotation.x) * Math.min(1, dt * 2);
     }
     if (t > 0.6 && t < 1.4) this.app.shake.add(dt * 0.25);
+    // rope ladder drops; the robber climbs out of the hatch onto it and hangs on as the chopper banks away
+    h.ladder.visible = t > 0.25;
+    const lp = g.position, sw = Math.sin(t * 4) * 0.12;
+    // (first person while climbing; once the camera pulls back you see yourself hanging off the ladder)
+    if (t > 1.05) this.actor(dt, lp.x - 0.1 + sw * 0.3, lp.z, Math.PI / 2, 0.5, false, 0.05 + Math.sin(t * 9) * 0.06, false, lp.y - 2.1 + Math.sin(t * 3) * 0.05);
   }
   updateEscape(dt) {
     const p = this.player, van = this.van.group, app = this.app;
@@ -2424,8 +2503,8 @@ export class Game {
       this.endT += dt;
       if (!p.hidden) { p.hidden = true; p.c.root.visible = false; app.audio.play('creak'); }
       if (this.endT > 0.5 && !this.whooshed) { this.whooshed = true; app.audio.play(this.heli ? 'chopper' : 'dash'); }
-      if (this.heli) this.updateHeli(dt);
-      if (this.endT > (this.heli ? 3.6 : 2.8) && !this.endSent) { this.endSent = true; app.onWin(this.results()); }
+      if (this.heli) this.updateHeli(dt); else this.updateRoofRun(dt);
+      if (this.endT > (this.heli ? 3.8 : 3.3) && !this.endSent) { this.endSent = true; app.onWin(this.results()); }
       return;
     }
     this.endT += dt;
