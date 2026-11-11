@@ -1052,7 +1052,6 @@ class App {
     this.hDone.add(id);
     const qi = this.hQ.indexOf(id);
     if (qi >= 0) this.hQ.splice(qi, 1);
-    if (this.hCur === id && this.hT > 1.2) this.hT = Math.min(this.hT, 0.5);
   }
   updateHints(dt) {
     const el = $('hint');
@@ -1063,9 +1062,12 @@ class App {
       this.hCur = this.hQ.shift();
       if (this.hDone.has(this.hCur) && this.hCur !== 'stash') { this.hCur = null; return; }
       el.textContent = HINTS[this.hCur][this.input.touch ? 1 : 0];
+      const more = document.createElement('small'); more.className = 'hmore';
+      more.textContent = this.input.touch ? 'Full controls: tap the pause button' : 'Full controls: press ESC (pause menu)';
+      el.appendChild(more);
       el.classList.remove('hidden');
       el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
-      this.hT = 3.4;
+      this.hT = 6.5;
     }
   }
   setPrompt(kind, prog = 0) {

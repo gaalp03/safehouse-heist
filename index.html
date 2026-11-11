@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="5422d84f">
+<meta name="build" content="2a35885c">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=5422d84f">
+<link rel="modulepreload" href="./js/main.js?v=2a35885c">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -602,6 +602,16 @@ body.calm #mug.go em{animation:none}
 @keyframes ants{to{stroke-dashoffset:-30}}
 /* result star sparkles */
 .spk{position:fixed;left:0;top:0;width:20px;height:20px;margin:-10px 0 0 -10px;z-index:8;pointer-events:none;background:#ffe066;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);filter:drop-shadow(0 0 4px rgba(255,210,58,.9))}
+/* launch polish: minimap ~12% bigger; control hints readable */
+#mm{width:168px}
+@media (max-width:640px){#mm{width:108px}}
+@media (max-height:480px){#mm{width:124px}}
+@media (orientation:landscape){body.touch #mm{width:178px}}
+@media (orientation:portrait){body.touch #mm{width:min(148px,calc(100vw - 242px))}body.touch #bSneak{right:calc(env(safe-area-inset-right) + 180px)}}
+#hint{line-height:1.3}
+#hint .hmore{display:block;margin-top:5px;font-size:.72em;opacity:.7;letter-spacing:.3px}
+@media (max-width:640px),(max-height:480px){#hint{font-size:15px}#hint .hmore{font-size:12px}}
+@media (orientation:portrait){body.touch #hint{top:auto;bottom:calc(env(safe-area-inset-bottom) + 196px);left:12px;right:12px;width:auto;transform:none}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -756,7 +766,7 @@ body.calm #mug.go em{animation:none}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=5422d84f"></script>
+<script type="module" src="./js/main.js?v=2a35885c"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>
