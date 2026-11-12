@@ -52,6 +52,6 @@ export default {
   panel: { x: 6, y: 13, dx: 0, dy: -1 },
   alarmTime: 60,
   vents: [{ a: [2, 4, -1, 0], b: [2, 10, -1, 0] }],
-  tips: ['press Z to sneak: crouching behind the low counter hides you from the guard.', 'hide in the wardrobe until the patrolling guard walks away.', 'knock guards out from BEHIND with a click, then take the uniform.'],
+  tips: ['press {sneak} to sneak: crouching behind the low counter hides you from the guard.', 'hide in the wardrobe until the patrolling guard walks away.', 'knock guards out from BEHIND with {hit}, then take the uniform.'],
   brief: "A crooked landlord stashes rent money in his bedroom safe. His guards are sleepy. Learn the ropes!",
 };

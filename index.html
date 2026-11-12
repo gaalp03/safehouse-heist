@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="2a35885c">
+<meta name="build" content="a29dd38b">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=2a35885c">
+<link rel="modulepreload" href="./js/main.js?v=a29dd38b">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -612,6 +612,32 @@ body.calm #mug.go em{animation:none}
 #hint .hmore{display:block;margin-top:5px;font-size:.72em;opacity:.7;letter-spacing:.3px}
 @media (max-width:640px),(max-height:480px){#hint{font-size:15px}#hint .hmore{font-size:12px}}
 @media (orientation:portrait){body.touch #hint{top:auto;bottom:calc(env(safe-area-inset-bottom) + 196px);left:12px;right:12px;width:auto;transform:none}}
+/* ---------- Controls window ---------- */
+#menu .tutrow{gap:10px;flex-wrap:wrap;justify-content:center}
+#bCtl{font-family:var(--disp);font-size:16px;color:#fff;text-shadow:var(--txo);border:3px solid var(--ink);border-radius:14px;padding:8px 18px 7px;min-height:44px;cursor:pointer;background:linear-gradient(180deg,#d8f2ff 0%,#7fd0ff 45%,#3a9ae8 100%);box-shadow:inset 0 4px 0 rgba(255,255,255,.6),inset 0 -6px 0 rgba(0,40,90,.25),0 6px 0 var(--ink);transition:transform .12s cubic-bezier(.2,1.8,.4,1)}
+#bCtl:hover{transform:translateY(-2px) scale(1.04)}#bCtl:active{transform:translateY(4px) scale(1.02,.94);box-shadow:inset 0 3px 0 rgba(255,255,255,.5),0 1px 0 var(--ink)}
+@media (max-width:640px),(max-height:820px){#bCtl{font-size:14px;padding:6px 14px 5px;min-height:38px}}
+.panel.ctlp{width:min(640px,94vw);max-height:calc(100dvh - 24px);gap:10px}
+#ctlTabs{display:flex;gap:6px;background:rgba(0,0,0,.25);border:3px solid var(--ink);border-radius:14px;padding:4px}
+#ctlTabs button{font:400 14px/1 var(--disp);color:#fff6e8;background:none;border:0;border-radius:10px;padding:8px 14px 6px;cursor:pointer;letter-spacing:.5px}
+#ctlTabs button.on{background:linear-gradient(180deg,#fff27a,#ffd23a 50%,#f5a40a);color:var(--ink);box-shadow:inset 0 3px 0 rgba(255,255,255,.6),0 3px 0 var(--ink)}
+#ctlList{list-style:none;margin:0;padding:4px 6px 4px 2px;width:100%;overflow-y:auto;flex:1 1 auto;min-height:120px;display:flex;flex-direction:column;gap:6px}
+#ctlList li{display:flex;align-items:center;gap:8px;background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:12px;padding:5px 8px 5px 12px;box-shadow:3px 3px 0 var(--ink)}
+#ctlList li:nth-child(odd){background:#fff3d6}
+#ctlList .cn{flex:1;font-family:var(--disp);font-size:15px;line-height:1.15;text-align:left}
+#ctlList .ci{font-size:22px;width:30px;text-align:center}
+#ctlList .ck,#ctlList kbd.fixed{font:400 14px/1 var(--disp);min-width:86px;text-align:center;padding:8px 10px 6px;border:3px solid var(--ink);border-radius:9px;background:linear-gradient(180deg,#ffffff,#e6e2f0);color:var(--ink);box-shadow:0 4px 0 var(--ink);cursor:pointer;white-space:nowrap;transition:transform .1s}
+#ctlList .ck:hover{transform:translateY(-2px);background:linear-gradient(180deg,#fff9cf,#ffe066)}
+#ctlList .ck:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+#ctlList .ck.empty{color:rgba(28,19,48,.4);background:rgba(255,255,255,.5);box-shadow:0 4px 0 rgba(28,19,48,.4);border-style:dashed}
+#ctlList .ck.wait{background:linear-gradient(180deg,#ff8a96,#ff4d5e);color:#fff;text-shadow:0 2px 0 var(--ink);animation:apulse .5s infinite alternate}
+#ctlList kbd.fixed{cursor:default;opacity:.75;box-shadow:0 3px 0 rgba(28,19,48,.5);min-width:120px}
+#ctlList li.fixedrow{opacity:.85}
+#ctlList li.tc kbd.fixed{min-width:140px;opacity:1}
+#ctlNote{margin:0;font-size:13px;color:#fff6e8;opacity:.85;min-height:18px;text-align:center}
+#ctlNote.warn{color:#ffe066;opacity:1}
+@media (max-width:640px){#ctlList .cn{font-size:13px}#ctlList .ck,#ctlList kbd.fixed{min-width:64px;font-size:12px;padding:7px 6px 5px}#ctlList li.tc kbd.fixed{min-width:96px}.panel.ctlp .big{font-size:28px!important}}
+@media (max-height:520px) and (min-aspect-ratio:4/3){#menu>.tutrow{grid-column:2}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -704,12 +730,11 @@ body.calm #mug.go em{animation:none}
   <div id="selInfo"><b id="selName">Safe House</b><span id="selStars" class="stars"></span><small id="selSub"></small><small id="selGoal"></small></div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button><button data-d="ironman">🛡 IRON</button></div>
   <div class="row menurow"><button class="btn s" id="bTrophy">📋 JOBS</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧰 LOCKER</button></div>
-  <button id="bTut" class="linkbtn">🎓 Play the tutorial</button>
-  <p class="keys o"><span class="kb">WASD move · Mouse look · CLICK hit · E use / grab / crack · SPACE dash · Z sneak · Q coin · C smoke · R restart · Esc pause</span><span class="tc">Left: move · Right: look · ⚡ dash · coin lure · 💨 smoke · ✋ knock out &amp; crack</span></p>
+  <div class="row tutrow"><button id="bTut" class="linkbtn">🎓 Play the tutorial</button><button id="bCtl" class="linkbtn">🎮 Controls</button></div>
 </div>
 
 <div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>
-  <button class="btn" id="bResume">RESUME</button><button class="btn g hidden" id="bPSkip">🎓 SKIP TUTORIAL</button><div class="row"><button class="btn s" id="bRestart">RESTART</button><button class="btn s" id="bPSet">⚙ SETTINGS</button><button class="btn s" id="bPMenu">MENU</button></div><div id="pObj" class="o"></div><div id="pTip"></div><ul id="pKeys"></ul></div></div>
+  <button class="btn" id="bResume">RESUME</button><button class="btn g hidden" id="bPSkip">🎓 SKIP TUTORIAL</button><div class="row"><button class="btn s" id="bRestart">RESTART</button><button class="btn s" id="bPSet">⚙ SETTINGS</button><button class="btn s" id="bPCtl">🎮 CONTROLS</button><button class="btn s" id="bPMenu">MENU</button></div><div id="pObj" class="o"></div><div id="pTip"></div></div></div>
 
 <div id="result" class="screen solid hidden"><div class="panel rp"><div class="rmapcol"><small class="o">YOUR ROUTE</small><canvas id="rMap"></canvas><div id="rMapLg" class="mlg"></div></div><div class="rcol">
   <div class="big win o">ESCAPED!</div>
@@ -742,6 +767,13 @@ body.calm #mug.go em{animation:none}
   <div id="ofGrid"></div>
   <button class="btn" id="bOfBack">DONE</button>
 </div></div>
+<div id="controls" class="screen solid hidden"><div class="panel ctlp">
+  <div class="big o" style="font-size:36px">CONTROLS</div>
+  <div id="ctlTabs"><button data-t="keys">⌨ KEYBOARD &amp; MOUSE</button><button data-t="touch">📱 TOUCH</button></div>
+  <ul id="ctlList"></ul>
+  <p id="ctlNote"></p>
+  <div class="row"><button class="btn s" id="bCtlReset">↺ RESET TO DEFAULTS</button><button class="btn" id="bCtlBack">DONE</button></div>
+</div></div>
 <div id="settings" class="screen solid hidden"><div class="panel setp">
   <div class="big o" style="font-size:36px">SETTINGS</div>
   <label>Look sensitivity <b id="vSens"></b><input id="sSens" type="range" min="0.3" max="2.5" step="0.1"></label>
@@ -766,7 +798,7 @@ body.calm #mug.go em{animation:none}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=2a35885c"></script>
+<script type="module" src="./js/main.js?v=a29dd38b"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

@@ -17,6 +17,7 @@ import { todaysDaily, prevDayKey, nextDailyIn, dayKey as dayKeyNow, MUTATORS, we
 import { ACH, recordRun, blankStats } from './achievements.js';
 import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
 import { TUT_STEPS } from './tutorial.js';
+import { ACTIONS, keyLabel } from './input.js';
 import { INTRO, SHOT_T } from './intro.js';
 
 const $ = (id) => document.getElementById(id);
@@ -164,6 +165,11 @@ class App {
     click('bResume', () => this.resume());
     click('bPSkip', () => { this.skipTutorial(); this.resume(); });
     click('bSet', () => this.showSettings());
+    click('bCtl', () => this.showControls());
+    click('bPCtl', () => this.showControls());
+    click('bCtlBack', () => this.closeControls());
+    click('bCtlReset', () => { this.input.resetBinds(); this.renderControls('All keys reset to defaults'); });
+    for (const b of document.querySelectorAll('#ctlTabs button')) b.addEventListener('click', (e) => { e.stopPropagation(); this.audio.play('click'); this.ctlTab = b.dataset.t; this.renderControls(); });
     click('bPSet', () => this.showSettings());
     click('bSetBack', () => { if (this.setFrom === 'pause') { this.state = 'pause'; this.screen('pause'); } else this.showMenu(); });
     for (const el of document.querySelectorAll('#settings input')) el.addEventListener('input', () => this.readSettings());
@@ -206,12 +212,15 @@ class App {
     this.input.on('restart', () => { if (['play', 'pause', 'result', 'busted'].includes(this.state)) this.start(); });
     this.input.on('mute', () => this.toggleMute());
     this.input.on('key', (code) => {
-      if (code === 'KeyT' && this.state === 'play' && this.game.tut) this.skipTutorial();
-      if (code === 'KeyH' && this.state === 'play') this.showHintTip();
-      if (this.state === 'intro') { if (code === 'Escape') this.endIntro(); else if (code === 'Enter' || code === 'Space' || code === 'KeyE') this.nextIntro(); return; }
+      if (this.state === 'controls' && code === 'Escape') { this.closeControls(); return; }
+      if (this.state === 'intro') { const u = (this.input.map[code] || []).includes('use'); if (code === 'Escape') this.endIntro(); else if (code === 'Enter' || code === 'Space' || u) this.nextIntro(); return; }
       if ((code === 'Enter' || code === 'Space') && this.state === 'menu') { this.audio.unlock(); this.playSel(); }
       else if (code === 'Enter' && this.state === 'result') { this.audio.unlock(); $('bNext').click(); }
       else if ((code === 'Enter' || code === 'Space') && (this.state === 'result' || this.state === 'busted')) { this.audio.unlock(); this.retry(); }
+    });
+    this.input.on('action', (a) => {
+      if (a === 'skip' && this.state === 'play' && this.game.tut) this.skipTutorial();
+      if (a === 'hint' && this.state === 'play') this.showHintTip();
     });
     this.input.on('mode', () => this.syncTouch());
     // a pointer lock that lands late (async) must not trap the mouse during menus / the intro cutscene
@@ -795,7 +804,7 @@ class App {
     c.querySelector('small').textContent = `HOW TO HEIST ${this.introI + 1}/${INTRO.length}`;
     c.querySelector('b').textContent = s.title;
     c.querySelector('span').textContent = s.text;
-    c.querySelector('.ikeys').innerHTML = s.keys[t].map(([k, d]) => `<kbd>${k}<em>${d}</em></kbd>`).join('');
+    c.querySelector('.ikeys').innerHTML = s.keys[t].map(([k, d]) => `<kbd>${t ? k : this.input.fmt(k)}<em>${d}</em></kbd>`).join('');
     c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop');
     $('bINext').textContent = this.introI === INTRO.length - 1 ? "LET'S GO! ▶" : 'NEXT ▶';
     this.audio.play('click');
@@ -944,6 +953,53 @@ class App {
     this.calm = !s.shake;   // 'Shake & flashes' off: no alarm strobe / siren edge flashes either
     document.body.classList.toggle('calm', this.calm);
   }
+  // ---- Controls window: every action listed; keyboard/mouse keys remappable (2 slots each), touch layout shown on phones ----
+  showControls() {
+    this.ctlFrom = this.state === 'pause' ? 'pause' : 'menu';
+    this.state = 'controls';
+    this.ctlTab = this.input.touch ? 'touch' : 'keys';
+    this.renderControls();
+    this.screen('controls');
+  }
+  closeControls() {
+    this.input.cancelCapture();
+    if (this.ctlFrom === 'pause') { this.state = 'pause'; this.screen('pause'); } else this.showMenu();
+  }
+  renderControls(note) {
+    const tab = this.ctlTab || 'keys', inp = this.input;
+    for (const b of document.querySelectorAll('#ctlTabs button')) b.classList.toggle('on', b.dataset.t === tab);
+    $('bCtlReset').classList.toggle('hidden', tab !== 'keys');
+    const list = $('ctlList');
+    if (tab === 'touch') {
+      const T = [['◀▶', 'Drag the left side', 'Move'], ['👆', 'Drag the right side', 'Look around'], ['✋', 'Hand button', 'Use · grab · crack · hide · pick lock (hold where needed)'],
+        ['🔨', 'HIT button', 'Knock out a guard from behind'], ['⚡', 'DASH button', 'Dash (fast, but loud)'], ['🦶', 'Boot button', 'Sneak / crouch (toggle)'],
+        ['🪙', 'Coin button', 'Hold to aim, release to throw'], ['☁️', 'Cloud button', 'Smoke bomb'], ['💡', 'Bulb button', 'Show hint'], ['⏸', 'Pause button', 'Pause']];
+      list.innerHTML = T.map(([i, k, d]) => `<li class="tc"><span class="ci">${i}</span><span class="cn">${d}</span><kbd class="fixed">${k}</kbd></li>`).join('');
+    } else {
+      const row = (a) => `<li><span class="cn">${a.name}</span>${[0, 1].map((sl) => `<button class="ck${inp.binds[a.id][sl] ? '' : ' empty'}" data-a="${a.id}" data-s="${sl}">${inp.binds[a.id][sl] ? keyLabel(inp.binds[a.id][sl]) : '+'}</button>`).join('')}</li>`;
+      list.innerHTML = '<li class="fixedrow"><span class="cn">Look around</span><kbd class="fixed">MOUSE</kbd></li>' + ACTIONS.map(row).join('') +
+        '<li class="fixedrow"><span class="cn">Pause (always)</span><kbd class="fixed">ESC</kbd></li>';
+      for (const b of list.querySelectorAll('.ck')) b.addEventListener('click', (e) => { e.stopPropagation(); this.rebind(b); });
+    }
+    const n = $('ctlNote');
+    n.textContent = note || (tab === 'keys' ? 'Click a key, then press the new key or mouse button (Esc cancels). Taken keys are swapped.' : 'Touch controls are fixed. Keyboard & mouse keys can be remapped on the other tab.');
+    n.classList.toggle('warn', !!note);
+  }
+  rebind(btn) {
+    const a = btn.dataset.a, sl = +btn.dataset.s, inp = this.input;
+    for (const b of document.querySelectorAll('#ctlList .ck')) b.classList.remove('wait');
+    btn.classList.add('wait'); btn.textContent = 'PRESS A KEY…';
+    $('ctlNote').textContent = 'Press the new key or mouse button for “' + ACTIONS.find((x) => x.id === a).name + '” (Esc cancels)'; $('ctlNote').classList.remove('warn');
+    inp.captureNext((code) => {
+      if (this.state !== 'controls') return;
+      if (!code) { this.renderControls('Cancelled'); return; }
+      const sw = inp.setBind(a, sl, code);
+      this.audio.play('click');
+      const nm = (id) => ACTIONS.find((x) => x.id === id).name;
+      this.renderControls(sw ? `${keyLabel(code)} was taken by ${sw.map((x) => '“' + nm(x) + '”').join(' and ')}: keys swapped (now ${keyLabel(inp.binds[a][sl] === code ? (inp.binds[sw[0]].find(Boolean) || '') : '') })` : `“${nm(a)}” → ${keyLabel(code)}`);
+      if (sw) $('ctlNote').textContent = `${keyLabel(code)} was taken by ${sw.map((x) => '“' + nm(x) + '”').join(' and ')}, so the keys were swapped.`;
+    });
+  }
   showSettings() {
     this.setFrom = this.state === 'pause' ? 'pause' : 'menu';
     this.state = 'settings';
@@ -968,12 +1024,8 @@ class App {
     this.state = 'pause';
     SDK.gameplayStop();
     $('pObj').textContent = '🎯 ' + (this.game.objText || '');
-    $('pTip').textContent = this.game.tut ? '' : '💡 HINT: ' + (this.lastTip && this.lastTipLevel === this.level.id ? this.lastTip : this.bustTip()).replace(/^Tip: /, '') + (this.input.touch ? '' : '  (press H in game)');
+    $('pTip').textContent = this.game.tut ? '' : '💡 HINT: ' + (this.lastTip && this.lastTipLevel === this.level.id ? this.lastTip : this.bustTip()).replace(/^Tip: /, '') + (this.input.touch ? '' : `  (press ${this.input.label('hint')} in game)`);
     $('bPSkip').classList.toggle('hidden', !(this.game.tut && this.tutStep < TUT_STEPS.length));
-    const t = this.input.touch, K = t
-      ? [['◀▶', 'Left side: move'], ['👆', 'Right side: look'], ['🔨', 'HIT: knock out a guard from behind'], ['✋', 'Use · grab · crack (hold)'], ['⚡', 'Dash (loud!)'], ['🦶', 'Sneak (quiet, slower)'], ['🪙', 'Throw a coin (lure)'], ['💨', 'Smoke bomb']]
-      : [['WASD', 'Move'], ['Mouse', 'Look'], ['Click', 'HIT: knock out a guard from behind'], ['E', 'Use · grab · crack (hold)'], ['Space', 'Dash (loud!)'], ['Z', 'Sneak (quiet, slower)'], ['Q', 'Throw a coin (lure)'], ['C', 'Smoke bomb'], ['R', 'Restart run']];
-    $('pKeys').innerHTML = K.map(([k, d]) => `<li><kbd>${k}</kbd>${d}</li>`).join('');
     this.screen('pause');
   }
   resume() {
@@ -1041,6 +1093,7 @@ class App {
     this.audio.play('click');
   }
   hint(id) {
+    return;   // in-game control hints removed: every control is listed (and remappable) in the Controls window
     if (!this.level || !this.level.tutorial || this.hShown.has(id) || this.hDone.has(id)) return;
     // during the guided tutorial the step card is the only instruction on screen
     if (this.game && this.game.tut && (this.tutStep < TUT_STEPS.length || ['move', 'loot', 'safe', 'pick', 'cone', 'stash'].includes(id))) { this.hShown.delete(id); return; }
@@ -1074,9 +1127,11 @@ class App {
     const p = $('prompt'), ring = $('ring'), t = this.input && this.input.touch;
     const sn = (this.level && this.level.safeName ? this.level.safeName : 'safe').toUpperCase();
     const txt = kind === 'slot' ? (t ? 'HOLD ✋ TO PULL THE LEVER' : 'HOLD E: PULL THE LEVER') : kind === 'radio' ? (t ? 'HOLD ✋ TO ANSWER THE RADIO' : 'HOLD E: ANSWER "ALL CLEAR"') : kind === 'case' ? (t ? 'HOLD ✋ TO SMASH' : 'HOLD E TO SMASH THE CASE') : kind === 'pick' ? (t ? 'TAP ✋ TO PICK THE LOCK' : 'E: PICK THE LOCK') : kind === 'picking' ? (t ? 'TAP ✋ IN THE GREEN · MOVE TO STOP' : 'E IN THE GREEN · MOVE TO STOP') : kind === 'breaker' ? (t ? 'HOLD ✋ TO CUT POWER' : 'HOLD E TO CUT THE POWER') : kind === 'door' ? (t ? 'TAP ✋ TO OPEN' : 'E: SWIPE KEYCARD') : kind === 'locked' ? 'LOCKED: FIND THE KEYCARD' : kind === 'uniform' ? (t ? 'HOLD ✋ TO TAKE THE UNIFORM' : 'HOLD E: TAKE HIS UNIFORM') : kind === 'tv' ? (t ? 'TAP ✋ TO TURN THE TV ON' : 'E: TURN THE TV ON (LURE)') : kind === 'vent' ? (t ? 'TAP ✋ TO CRAWL IN' : 'E: CRAWL INTO THE VENT') : kind === 'hide' ? (t ? 'TAP ✋ TO HIDE' : 'E: HIDE') : kind === 'leave' ? (t ? 'TAP ✋ OR MOVE TO LEAVE' : 'E / MOVE: LEAVE') : kind === 'panel' ? (t ? 'HOLD ✋ TO DISARM' : 'HOLD E TO DISARM ALARM') : kind === 'safe' ? (t ? 'HOLD ✋ TO CRACK ' + sn : 'HOLD E TO CRACK ' + sn) : kind === 'pocket' ? (t ? 'HIT: KO · HOLD ✋: PICKPOCKET' : 'CLICK: KO · HOLD E: PICKPOCKET') : kind === 'ko' ? (t ? 'TAP HIT TO KNOCK OUT' : 'CLICK TO KNOCK OUT') : '';
-    if (p.dataset.k !== kind) {
-      p.dataset.k = kind;
-      p.innerHTML = txt.replace(/(^|[\s(])(E|✋|CLICK)(?=[\s:/]|$)/g, '$1<kbd>$2</kbd>');
+    const pk = kind + ':' + this.input.bindVer + (t ? 't' : 'k');
+    if (p.dataset.k !== pk) {
+      p.dataset.k = pk;
+      if (t) p.innerHTML = txt.replace(/(^|[\s(])(✋|HIT)(?=[\s:/]|$)/g, '$1<kbd>$2</kbd>');
+      else p.innerHTML = this.input.fmt(txt.replace(/\bCLICK\b/g, '{hit}').replace(/\bE\b/g, kind === 'picking' || kind === 'pick' ? '{pick}' : '{use}'), true);
       p.classList.toggle('hidden', !kind);
       $('xh').classList.toggle('ready', !!kind);
       this.els.bAct.classList.toggle('ready', !!kind && kind !== 'ko');
@@ -1323,7 +1378,7 @@ class App {
     return { gain, up: r1.i > r0.i, rank: r1 };
   }
   bustTip() {
-    const g = this.game, t = this.input.touch, Z = t ? 'the 🦶 button' : 'Z', E = t ? 'HIT' : 'a CLICK';
+    const g = this.game, t = this.input.touch, Z = t ? 'the 🦶 button' : this.input.label('sneak'), E = t ? 'HIT' : this.input.label('hit');
     if (g.policeBusted) return 'The police arrived! Knock out alerted guards before they radio in, or disarm the alarm keypad.';
     const C = {
       hide: 'Tip: a guard saw you climb in. Only hide when nobody is looking.',
@@ -1336,7 +1391,7 @@ class App {
     const lv = this.level.tips || [];
     const cause = g.bustCause || 'cone';
     if (g.tut) return C[cause] || C.cone;
-    if ((cause === 'cone' || cause === 'los') && lv.length && Math.random() < 0.5) return 'Tip: ' + lv[(Math.random() * lv.length) | 0];
+    if ((cause === 'cone' || cause === 'los') && lv.length && Math.random() < 0.5) return 'Tip: ' + this.input.fmt(lv[(Math.random() * lv.length) | 0].replace(/\{(\w+)\}/g, (m, a) => (t ? ({ sneak: 'the 🦶 button', hit: 'HIT' }[a] || m) : m)));
     return C[cause] || C.cone;
   }
   onBusted() {
@@ -1546,13 +1601,13 @@ class App {
       el.classList.remove('done'); void el.offsetWidth; el.classList.add('done');
       if (this.tutStep >= TUT_STEPS.length) { setTimeout(() => el.classList.add('hidden'), 900); return; }
     }
-    const s = TUT_STEPS[this.tutStep], key = this.tutStep + (this.input.touch ? 't' : 'k');
+    const s = TUT_STEPS[this.tutStep], key = this.tutStep + (this.input.touch ? 't' : 'k') + this.input.bindVer;
     g.tutAt = s.at || null;
     if (el.dataset.k !== key) {
       el.dataset.k = key;
       el.querySelector('small').textContent = `TUTORIAL ${this.tutStep + 1}/${TUT_STEPS.length}`;
-      el.querySelector('span').textContent = s.text[this.input.touch ? 1 : 0];
-      $('tutSkip').innerHTML = this.input.touch ? 'SKIP TUTORIAL ▶' : 'SKIP TUTORIAL <kbd>T</kbd>';
+      el.querySelector('span').textContent = this.input.touch ? s.text[1] : this.input.fmt(s.text[0]);
+      $('tutSkip').innerHTML = this.input.touch ? 'SKIP TUTORIAL ▶' : `SKIP TUTORIAL <kbd>${this.input.label('skip')}</kbd>`;
       el.querySelector('i').style.width = (this.tutStep / TUT_STEPS.length * 100) + '%';
     }
     el.classList.toggle('hidden', g.alarm || g.state !== 'play');

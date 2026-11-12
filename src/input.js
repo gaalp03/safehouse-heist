@@ -1,13 +1,52 @@
 // Keyboard + mouse (pointer-lock look) + touch (left: dynamic joystick, right: drag to look, buttons).
-const MOVE = {
-  KeyW: 'u', ArrowUp: 'u', KeyS: 'd', ArrowDown: 'd', KeyA: 'l', ArrowLeft: 'l', KeyD: 'r', ArrowRight: 'r',
+// Every keyboard/mouse action is remappable (two slots each), saved in localStorage.
+export const ACTIONS = [
+  { id: 'up', name: 'Move forward' },
+  { id: 'down', name: 'Move back' },
+  { id: 'left', name: 'Move left' },
+  { id: 'right', name: 'Move right' },
+  { id: 'dash', name: 'Dash (fast, but loud)' },
+  { id: 'sneak', name: 'Sneak / crouch (toggle)' },
+  { id: 'use', name: 'Use · grab · crack · hide · disguise (hold)' },
+  { id: 'pick', name: 'Pick lock (tap in the green)' },
+  { id: 'hit', name: 'Hit / knock out from behind' },
+  { id: 'throw', name: 'Throw coin (hold to aim)' },
+  { id: 'smoke', name: 'Smoke bomb' },
+  { id: 'hint', name: 'Show hint' },
+  { id: 'pause', name: 'Pause' },
+  { id: 'restart', name: 'Restart heist' },
+  { id: 'mute', name: 'Mute sound' },
+  { id: 'skip', name: 'Skip tutorial' },
+];
+export const DEFAULT_BINDS = {
+  up: ['KeyW', 'ArrowUp'], down: ['KeyS', 'ArrowDown'], left: ['KeyA', 'ArrowLeft'], right: ['KeyD', 'ArrowRight'],
+  dash: ['Space', 'ShiftLeft'], sneak: ['KeyZ', 'ControlRight'], use: ['KeyE', 'KeyF'], pick: ['KeyE', 'KeyF'],
+  hit: ['Mouse0', ''], throw: ['KeyQ', 'Mouse1'], smoke: ['KeyC', 'KeyX'], hint: ['KeyH', ''],
+  pause: ['KeyP', ''], restart: ['KeyR', ''], mute: ['KeyM', ''], skip: ['KeyT', ''],
 };
-const GAME_KEYS = new Set([...Object.keys(MOVE), 'Space', 'ShiftLeft', 'ShiftRight', 'KeyE', 'KeyF', 'Enter']);
+// 'use' and 'pick' never apply at the same moment (picking a lock is its own mode), so they may share keys
+const SHARE = (a, b) => (a === 'use' && b === 'pick') || (a === 'pick' && b === 'use');
+const MOVE = { up: 'u', down: 'd', left: 'l', right: 'r' };
+const STORE = 'safehouseHeist.binds.v1';
+export function keyLabel(code) {
+  if (!code) return '—';
+  if (code === 'Mouse0') return 'CLICK';
+  if (code === 'Mouse1') return 'MIDDLE CLICK';
+  if (code === 'Mouse2') return 'RIGHT CLICK';
+  if (/^Mouse\d$/.test(code)) return 'MOUSE ' + code.slice(5);
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  if (code.startsWith('Numpad')) return 'NUM ' + code.slice(6);
+  const M = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→', Space: 'SPACE', ShiftLeft: 'L-SHIFT', ShiftRight: 'R-SHIFT', ControlLeft: 'L-CTRL', ControlRight: 'R-CTRL',
+    AltLeft: 'L-ALT', AltRight: 'R-ALT', Enter: 'ENTER', Tab: 'TAB', Backspace: 'BACKSPACE', CapsLock: 'CAPS', Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']',
+    Backslash: '\\', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Delete: 'DEL', Insert: 'INS', Home: 'HOME', End: 'END', PageUp: 'PG UP', PageDown: 'PG DN' };
+  return M[code] || code.toUpperCase();
+}
 const TOUCH_LOOK = 2.4; // touch px -> "mouse px" scale
 
 export class Input {
   constructor(els) {
-    this.k = {}; this.act = false; this.actP = false; this.dashP = false;
+    this.k = {}; this.act = false; this.actP = false; this.dashP = false; this.pickP = false;
     this.lx = 0; this.ly = 0;
     this.joy = { id: -1, ox: 0, oy: 0, x: 0, y: 0 };
     this.look = { id: -1, x: 0, y: 0 };
@@ -15,40 +54,38 @@ export class Input {
     this.touch = (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) && !matchMedia('(pointer: fine)').matches;
     this.els = els;
     this.locked = false; this.lockFailed = false; this.active = false; this.dragLook = false;
+    this.loadBinds();
 
     addEventListener('keydown', (e) => {
-      if (GAME_KEYS.has(e.code)) e.preventDefault();
+      if (this.capture) { e.preventDefault(); if (!e.repeat) this.finishCapture(e.code); return; }
+      const acts = this.map[e.code];
+      if (acts || e.code === 'Escape') e.preventDefault();
       this.setTouch(false);
       if (e.repeat) return;
-      if (MOVE[e.code]) this.k[MOVE[e.code]] = 1;
-      if (e.code === 'Space' || e.code.startsWith('Shift')) this.dashP = true;
-      if (e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') { this.act = true; this.actP = true; }
-      if (e.code === 'Escape' || e.code === 'KeyP') this.emit('pause');
-      if (e.code === 'KeyR') this.emit('restart');
-      if (e.code === 'KeyM') this.emit('mute');
-      if (e.code === 'KeyQ' || e.code === 'KeyG') this.aimQ = true;   // hold to aim (arc preview), release to throw
-      if (e.code === 'KeyC' || e.code === 'KeyX') this.smokeP = true;
-      if (e.code === 'KeyZ' || e.code === 'ControlRight') this.crouchP = true;
+      if (e.code === 'Escape') this.emit('pause');   // Esc always pauses (browsers reserve it for pointer lock)
+      if (acts) for (const a of acts) this.press(a);
       this.emit('key', e.code);
     });
-    addEventListener('keyup', (e) => {
-      if (MOVE[e.code]) this.k[MOVE[e.code]] = 0;
-      if (e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') this.act = false;
-      if ((e.code === 'KeyQ' || e.code === 'KeyG') && this.aimQ) { this.aimQ = false; this.throwP = true; }
-    });
+    addEventListener('keyup', (e) => { const acts = this.map[e.code]; if (acts) for (const a of acts) this.release(a); });
     addEventListener('blur', () => { this.k = {}; this.act = false; this.aimQ = false; this.joyEnd(); this.look.id = -1; });
+    // capture a mouse button while rebinding (window-level so clicks on the controls screen work)
+    addEventListener('mousedown', (e) => {
+      if (!this.capture) return;
+      e.preventDefault(); e.stopPropagation(); this.capGuard = performance.now();
+      this.finishCapture('Mouse' + e.button);
+    }, true);
+    addEventListener('click', (e) => { if (performance.now() - (this.capGuard || 0) < 400) { e.preventDefault(); e.stopPropagation(); } }, true);
 
     // ---- mouse ----
     const cv = els.canvas;
     cv.addEventListener('mousedown', (e) => {
       if (!this.active) return;
       if (!this.locked && !this.lockFailed && !this.touch) { this.requestLock(); return; }
-      if (e.button === 0) this.atkP = true;
-      if (e.button === 2) this.dashP = true;
-      if (e.button === 1) this.throwP = true;
+      const acts = this.map['Mouse' + e.button];
+      if (acts) for (const x of acts) this.press(x);
       this.dragLook = true;
     });
-    addEventListener('mouseup', () => { this.dragLook = false; });
+    addEventListener('mouseup', (e) => { this.dragLook = false; const acts = this.map['Mouse' + e.button]; if (acts) for (const x of acts) this.release(x); });
     addEventListener('contextmenu', (e) => e.preventDefault());
     addEventListener('mousemove', (e) => {
       if (!this.active) return;
@@ -128,6 +165,77 @@ export class Input {
     btn(els.bSmoke, () => { this.smokeP = true; });
     btn(els.bSneak, () => { this.crouchP = true; });
   }
+  // ---- bindings ----
+  loadBinds() {
+    let b = null;
+    try { b = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (_) {}
+    this.binds = {};
+    for (const a of ACTIONS) {
+      const v = b && Array.isArray(b[a.id]) && b[a.id].length === 2 && b[a.id].every((c) => typeof c === 'string') ? b[a.id] : DEFAULT_BINDS[a.id];
+      this.binds[a.id] = v.slice();
+    }
+    this.rebuild();
+  }
+  saveBinds() { try { localStorage.setItem(STORE, JSON.stringify(this.binds)); } catch (_) {} }
+  rebuild() {
+    this.map = {};
+    for (const [a, codes] of Object.entries(this.binds)) for (const c of codes) if (c) (this.map[c] = this.map[c] || []).push(a);
+    this.bindVer = (this.bindVer || 0) + 1;
+  }
+  resetBinds() { for (const a of ACTIONS) this.binds[a.id] = DEFAULT_BINDS[a.id].slice(); this.rebuild(); this.saveBinds(); }
+  // assign code to action slot; a conflicting action gets this slot's old key (swap). Returns the swapped action id or null.
+  setBind(action, slot, code) {
+    const old = this.binds[action][slot];
+    const swapped = [];
+    if (code) for (const [a, codes] of Object.entries(this.binds)) {
+      if (a === action || SHARE(a, action)) continue;
+      const i = codes.indexOf(code);
+      if (i >= 0) { codes[i] = old; swapped.push(a); }
+    }
+    const other = this.binds[action].indexOf(code);
+    if (code && other >= 0 && other !== slot) this.binds[action][other] = old;
+    this.binds[action][slot] = code;
+    this.rebuild(); this.saveBinds();
+    return swapped.length ? swapped : null;
+  }
+  captureNext(cb) { this.capture = cb; this.k = {}; this.act = false; }
+  cancelCapture() { this.capture = null; }
+  finishCapture(code) {
+    const cb = this.capture; this.capture = null;
+    if (cb) cb(code === 'Escape' ? null : code);
+  }
+  // display label of an action ('E', 'CLICK', 'WASD' for move)
+  label(action) {
+    if (action === 'move') {
+      const k = ['up', 'left', 'down', 'right'].map((a) => keyLabel(this.binds[a][0] || this.binds[a][1]));
+      return k.every((x) => x.length === 1) ? k.join('') : k.join(' ');
+    }
+    const b = this.binds[action]; if (!b) return action;
+    return keyLabel(b[0] || b[1]);
+  }
+  // replace {action} tokens; html=true wraps them in <kbd>
+  fmt(str, html) { return str.replace(/\{(\w+)\}/g, (m, a) => (a === 'move' || this.binds[a] ? (html ? '<kbd>' + this.label(a) + '</kbd>' : this.label(a)) : m)); }
+  press(a) {
+    if (MOVE[a]) { this.k[MOVE[a]] = 1; return; }
+    switch (a) {
+      case 'dash': this.dashP = true; break;
+      case 'sneak': this.crouchP = true; break;
+      case 'use': this.act = true; this.actP = true; break;
+      case 'pick': this.pickP = true; break;
+      case 'hit': this.atkP = true; break;
+      case 'throw': this.aimQ = true; break;   // hold to aim (arc preview), release to throw
+      case 'smoke': this.smokeP = true; break;
+      case 'pause': this.emit('pause'); break;
+      case 'restart': this.emit('restart'); break;
+      case 'mute': this.emit('mute'); break;
+      default: this.emit('action', a);
+    }
+  }
+  release(a) {
+    if (MOVE[a]) { this.k[MOVE[a]] = 0; return; }
+    if (a === 'use') this.act = false;
+    if (a === 'throw' && this.aimQ) { this.aimQ = false; this.throwP = true; }
+  }
   requestLock() {
     if (this.touch || this.locked) return;
     const cv = this.els.canvas;
@@ -162,10 +270,11 @@ export class Input {
   }
   consumeLook(out) { out.x = this.lx; out.y = this.ly; this.lx = 0; this.ly = 0; return out; }
   consumeAtk() { const v = this.atkP; this.atkP = false; return v; }
+  consumePick() { const v = this.pickP; this.pickP = false; return v; }
   consumeAct() { const v = this.actP; this.actP = false; return v; }
   consumeDash() { const v = this.dashP; this.dashP = false; return v; }
   consumeCrouch() { const v = this.crouchP; this.crouchP = false; return v; }
   consumeSmoke() { const v = this.smokeP; this.smokeP = false; return v; }
   consumeThrow() { const v = this.throwP; this.throwP = false; return v; }
-  clear() { this.aimQ = false; this.atkP = false; this.actP = false; this.dashP = false; this.throwP = false; this.smokeP = false; this.lx = 0; this.ly = 0; }
+  clear() { this.aimQ = false; this.atkP = false; this.actP = false; this.pickP = false; this.dashP = false; this.throwP = false; this.smokeP = false; this.lx = 0; this.ly = 0; }
 }

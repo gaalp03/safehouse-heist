@@ -2903,6 +2903,7 @@ export class Game {
 
   // ---------- lockpicking minigame ----------
   startPick(d) {
+    this.app.input.consumePick();
     this.picking = { d, pin: 0, t: Math.random() * 6, speed: this.tut ? 1.7 : 2.2, w: (this.tut ? 0.36 : 0.26) * this.gear.pickW, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
     this.newPinZone();
     this.app.audio.play('click');
@@ -2922,7 +2923,9 @@ export class Game {
     if (Math.hypot(_mv.x, _mv.y) > 0.5) { this.stopPick(); return; }
     pk.t += dt * pk.speed; pk.cool -= dt;
     pk.pos = 0.5 + 0.5 * Math.sin(pk.t);
-    if (inp.consumeAct() && pk.cool <= 0) {
+    // desktop: the remappable 'pick' action; touch: the hand button
+    const tap = inp.consumePick() || (inp.touch ? inp.consumeAct() : (inp.consumeAct(), false));
+    if (tap && pk.cool <= 0) {
       if (Math.abs(pk.pos - pk.zone) < pk.w / 2) {
         pk.pin++;
         app.audio.play('pin', pk.pin);

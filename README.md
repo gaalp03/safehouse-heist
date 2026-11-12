@@ -193,3 +193,8 @@ Adding a level: create `src/levels/levelN.js` in the same format as `level1.js` 
 - City map uses a 3-row layout with compact pins on small (≤620px tall) desktop embeds.
 - New CC0 sounds from OpenGameArt: bust sad-trumpet, guard "huh?", heartbeat, night crickets ambience, TV static (see CREDITS.md).
 - Daily mutators: Smoke Show, Inside Job, Sleepy Shift, Big Bounty. Achievement *Master Thief* for 30 stars.
+
+## Controls window & key remapping
+- Main menu **🎮 Controls** (also in the pause menu) lists every action. Keyboard & mouse tab: each action has two remappable slots (click, then press any key or mouse button; Esc cancels). Taken keys are swapped automatically, with a note. Saved in localStorage (`safehouseHeist.binds.v1`); **Reset to defaults** restores them. Esc always pauses.
+- Touch tab shows the fixed on-screen controls.
+- The in-game control-hint popups are gone; tutorial cards, intro cards, action prompts, bust tips and the hint all show the player's current keys.
