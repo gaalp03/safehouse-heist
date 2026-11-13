@@ -389,6 +389,9 @@ class App {
       clearTimeout(this.dropT); this.dropT = setTimeout(() => city.classList.remove('drop'), 1500); }
     this.renderSel();
     if (this.diff === 'ironman' && !this.ironUnlocked()) this.diff = 'normal';
+    $('diffInfo').textContent = { easy: 'Easy · guards see less, move slower and forget you fast · wide lockpick zone · 5 coins, 2 smokes · police in 70s',
+      normal: 'Normal · the intended heist', hard: 'Hard · sharp-eyed, faster guards · quick cameras · tight lockpick · noise carries · short knockouts · police in 30s',
+      ironman: 'Ironman · Hard, but harsher: 1 coin, no smoke, police in 15s · ×2.5 score' }[this.diff] || '';
     for (const el of document.querySelectorAll('#diff button')) { el.classList.toggle('on', el.dataset.d === this.diff); if (el.dataset.d === 'ironman') { el.classList.toggle('lock', !this.ironUnlocked()); el.title = this.ironUnlocked() ? 'Ironman: x2.5 score, 1 coin, no smoke, 15s police' : 'Escape any heist on Hard to unlock'; } }
     $('lvl1stars').innerHTML = this.starsHTML(b ? b.stars : 0);
     $('lvl1best').textContent = b ? 'Best ' + fmtMoney(b.score) : 'New!';
@@ -1613,8 +1616,51 @@ class App {
     el.classList.toggle('hidden', g.alarm || g.state !== 'play');
     document.body.classList.toggle('tutcard', !el.classList.contains('hidden'));
   }
+  // touch HUD: nudge banners, the contract list, prompts, lockpick and tutorial card vertically
+  // so they never sit on top of each other, the minimap, the pills or the touch buttons
+  layoutTouchHud(force) {
+    const now = performance.now();
+    if (!force && now - (this.layT || 0) < 200) return;
+    this.layT = now;
+    const MOV = ['obj', 'alarm', 'disgp', 'alarmwhy', 'briefp', 'tut', 'ctr', 'lockpick', 'prompt', 'hint'];
+    if (!this.input.touch) { if (this.layDirty) { for (const id of MOV) { const e = $(id); if (e) { e.style.translate = ''; e._dy = 0; } } this.layDirty = false; } return; }
+    this.layDirty = true;
+    document.body.classList.toggle('picking', !!(this.game && this.game.picking));
+    const vis = (e) => { if (!e) return false; for (let x = e; x; x = x.parentElement) { const cs = getComputedStyle(x); if (cs.display === 'none' || cs.visibility === 'hidden') return false; } const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2; };
+    const W = innerWidth, H = innerHeight, pad = 6;
+    // layout box ignoring pop/pulse scale animations, so the result doesn't depend on when we measure
+    const box = (e) => { const r = e.getBoundingClientRect(), sc = getComputedStyle(e).scale; let sx = 1, sy = 1; if (sc && sc !== 'none') { const v = sc.split(' ').map(parseFloat); sx = v[0] || 1; sy = v[1] || sx; }
+      const cx = (r.left + r.right) / 2, cy = (r.top + r.bottom) / 2, w = r.width / sx / 2, h = r.height / sy / 2; return { left: cx - w, right: cx + w, top: cy - h, bottom: cy + h }; };
+    const placed = [];
+    for (const id of ['loot', 'coins', 'smokep', 'key', 'mm', 'tr', 'bAct', 'bHit', 'bDash', 'bThrow', 'bSneak', 'bSmoke']) { const e = $(id); if (vis(e)) placed.push(box(e)); }
+    const hits = (r) => placed.some((q) => r.left < q.right + 2 && q.left < r.right + 2 && r.top < q.bottom + 3 && q.top < r.bottom + 3);
+    for (const id of MOV) {
+      const e = $(id); if (!e) continue;
+      if (!vis(e)) { if (e._dy || e._dx) { e._dy = e._dx = 0; e.style.translate = ''; } continue; }
+      const r0 = box(e), dy0 = e._dy || 0, dx0 = e._dx || 0;
+      const base = { left: r0.left - dx0, right: r0.right - dx0, top: r0.top - dy0, bottom: r0.bottom - dy0 };
+      const at = (dx, dy) => ({ left: base.left + dx, right: base.right + dx, top: base.top + dy, bottom: base.bottom + dy });
+      // nearest free spot: small vertical moves first, then sideways ones (landscape phones are short)
+      let best = [0, 0], bestCost = Infinity;
+      for (let kx = 0; kx <= 12; kx++) for (const sx of kx ? [1, -1] : [1]) {
+        const dx = sx * kx * 20;
+        if (base.left + dx < 2 || base.right + dx > W - 2) continue;
+        for (let k = 0; k <= 120; k++) {
+          const cost = k * pad + Math.abs(dx) * 1.6; if (cost >= bestCost) break;
+          for (const sg of k ? [1, -1] : [1]) {
+            const dy = sg * k * pad, r = at(dx, dy);
+            if (r.top < 2 || r.bottom > H - 2 || hits(r)) continue;
+            best = [dx, dy]; bestCost = cost; break;
+          }
+        }
+      }
+      if (best[0] !== dx0 || best[1] !== dy0) { e._dx = best[0]; e._dy = best[1]; e.style.translate = best[0] || best[1] ? `${best[0]}px ${best[1]}px` : ''; }
+      placed.push(at(best[0], best[1]));
+    }
+  }
   updateHud() {
     this.updateTutorial();
+    this.layoutTouchHud();
     const g = this.game, p = g.player;
     if (this.lootShown != null && this.lootShown < g.lootGot) {
       this.lootShown = Math.min(g.lootGot, this.lootShown + Math.max(7, (g.lootGot - this.lootShown) * 0.18));

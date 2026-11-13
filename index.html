@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="a29dd38b">
+<meta name="build" content="054493e7">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=a29dd38b">
+<link rel="modulepreload" href="./js/main.js?v=054493e7">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -641,6 +641,25 @@ body.calm #mug.go em{animation:none}
 /* desktop: original top-left minimap at its slightly larger size; pills + contracts sit just below it */
 body:not(.touch) #coins,body:not(.touch) #smokep,body:not(.touch) #key{top:216px}
 body:not(.touch) #ctr{top:260px}
+#diffInfo{font-size:12px;color:#fff6e8;opacity:.85;text-shadow:0 2px 0 var(--ink);margin-top:-4px;text-align:center;max-width:min(520px,92vw)}
+@media (max-height:520px) and (min-aspect-ratio:4/3){#menu>#diffInfo{grid-column:2}}
+/* touch HUD: banners wrap instead of running off-screen; the layout pass in main.js keeps them apart */
+body.touch #alarmwhy{white-space:normal;max-width:min(62vw,420px);text-align:center;font-size:14px;padding:7px 14px}
+body.touch #disgp{top:64px;bottom:auto}
+@media (orientation:landscape){body.touch #lockpick{top:calc(50% + 40px)}body.touch #lockpick .lp-bar{width:min(240px,40vw)}}
+@media (orientation:landscape) and (max-height:480px){body.touch #lockpick{padding:8px 12px 6px;gap:5px}body.touch #lockpick .lp-pins b{height:16px}}
+@media (orientation:landscape){body.touch #tut{left:50%;right:auto;transform:translateX(-50%);width:min(420px,46vw);top:64px}}
+@media (orientation:landscape) and (max-height:480px){body.touch #obj{max-width:34vw;white-space:normal;font-size:13px;padding:5px 10px}body.touch #tut{padding:6px 12px 7px}body.touch #tut span{font-size:14px}}
+@media (orientation:landscape){body.touch #tut{width:min(380px,40vw)}body.touch.picking #alarmwhy{display:none}}
+@media (orientation:landscape) and (max-height:480px){body.touch #prompt{font-size:13px;padding:6px 12px}body.touch #lockpick{padding:6px 10px 5px}body.touch #lockpick .lp-bar{height:20px}}
+/* touch: while picking, the instruction lives inside the lock plate (one block instead of two) */
+body.touch.picking #prompt{display:none!important}
+body.touch #lockpick::before{content:'TAP ✋ IN THE GREEN · MOVE TO STOP';font:400 13px/1.1 var(--disp);color:var(--ink);letter-spacing:.3px;text-align:center}
+@media (orientation:portrait){body.touch #lockpick{padding:7px 12px 6px;gap:5px}body.touch #lockpick .lp-bar{width:min(230px,60vw);height:20px}body.touch #lockpick .lp-pins b{height:16px}body.touch #lockpick::before{font-size:11px}body.touch #alarm{font-size:15px}body.touch #disgp{font-size:12px;padding:4px 10px}}
+@media (orientation:landscape) and (max-height:480px){body.touch #tut{width:min(330px,38vw)}}
+@media (orientation:landscape){body.touch #hint{left:50%;right:auto;transform:translateX(-50%);width:min(380px,40vw);top:64px;bottom:auto}}
+@media (orientation:landscape) and (max-height:480px){body.touch #hint{font-size:13px;width:min(320px,36vw);padding:8px 12px 7px}}
+@media (max-height:480px){.panel.ctlp{gap:5px;padding:10px 16px 10px}.panel.ctlp .big{font-size:24px!important}#ctlTabs button{font-size:12px;padding:6px 10px 4px}#ctlList{gap:4px;min-height:90px}#ctlList li{padding:3px 6px 3px 10px}#ctlList .cn{font-size:12px}#ctlList .ck,#ctlList kbd.fixed{padding:5px 8px 4px;font-size:12px;box-shadow:0 3px 0 var(--ink)}#ctlNote{font-size:11px;min-height:0}.panel.ctlp .btn{min-height:36px;padding:6px 18px 5px;font-size:15px}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -732,6 +751,7 @@ body:not(.touch) #ctr{top:260px}
   </div>
   <div id="selInfo"><b id="selName">Safe House</b><span id="selStars" class="stars"></span><small id="selSub"></small><small id="selGoal"></small></div>
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button><button data-d="ironman">🛡 IRON</button></div>
+  <small id="diffInfo"></small>
   <div class="row menurow"><button class="btn s" id="bTrophy">📋 JOBS</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧰 LOCKER</button></div>
   <div class="row tutrow"><button id="bTut" class="linkbtn">🎓 Play the tutorial</button><button id="bCtl" class="linkbtn">🎮 Controls</button></div>
 </div>
@@ -801,7 +821,7 @@ body:not(.touch) #ctr{top:260px}
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=a29dd38b"></script>
+<script type="module" src="./js/main.js?v=054493e7"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

@@ -566,9 +566,9 @@ export class Game {
     Object.assign(g, {
       susp: 0, lastX: 0, lastZ: 0, lostT: 99, koT: 0, t: 0, wp: 0, dir: 1, nav: [], navGoal: -1, navT: 0,
       tx: 0, tz: 0, hurry: 0, baseFace: 0, fallT: 0, zz: 0.5, prevBadge: '',
-      speed: (d.speed || 1.8) * this.D.speed, range: (g.kind === 'owner' ? 4.6 : 5.6) * this.D.range, fov: g.kind === 'owner' ? 1.2 : 1.35,
+      speed: (d.speed || 1.8) * this.D.speed, range: (g.kind === 'owner' ? 4.6 : 5.6) * this.D.range, fov: (g.kind === 'owner' ? 1.2 : 1.35) * (this.D.fov || 1),
       reviveT: null, sawSafe: false, safeRun: false, sawCase: false,
-      ...(g.kind === 'clerk' ? { range: 4.6 * this.D.range, fov: 1.5 } : {}),
+      ...(g.kind === 'clerk' ? { range: 4.6 * this.D.range, fov: 1.5 * (this.D.fov || 1) } : {}),
     });
     g.c.root.rotation.set(0, 0, 0);
     g.c.root.position.y = 0;
@@ -1134,7 +1134,7 @@ export class Game {
     if (g.reviveT) { g.reviveT.claimed = false; g.reviveT = null; }
     g.safeRun = false; g.claimed = false;
     if (g.kind === 'clerk' && g.state === 'flee') { this.clerkStopped = true; this.app.floaters.spawn('ALARM STOPPED', g.x, 2.2, g.z, 'big', 1.2); }
-    g.state = 'ko'; g.koT = this.tut ? 90 : 9; g.susp = 0; g.fallT = 0; g.radioCall = 0; g.answerProg = 0; g.callT = 0;
+    g.state = 'ko'; g.koT = this.tut ? 90 : (this.D.ko || 9); g.susp = 0; g.fallT = 0; g.radioCall = 0; g.answerProg = 0; g.callT = 0;
     this.koStreak = this.time - (this.lastKo ?? -99) < 8 ? (this.koStreak || 1) + 1 : 1; this.lastKo = this.time; this.maxKoStreak = Math.max(this.maxKoStreak || 0, this.koStreak);
     if (this.koStreak >= 2) {
       app.floaters.spawn(['', '', 'DOUBLE TAKEDOWN!', 'TRIPLE TAKEDOWN!'][this.koStreak] || 'UNSTOPPABLE!', g.x, 2.3, g.z, 'big', 1.3);
@@ -1543,6 +1543,7 @@ export class Game {
   makeNoise(x, z, r, except, lure) {
     // thunder masks the robber's own racket (not lures / guard noises)
     if (this.thunderT > 0 && except == null && !lure) r *= 0.3;
+    if (except == null && !lure) r *= this.D.noise || 1;   // your own racket carries further on harder difficulties
     const ring = this.noiseRings.find((n) => n.t >= 1);
     if (ring) { ring.t = 0; ring.r = r; ring.x = x; ring.z = z; ring.m.visible = true; }
     for (const g of this.guards) {
@@ -1950,7 +1951,7 @@ export class Game {
       }
     } else {
       g.lostT += dt;
-      if (g.state !== 'alert') g.susp = Math.max(0, g.susp - dt * 0.3);
+      if (g.state !== 'alert') g.susp = Math.max(0, g.susp - dt * 0.3 * (this.D.decay || 1));
       // close call: he almost had you, then lost interest
       if (g.state !== 'alert' && g.peak > 0.72 && g.susp < 0.15 && perceive) {
         g.peak = 0; this.closeCalls++;
@@ -1993,7 +1994,7 @@ export class Game {
       case 'post': {
         const px = d.post[0] + 0.5, pz = d.post[1] + 0.5;
         if (Math.hypot(g.x - px, g.z - pz) > 0.15) this.navTo(g, px, pz, g.speed, dt);
-        else g.face = turn(g.face, d.face + Math.sin(this.t * d.sweepSpeed) * d.sweep, 3 * dt);
+        else g.face = turn(g.face, d.face + Math.sin(this.t * d.sweepSpeed * (this.D.speed || 1)) * d.sweep, 3 * dt);
         break;
       }
       case 'suspicious': {
@@ -2158,16 +2159,16 @@ export class Game {
       return;
     }
     if (perceive && Math.hypot(p.x - d.pos[0], p.z - d.pos[1]) < 7 && this.coinsLeft > 0) this.app.hint('camhit');
-    cam.face = d.face + Math.sin(this.t * d.sweepSpeed) * d.sweep;
+    cam.face = d.face + Math.sin(this.t * d.sweepSpeed * (this.D.camSweep || 1)) * d.sweep;
     const x = d.pos[0], z = d.pos[1];
     cam.mesh.rotation.y = cam.face;
     cam.cool -= dt;
     let seen = false;
     if (perceive && p.inv <= 0 && cam.cool <= 0) {
       const dx = p.x - x, dz = p.z - z, dist = Math.hypot(dx, dz);
-      seen = this.disguiseT <= 0 && dist < CAM_R && Math.abs(angDiff(cam.face, Math.atan2(dx, dz))) < 0.45 && this.los(x, z, p.x, p.z) && !this.smokeBlocks(x, z, p.x, p.z);
+      seen = this.disguiseT <= 0 && dist < CAM_R * (this.D.camR || 1) && Math.abs(angDiff(cam.face, Math.atan2(dx, dz))) < 0.45 && this.los(x, z, p.x, p.z) && !this.smokeBlocks(x, z, p.x, p.z);
     }
-    cam.susp = clamp(cam.susp + (seen ? dt * 1.5 : -dt * 0.8), 0, 1);
+    cam.susp = clamp(cam.susp + (seen ? dt * 1.5 * (this.D.camRate || 1) : -dt * 0.8 * (this.D.decay || 1)), 0, 1);
     if (cam.susp >= 1) {
       cam.susp = 0; cam.cool = 4;
       this.triggerAlarm('The camera triggered the alarm!');
@@ -2182,7 +2183,7 @@ export class Game {
     }
     const hot = cam.cool > 0;
     cam.lens.material.color.setHex(hot || (Math.sin(this.t * 6) > 0) ? 0xff3b4e : 0x7a1f28);
-    this.updateCone(cam.cone, x, z, cam.face, 0.9, CAM_R, hot ? COL.alert : cam.susp > 0.2 ? 0xff2a40 : 0xff5a6e);
+    this.updateCone(cam.cone, x, z, cam.face, 0.9, CAM_R * (this.D.camR || 1), hot ? COL.alert : cam.susp > 0.2 ? 0xff2a40 : 0xff5a6e);
   }
 
   openSafe() {
@@ -2904,7 +2905,7 @@ export class Game {
   // ---------- lockpicking minigame ----------
   startPick(d) {
     this.app.input.consumePick();
-    this.picking = { d, pin: 0, t: Math.random() * 6, speed: this.tut ? 1.7 : 2.2, w: (this.tut ? 0.36 : 0.26) * this.gear.pickW, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
+    this.picking = { d, pin: 0, t: Math.random() * 6, speed: this.tut ? 1.7 : 2.2 * (this.D.pickSpd || 1), w: (this.tut ? 0.36 : 0.26 * (this.D.pickW || 1)) * this.gear.pickW, zone: 0.5, pos: 0.5, slips: 0, cool: 0 };
     this.newPinZone();
     this.app.audio.play('click');
     this.app.onPick(this.picking);
