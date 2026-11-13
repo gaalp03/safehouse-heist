@@ -450,11 +450,11 @@ body.tutcard #obj{visibility:hidden}#pause{z-index:4}@media (max-height:680px){#
 @property --mma{syntax:'<angle>';inherits:false;initial-value:0deg}
 .mmring{position:fixed;z-index:6;pointer-events:none;border-radius:16px;padding:6px;background:conic-gradient(from var(--mma),transparent 0deg 250deg,rgba(255,200,40,.5) 290deg,#ffd23a 330deg,#fff6c0 350deg,transparent 360deg);-webkit-mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);-webkit-mask-composite:xor;filter:drop-shadow(0 0 8px rgba(255,210,58,.9));animation:mmrun 1s linear infinite}
 @keyframes mmrun{to{--mma:360deg}}
-/* minimap lives bottom-left (GTA style); the left column of pills + contracts moves up into its old slot */
-#mm{top:auto;bottom:calc(env(safe-area-inset-bottom) + 14px);left:max(12px,env(safe-area-inset-left))}
-#coins{top:92px}#smokep{top:92px}#key{top:92px}
-#ctr{top:136px}
-@media (max-width:640px){#mm{top:auto;bottom:calc(env(safe-area-inset-bottom) + 12px)}#coins,#smokep,#key{top:104px}#ctr{top:150px}}
+/* touch: minimap bottom-left, pills + contracts move up into its old slot. Desktop keeps the original top-left spot */
+body.touch #mm{top:auto;bottom:calc(env(safe-area-inset-bottom) + 14px);left:max(12px,env(safe-area-inset-left))}
+body.touch #coins,body.touch #smokep,body.touch #key{top:92px}
+body.touch #ctr{top:136px}
+@media (max-width:640px){body.touch #mm{top:auto;bottom:calc(env(safe-area-inset-bottom) + 12px)}body.touch #coins,body.touch #smokep,body.touch #key{top:104px}body.touch #ctr{top:150px}}
 @media (max-height:480px){#mm{width:110px}}
 body.touch #mm{bottom:calc(env(safe-area-inset-bottom) + 12px);opacity:.85}
 #iDisg{position:absolute;left:50%;top:calc(9vh + 14px);translate:-50% 0;font-size:16px;color:#9fc4ff;padding:6px 14px;white-space:nowrap;animation:objp .4s cubic-bezier(.2,1.8,.4,1)}
@@ -638,6 +638,9 @@ body.calm #mug.go em{animation:none}
 #ctlNote.warn{color:#ffe066;opacity:1}
 @media (max-width:640px){#ctlList .cn{font-size:13px}#ctlList .ck,#ctlList kbd.fixed{min-width:64px;font-size:12px;padding:7px 6px 5px}#ctlList li.tc kbd.fixed{min-width:96px}.panel.ctlp .big{font-size:28px!important}}
 @media (max-height:520px) and (min-aspect-ratio:4/3){#menu>.tutrow{grid-column:2}}
+/* desktop: original top-left minimap at its slightly larger size; pills + contracts sit just below it */
+body:not(.touch) #coins,body:not(.touch) #smokep,body:not(.touch) #key{top:216px}
+body:not(.touch) #ctr{top:260px}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
