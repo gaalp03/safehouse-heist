@@ -78,7 +78,8 @@ class App {
     this.save.best = this.save.best || {};
     this.diff = DIFFS[this.save.diff] ? this.save.diff : 'normal';
 
-    const mobile = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+    const dev = SDK.deviceType();
+    const mobile = dev ? dev === 'mobile' || dev === 'tablet' : matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
     // phones: render near native resolution (retina screens looked blurry at 1.25x); desktop unchanged
     const ndpr = devicePixelRatio || 1;
     this.mobile = mobile;
@@ -234,6 +235,8 @@ class App {
     document.addEventListener('visibilitychange', () => {
       this.audio.setHidden(document.hidden);
       if (document.hidden && this.state === 'play') this.pause();
+      else if (document.hidden) SDK.gameplayStop();
+      else if (this.state === 'play' && this.game.state === 'play') SDK.gameplayStart();
     });
     this.updateMuteIcon();
   }
@@ -745,9 +748,10 @@ class App {
     }
     if (this.mode === 'classic' && this.game.contracts.length && !this.save.seenCtr) { this.save.seenCtr = true; SDK.store(this.save); this.hint('ctr'); }
     this.hint('move');
-    SDK.gameplayStart();
+    const intro = this.game.tut && this.tutStep === 0 && !this.introSeen;
+    if (!intro) SDK.gameplayStart(); // the tutorial intro cutscene starts gameplay when it ends
     { const hb = $('bHint'); hb.classList.remove('pulse'); if (this.hintPulse) { this.hintPulse = false; void hb.offsetWidth; hb.classList.add('pulse'); } }
-    if (this.game.tut && this.tutStep === 0 && !this.introSeen) this.beginIntro();
+    if (intro) this.beginIntro();
     else this.mapIntro();
   }
   // first visit to a heist: the minimap blinks twice big in the middle, then glides into its corner
@@ -786,6 +790,7 @@ class App {
     this.game.arrT = null;
     this.introSeen = true;
     this.state = 'intro'; this.introI = -1;
+    SDK.gameplayStop(); // the cutscene is not gameplay
     this.introHintSnap = new Set(this.hDone);
     this.floaters.minScale = 1.05;
     this.introKO = false; this.introCoin = this.introLured = this.introSafe = this.introDirty = this.introSmoke = this.introCough = this.introDisg = this.introNod = this.introR1 = this.introR2 = this.introMe = false;
@@ -906,6 +911,7 @@ class App {
     this.game.actorOff();
     for (const g of this.game.guards) { g.cone.material.opacity = 1; g.cone.material.color.setHex(0xffe14d); }
     if (this.introKO || this.introDirty) { this.game.reset(); this.introKO = this.introDirty = false; }
+    SDK.gameplayStart();
     this.onCoins(this.game.coinsLeft); this.onSmoke(this.game.smokesLeft); this.onDisguise(this.game.disguiseT);
     for (const id of this.introHintSnap ? [...this.hDone].filter((x) => !this.introHintSnap.has(x)) : []) this.hDone.delete(id);
     this.floaters.clear(); this.particles.clear(); this.floaters.minScale = 0;

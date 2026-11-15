@@ -1,3 +1,4 @@
+import { SDK } from './sdk.js';
 // Keyboard + mouse (pointer-lock look) + touch (left: dynamic joystick, right: drag to look, buttons).
 // Every keyboard/mouse action is remappable (two slots each), saved in localStorage.
 export const ACTIONS = [
@@ -51,7 +52,9 @@ export class Input {
     this.joy = { id: -1, ox: 0, oy: 0, x: 0, y: 0 };
     this.look = { id: -1, x: 0, y: 0 };
     this.handlers = {};
-    this.touch = (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) && !matchMedia('(pointer: fine)').matches;
+    // on CrazyGames trust the platform's device type; otherwise sniff the pointer (live switching still follows real input)
+    const dev = SDK.deviceType();
+    this.touch = dev ? dev === 'mobile' || dev === 'tablet' : (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) && !matchMedia('(pointer: fine)').matches;
     this.els = els;
     this.locked = false; this.lockFailed = false; this.active = false; this.dragLook = false;
     this.loadBinds();
