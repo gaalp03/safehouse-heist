@@ -660,6 +660,16 @@ body.touch #lockpick::before{content:'TAP ✋ IN THE GREEN · MOVE TO STOP';font
 @media (orientation:landscape){body.touch #hint{left:50%;right:auto;transform:translateX(-50%);width:min(380px,40vw);top:64px;bottom:auto}}
 @media (orientation:landscape) and (max-height:480px){body.touch #hint{font-size:13px;width:min(320px,36vw);padding:8px 12px 7px}}
 @media (max-height:480px){.panel.ctlp{gap:5px;padding:10px 16px 10px}.panel.ctlp .big{font-size:24px!important}#ctlTabs button{font-size:12px;padding:6px 10px 4px}#ctlList{gap:4px;min-height:90px}#ctlList li{padding:3px 6px 3px 10px}#ctlList .cn{font-size:12px}#ctlList .ck,#ctlList kbd.fixed{padding:5px 8px 4px;font-size:12px;box-shadow:0 3px 0 var(--ink)}#ctlNote{font-size:11px;min-height:0}.panel.ctlp .btn{min-height:36px;padding:6px 18px 5px;font-size:15px}}
+
+/* compact tutorial card on touch */
+body.touch #tut{padding:4px 10px 5px;gap:1px;border-width:3px;box-shadow:3px 4px 0 var(--ink);opacity:.94}
+body.touch #tut small{font-size:9px;padding:0 6px;letter-spacing:1px}
+body.touch #tut span{font-size:13px;line-height:1.12}
+body.touch #tut b{height:3px;margin-top:2px}
+body.touch #tutSkip{font-size:11px;min-height:26px;min-width:0;width:auto;padding:3px 12px 2px;margin-top:3px;border-width:2px;border-radius:9px;box-shadow:inset 0 2px 0 rgba(255,255,255,.55),0 3px 0 var(--ink)}
+body.touch #tutSkip::after{display:none}
+@media (orientation:landscape){body.touch #tut{top:58px;width:min(340px,40vw)}body.touch #tut span{font-size:12px}}
+@media (orientation:landscape) and (max-height:480px){body.touch #tut{width:min(300px,36vw)}body.touch #tut small{display:none}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
