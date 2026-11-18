@@ -243,10 +243,14 @@ export class Input {
     if (this.touch || this.locked) return;
     const cv = this.els.canvas;
     if (!cv.requestPointerLock) { this.lockFailed = true; return; }
+    // no user gesture yet (game auto-started on load): wait for the first click instead of failing for good
+    const ua = navigator.userActivation;
+    if (ua && !ua.isActive) return;
+    const gest = !ua || ua.isActive;
     try {
       const r = cv.requestPointerLock();
-      if (r && r.catch) r.catch(() => { this.lockFailed = true; });
-    } catch (_) { this.lockFailed = true; }
+      if (r && r.catch) r.catch(() => { if (gest) this.lockFailed = true; });
+    } catch (_) { if (gest) this.lockFailed = true; }
   }
   exitLock() { if (document.pointerLockElement) try { document.exitPointerLock(); } catch (_) {} }
   joyEnd() {

@@ -22,38 +22,39 @@ import { INTRO, SHOT_T } from './intro.js';
 
 const $ = (id) => document.getElementById(id);
 const pinIdx = (k) => (/^lvl\d+$/.test(k) ? +k.slice(3) - 1 : undefined);
-const HINTS = {
-  move: ['WASD to move · Mouse to look', 'Left side: move · Right side: look'],
-  thunder: ['⚡ Thunder covers your noise for a moment. Dash now!', '⚡ Thunder covers your noise for a moment. Dash now!'],
-  uniform: ['Hold E on a knocked-out guard to wear his uniform: guards & cameras ignore you from afar', 'Hold ✋ on a knocked-out guard to wear his uniform: guards & cameras ignore you from afar'],
-  ctr: ['📋 The slips on the left are bonus contracts: optional side jobs worth extra cash', '📋 The slips on the left are bonus contracts: optional side jobs worth extra cash'],
-  vent: ['Air vent! E to crawl through to another room, unseen', 'Air vent! Tap the hand to crawl through, unseen'],
-  dash: ['SPACE / SHIFT to dash. Careful, it\'s noisy!', 'Tap DASH to dash. Careful, it\'s noisy!'],
-  cone: ['Stay out of the vision cones!', 'Stay out of the vision cones!'],
-  ko: ['Behind a guard? CLICK to hit = knock out!', 'Behind a guard? Tap HIT = knock out!'],
-  safe: ['Hold E to crack the safe', 'Hold the hand button to crack the safe'],
-  owner: ['Shh... the owner is asleep. No dashing near the bed!', 'Shh... the owner is asleep. No dashing near the bed!'],
-  loot: ['Extra loot = more stars. Grab it all!', 'Extra loot = more stars. Grab it all!'],
-  stash: ['Got the stash! Get back to the van!', 'Got the stash! Get back to the van!'],
-  dog: ['A guard dog! It follows your scent and barks. Coins distract it.', 'A guard dog! It follows your scent and barks. Coins distract it.'],
-  clerk: ['The clerk is running for the alarm button! Knock them out first!', 'The clerk is running for the alarm button! Knock them out first!'],
-  camhit: ['Security camera! Hit it with a thrown coin (Q) to knock it out for 12s', 'Security camera! Hit it with a thrown coin to knock it out for 12s'],
-  pocket: ['Behind a guard: CLICK to knock out, HOLD E to pickpocket his wallet (or spare keycard)', 'Behind a guard: tap HIT to knock out, HOLD ✋ to pickpocket his wallet'],
-  slot: ['Slot machine! Hold E to hit a noisy jackpot that lures guards away', 'Slot machine! Hold ✋ to hit a noisy jackpot that lures guards away'],
-  spot: ['Spotlight! Stay out of the moving light pools, or cut the power at the breaker', 'Spotlight! Stay out of the moving light pools, or cut the power at the breaker'],
-  radio: ['A knocked-out guard\'s radio is calling! Hold E next to him to answer, or backup comes', 'A knocked-out guard\'s radio is calling! Hold ✋ next to him to answer, or backup comes'],
-  case: ['Hold E to smash a display case. Loud! Guards who see a broken case raise the alarm', 'Hold ✋ to smash a display case. Loud! Guards who see a broken case raise the alarm'],
-  pick: ['Locked! Press E when the pin is in the green zone. Slips are noisy!', 'Locked! Tap the hand when the pin is in the green zone. Slips are noisy!'],
-  laser: ['Laser grid! Time your run, or cut the power at the breaker in the security room', 'Laser grid! Time your run, or cut the power at the breaker in the security room'],
-  key: ['The vault door needs a keycard. Search the offices!', 'The vault door needs a keycard. Search the offices!'],
-  door: ['Got the keycard! Swipe it at the vault door', 'Got the keycard! Swipe it at the vault door'],
-  drill: ['Cracking the vault is LOUD. Guards will hear it!', 'Cracking the vault is LOUD. Guards will hear it!'],
-  hide: ['E at a wardrobe: hide inside. Guards lose you if they did not see you!', 'Tap the hand at a wardrobe to hide inside'],
-  heavy: ['Gold and paintings are HEAVY and slow you down. Walk back to the van to stash them', 'Gold and paintings are HEAVY and slow you down. Walk back to the van to stash them'],
-  sneak: ['Z: crouch-sneak. Slower and quieter, and crouching behind counters or tables hides you', 'Tap 🦶 to sneak. Slower and quieter, and crouching behind low cover hides you'],
-  smoke: ['C: drop a smoke bomb. Guards cannot see into or through the cloud!', 'Tap 💨 to drop a smoke bomb. Guards cannot see through it!'],
-  coin: ['Hold Q to aim, release to throw a coin and lure guards away', 'Hold the coin button to aim, release to throw it and lure guards away'],
-  alarm: ['ALARM! Escape or hold E at the keypad by the front door', 'ALARM! Escape or hold the hand at the keypad by the front door'],
+// first-time control hints: [desktop keys, touch keys, text, touch text?]. Shown once each, the first time the action is needed
+const KH = {
+  move: ['{move}', '◀ LEFT SIDE', 'Move · click & mouse to look', 'Drag left to move · right to look'],
+  dash: ['{dash}', 'DASH', 'Dash · fast but noisy'],
+  sneak: ['{sneak}', '🦶 SNEAK', 'Sneak · quiet, hides behind cover'],
+  cone: ['', '', '👁 Stay out of the vision cones'],
+  ko: ['{hit}', 'HIT', 'Knock out from behind'],
+  pocket: ['{hit} · HOLD {use}', 'HIT · HOLD ✋', 'Knock out · pickpocket'],
+  safe: ['HOLD {use}', 'HOLD ✋', 'Crack the safe'],
+  pick: ['{pick}', 'TAP ✋', 'Pick when the pin is in the green'],
+  hide: ['{use}', '✋', 'Hide in the wardrobe'],
+  vent: ['{use}', '✋', 'Crawl through the vent, unseen'],
+  coin: ['HOLD {throw}', 'HOLD 🪙', 'Aim, release to throw a coin and lure guards'],
+  smoke: ['{smoke}', '💨', 'Smoke bomb · guards can\'t see through it'],
+  uniform: ['HOLD {use}', 'HOLD ✋', 'Wear his uniform as a disguise'],
+  radio: ['HOLD {use}', 'HOLD ✋', 'Answer his radio or backup comes'],
+  slot: ['HOLD {use}', 'HOLD ✋', 'Noisy jackpot lures guards away'],
+  case: ['HOLD {use}', 'HOLD ✋', 'Smash the case · loud!'],
+  camhit: ['{throw}', '🪙', 'A thrown coin knocks out a camera'],
+  alarm: ['HOLD {use}', 'HOLD ✋', 'Keypad by the front door stops the alarm'],
+  loot: ['', '', '💰 Extra loot = more stars'],
+  stash: ['', '', '🚐 Got it! Back to the van'],
+  owner: ['', '', '😴 Owner asleep · no dashing near the bed'],
+  dog: ['', '', '🐕 Guard dog · coins distract it'],
+  clerk: ['', '', '🏃 Clerk runs for the alarm · stop them!'],
+  laser: ['', '', '🔴 Lasers · time it, or cut the power'],
+  spot: ['', '', '🔦 Avoid the spotlights'],
+  key: ['', '', '🔑 Find the keycard'],
+  door: ['', '', '🔑 Swipe it at the vault door'],
+  drill: ['', '', '🔊 Cracking is loud · guards will hear'],
+  heavy: ['', '', '🏋 Heavy loot slows you down'],
+  thunder: ['', '', '⚡ Thunder covers your noise · dash now!'],
+  ctr: ['', '', '📋 Bonus contracts on the left = extra cash'],
 };
 
 class App {
@@ -147,8 +148,12 @@ class App {
 
     SDK.loadingStop();
     setTimeout(() => this.audio.loadSamples(), 300);
-    $('loading').classList.add('hidden');
+    // brand-new player: no menu, no cutscene, no tutorial: straight into the first heist with first-time hints
+    const fresh = !this.save.tutDone && !this.save.played && !Object.keys(this.save.best).length;
+    if (!this.save.tutDone && !this.save.hintsOn) { this.save.hintsOn = true; SDK.store(this.save); }
     this.showMenu();
+    if (fresh) this.start('classic', 0);
+    $('loading').classList.add('hidden');
   }
 
   // ---------------- UI ----------------
@@ -200,9 +205,10 @@ class App {
     click('bTrophy', () => this.showTrophies());
     click('bOutfit', () => this.showOutfits());
     click('bOfBack', () => this.showMenu());
-    click('bTut', () => { this.introSeen = false; this.start('tutorial', 0); });
+    click('bTut', () => { this.introSeen = false; this.wantIntro = true; this.start('tutorial', 0); });
     click('bISkip', () => this.endIntro());
     click('bHint', () => this.showHintTip());
+    $('khint').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.hCur && this.hCur !== '_tip') { this.hT = 0; $('khint').classList.add('hidden'); } });
     click('bINext', () => this.nextIntro());
     $('c').addEventListener('pointerdown', () => { if (this.state === 'intro' && this.introT > 0.6) this.nextIntro(); });
     $('tutSkip').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.game.tut) this.skipTutorial(); });
@@ -696,7 +702,6 @@ class App {
     if (mode) this.mode = mode;
     if (!this.mode) this.mode = 'classic';
     if (!mode && this.mode === 'tutorial' && this.save.tutDone) this.mode = 'classic';
-    if (this.mode === 'classic' && (idx == null || idx === 0) && !this.save.tutDone && (this.levelIdx || 0) === 0) this.mode = 'tutorial';
     if (this.mode === 'daily') { if (!this.daily || this.daily.key !== dayKeyNow()) this.daily = this.todays(); idx = this.daily.level; this.save.dailyPick = { key: this.daily.key, level: idx, mut: this.daily.mutator.id }; }
     else if (this.mode === 'tutorial') idx = 0;
     if (idx != null) this.levelIdx = idx;
@@ -748,7 +753,8 @@ class App {
     }
     if (this.mode === 'classic' && this.game.contracts.length && !this.save.seenCtr) { this.save.seenCtr = true; SDK.store(this.save); this.hint('ctr'); }
     this.hint('move');
-    const intro = this.game.tut && this.tutStep === 0 && !this.introSeen;
+    const intro = this.game.tut && this.tutStep === 0 && !this.introSeen && this.wantIntro;
+    this.wantIntro = false;
     if (!intro) SDK.gameplayStart(); // the tutorial intro cutscene starts gameplay when it ends
     { const hb = $('bHint'); hb.classList.remove('pulse'); if (this.hintPulse) { this.hintPulse = false; void hb.offsetWidth; hb.classList.add('pulse'); } }
     if (intro) this.beginIntro();
@@ -1094,6 +1100,7 @@ class App {
   // HINT button: the same tip the busted screen gives (last bust on this heist, or a fresh one)
   showHintTip() {
     const t = this.lastTip && this.lastTipLevel === this.level.id ? this.lastTip : this.bustTip();
+    $('khint').classList.add('hidden');
     const el = $('hint');
     this.hCur = '_tip'; this.hT = 6;
     el.textContent = '💡 ' + t.replace(/^Tip: /, '');
@@ -1102,34 +1109,40 @@ class App {
     this.audio.play('click');
   }
   hint(id) {
-    return;   // in-game control hints removed: every control is listed (and remappable) in the Controls window
-    if (!this.level || !this.level.tutorial || this.hShown.has(id) || this.hDone.has(id)) return;
-    // during the guided tutorial the step card is the only instruction on screen
-    if (this.game && this.game.tut && (this.tutStep < TUT_STEPS.length || ['move', 'loot', 'safe', 'pick', 'cone', 'stash'].includes(id))) { this.hShown.delete(id); return; }
+    // new players only; the guided tutorial has its own cards
+    if (!KH[id] || !this.save.hintsOn || (this.save.khs || {})[id] || (this.game && this.game.tut) || this.hShown.has(id) || this.hDone.has(id)) return;
     if (this.hCur === id || this.hQ.includes(id)) return;
     this.hShown.add(id);
-    this.hQ.push(id);
+    if (id === 'move') this.hQ.unshift(id); else this.hQ.push(id);
   }
   hintDone(id) {
     this.hDone.add(id);
+    if (this.hCur === id && this.hT > 0.9) { this.hT = 0.9; $('khint').classList.add('ok'); }
     const qi = this.hQ.indexOf(id);
     if (qi >= 0) this.hQ.splice(qi, 1);
   }
   updateHints(dt) {
-    const el = $('hint');
-    if (this.hCur) {
+    const el = $('khint');
+    if (this.hCur === '_tip') { // bulb tip uses the old #hint card
       this.hT -= dt;
-      if (this.hT <= 0 || this.state !== 'play' || this.game.state !== 'play') { this.hCur = null; el.classList.add('hidden'); el.classList.remove('tipnow'); }
-    } else if (this.hQ.length && this.state === 'play') {
-      this.hCur = this.hQ.shift();
-      if (this.hDone.has(this.hCur) && this.hCur !== 'stash') { this.hCur = null; return; }
-      el.textContent = HINTS[this.hCur][this.input.touch ? 1 : 0];
-      const more = document.createElement('small'); more.className = 'hmore';
-      more.textContent = this.input.touch ? 'Full controls: tap the pause button' : 'Full controls: press ESC (pause menu)';
-      el.appendChild(more);
-      el.classList.remove('hidden');
+      if (this.hT <= 0 || this.state !== 'play' || this.game.state !== 'play') { this.hCur = null; $('hint').classList.add('hidden'); $('hint').classList.remove('tipnow'); }
+      return;
+    }
+    if (this.hCur) {
+      if (this.state === 'play') this.hT -= dt; // freezes while paused so there is time to read
+      if (this.hT <= 0 || (this.state !== 'play' && this.state !== 'pause') || this.game.state !== 'play') { this.hCur = null; el.classList.add('hidden'); }
+    } else if (this.hQ.length && this.state === 'play' && this.game.state === 'play' && !(this.game.arrT != null && this.game.arrT < 0.8)) {
+      const id = this.hQ.shift();
+      if (this.hDone.has(id) && id !== 'stash') return;
+      const h = KH[id], t = this.input.touch, keys = t ? h[1] : h[0];
+      this.hCur = id;
+      (this.save.khs = this.save.khs || {})[id] = 1; SDK.store(this.save);
+      el.querySelector('.kk').innerHTML = keys ? (t ? keys.split(' · ').map((k) => '<kbd>' + k + '</kbd>').join(' ') : this.input.fmt(keys.replace(/\b(HOLD) /g, '$1&nbsp;'), true)) : '';
+      el.querySelector('.kt').textContent = (t && h[3]) || h[2];
+      el.classList.remove('hidden', 'ok');
       el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
-      this.hT = 6.5;
+      const bar = el.querySelector('.kb'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = '';
+      this.hT = 7;
     }
   }
   setPrompt(kind, prog = 0) {
@@ -1489,7 +1502,8 @@ class App {
     $('rBest').classList.toggle('new', newBest);
     if (!res.daily && this.ghostMsg) $('rBest').textContent += '  ·  ' + this.ghostMsg;
     const tutJustDone = this.game.tut && !this.save.tutDone;
-    if (this.game.tut) this.save.tutDone = true;
+    const firstJob = !this.save.tutDone && this.mode === 'classic';
+    if (this.game.tut || firstJob) this.save.tutDone = true;
     const freshA = recordRun(this.save, this.runRecord(true, res));
     this.awardXP(true, res.score, res.loot, 'rXP');
     const jt = this.jobsToast(recordJobs(this.save, this.runRecord(true, res)));
@@ -1500,6 +1514,7 @@ class App {
     const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
     this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
     this.showAchToast(freshA);
+    if (firstJob) { $('rAch').innerHTML = '🎉 <b>First job done!</b> Contracts, difficulty, Jobs and the Daily are open now.' + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); }
     if (tutJustDone) { $('rAch').innerHTML = '🎓 <b>Tutorial complete!</b> Contracts, difficulty and the Daily are yours now.' + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); }
     // next heist: label the button, and celebrate a fresh unlock
     const ni = this.levelIdx + 1, nextOk = !res.daily && ni < LEVELS.length && this.levelUnlocked(ni);
@@ -1509,6 +1524,22 @@ class App {
       $('rAch').innerHTML = `<span class="unlock">🔓 New heist unlocked: <b>${LEVELS[ni].name}</b></span>` + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : '');
       $('rAch').classList.remove('hidden');
       setTimeout(() => { if (this.state === 'result') { this.audio.play('unlock'); this.shake.add(0.15); } }, 1500);
+    }
+    // first job (or the tutorial) done: big unlock moment, then roll straight into the next heist
+    clearInterval(this.autoNextT);
+    if ((firstJob || tutJustDone) && nextOk) {
+      const u = $('unlockfx'); u.querySelector('b').textContent = LEVELS[ni].name.toUpperCase();
+      u.classList.remove('hidden'); u.style.animation = 'none'; void u.offsetWidth; u.style.animation = '';
+      clearTimeout(this.unlockT); this.unlockT = setTimeout(() => u.classList.add('hidden'), 2600);
+      const btn = $('bNext'), base = btn.textContent; let n = 6;
+      const stop = (e) => { if (e && e.target === btn) return; clearInterval(this.autoNextT); btn.textContent = base; btn.classList.remove('pulse'); removeEventListener('pointerdown', stop, true); removeEventListener('keydown', stop, true); };
+      addEventListener('pointerdown', stop, true); addEventListener('keydown', stop, true);
+      btn.classList.add('pulse'); btn.textContent = `${base} ${n}`;
+      this.autoNextT = setInterval(() => {
+        if (this.state !== 'result') { stop(); return; }
+        if (--n <= 0) { stop(); btn.click(); return; }
+        btn.textContent = `${base} ${n}`;
+      }, 1000);
     }
     this.nextWasLocked = false;
     if (this.justMastered) { $('rAch').innerHTML = `<span class="unlock">🏅 Heist mastered! +$2,000 bonus</span><br>` + $('rAch').innerHTML; $('rAch').classList.remove('hidden'); this.justMastered = false; }
@@ -1628,7 +1659,7 @@ class App {
     const now = performance.now();
     if (!force && now - (this.layT || 0) < 200) return;
     this.layT = now;
-    const MOV = ['obj', 'alarm', 'disgp', 'alarmwhy', 'briefp', 'tut', 'ctr', 'lockpick', 'prompt', 'hint'];
+    const MOV = ['obj', 'alarm', 'disgp', 'alarmwhy', 'briefp', 'tut', 'ctr', 'lockpick', 'prompt', 'hint', 'khint'];
     if (!this.input.touch) { if (this.layDirty) { for (const id of MOV) { const e = $(id); if (e) { e.style.translate = ''; e._dy = 0; } } this.layDirty = false; } return; }
     this.layDirty = true;
     document.body.classList.toggle('picking', !!(this.game && this.game.picking));

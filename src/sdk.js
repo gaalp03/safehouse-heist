@@ -21,11 +21,11 @@ export const SDK = {
     if (!cg || typeof cg.init !== 'function') return;
     let p;
     try { p = Promise.resolve(cg.init()); } catch (e) { console.warn('[SDK] init failed:', e && e.message); return; }
-    // a slow init must not block the game forever: wait up to 15s, then keep going and attach when it resolves
+    // a slow init must not block the game forever: wait up to 4s, then keep going and attach when it resolves
     p.then(() => this._attach(cg), (e) => console.warn('[SDK] init failed:', e && e.message));
     let timer;
     try {
-      await Promise.race([p, new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('timeout')), 15000); })]);
+      await Promise.race([p, new Promise((_, rej) => { timer = setTimeout(() => rej(new Error('timeout')), 4000); })]);
     } catch (e) {
       if (e && e.message === 'timeout') console.warn('[SDK] init slow, attaching later');
     } finally { clearTimeout(timer); }
