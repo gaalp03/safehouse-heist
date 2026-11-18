@@ -65,10 +65,18 @@ export const AN = {
           try {
             const B = window.ByteBrewSDK && window.ByteBrewSDK.ByteBrew;
             B.initializeByteBrew(GAME_ID, GAME_KEY, build);
-            bb = B; st = 'ready';
-            if (debug) console.log('[BB] ByteBrew initialized, user', B.getUserID && B.getUserID());
-            const pend = q; q = [];
-            for (const [n, v] of pend) this._send(n, v);
+            // ByteBrew opens its session asynchronously and drops events sent before that: wait for it, then flush
+            let tries = 0;
+            const ready = () => {
+              let ok = false; try { ok = B.isByteBrewInitialized(); } catch (_) {}
+              if (!ok && ++tries < 50) { setTimeout(ready, 200); return; }
+              if (!ok) { st = 'dead'; q = []; if (debug) console.warn('[BB] init timed out'); return; }
+              bb = B; st = 'ready';
+              if (debug) console.log('[BB] ByteBrew initialized, user', B.getUserID && B.getUserID());
+              const pend = q; q = [];
+              pend.forEach(([n, v], i) => setTimeout(() => this._send(n, v), i * 60));
+            };
+            ready();
           } catch (e) { st = 'dead'; q = []; if (debug) console.warn('[BB] init failed', e); }
         };
         s.onerror = () => { st = 'dead'; q = []; if (debug) console.warn('[BB] SDK file failed to load'); };

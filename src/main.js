@@ -1668,7 +1668,7 @@ class App {
   renderPrivacy() {
     const off = AN.off();
     $('bPrivTog').textContent = off ? 'ANALYTICS: OFF · TURN ON' : 'ANALYTICS: ON · TURN OFF';
-    $('bPriv').textContent = '🔒 Privacy · Analytics ' + (off ? 'off' : 'on');
+    $('bPriv').textContent = off ? '🔒 Privacy (analytics off)' : '🔒 Privacy';
   }
   maybePrivacyToast() {
     if (this.privShown || !AN.active() || this.state !== 'play' || (this.input.touch && this.hCur) || this.heistSec() < 8) return;

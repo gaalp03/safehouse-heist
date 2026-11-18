@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="0b781b5a">
+<meta name="build" content="5e2a80a5">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=0b781b5a">
+<link rel="modulepreload" href="./js/main.js?v=5e2a80a5">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -695,6 +695,10 @@ body.touch #khint{font-size:13px;padding:6px 28px 8px 9px;gap:7px}body.touch #kh
 #privt a{white-space:nowrap;color:var(--y);text-decoration:underline;cursor:pointer;font-weight:800}#privt i{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-style:normal;cursor:pointer;opacity:.7;padding:4px}
 @media (orientation:portrait){body.touch #privt{bottom:auto;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 228px)}}
 @media (orientation:landscape){body.touch #privt{bottom:auto;left:50%;transform:translateX(-50%);top:58px;max-width:min(380px,44vw)}}
+
+#menu #ver{right:auto;left:8px}@media (orientation:portrait){#menu{padding-bottom:calc(26px + env(safe-area-inset-bottom))}}
+@media (max-height:520px) and (min-aspect-ratio:4/3){#mfoot{right:auto;left:96px}#menu #selGoal{display:none}#menu .tutrow .btn,#menu .tutrow button{font-size:13px;min-height:34px;padding:5px 12px 4px}#menu .menurow .btn.s{min-height:38px;padding:6px 14px 5px;font-size:15px}}
+#mfoot{position:fixed;right:calc(2px + env(safe-area-inset-right));bottom:calc(1px + env(safe-area-inset-bottom));z-index:3;line-height:1}#menu .footlink{font:600 11px/1.2 system-ui,sans-serif;background:none;border:0;padding:4px 8px;color:#fff6e8;opacity:.55;text-decoration:underline;cursor:pointer;min-height:24px}#menu .footlink:hover{opacity:.9}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -788,7 +792,8 @@ body.touch #khint{font-size:13px;padding:6px 28px 8px 9px;gap:7px}body.touch #kh
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button><button data-d="ironman">🛡 IRON</button></div>
   <small id="diffInfo"></small>
   <div class="row menurow"><button class="btn s" id="bTrophy">📋 JOBS</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧰 LOCKER</button></div>
-  <div class="row tutrow"><button id="bTut" class="linkbtn">🎓 TUTORIAL</button><button id="bCtl" class="linkbtn">🎮 Controls</button><button id="bPriv" class="linkbtn">🔒 Privacy</button></div>
+  <div class="row tutrow"><button id="bTut" class="linkbtn">🎓 TUTORIAL</button><button id="bCtl" class="linkbtn">🎮 Controls</button></div>
+  <div id="mfoot"><button id="bPriv" class="footlink">🔒 Privacy</button></div>
 </div>
 
 <div id="privacy" class="screen solid hidden"><div class="panel privp"><div class="big o">PRIVACY</div><div class="privtxt"><p><b>Safehouse Heist</b> collects <b>anonymous gameplay statistics</b> through ByteBrew (a CrazyGames analytics partner) so we can see where the game is too hard or confusing and make it better.</p>
@@ -862,7 +867,7 @@ body.touch #khint{font-size:13px;padding:6px 28px 8px 9px;gap:7px}body.touch #kh
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=0b781b5a"></script>
+<script type="module" src="./js/main.js?v=5e2a80a5"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>
