@@ -6,6 +6,7 @@ import { Audio } from './audio.js';
 import { Input } from './input.js';
 import { Particles, Shake, Floaters } from './fx.js';
 import { SDK, ADS_ENABLED } from './sdk.js';
+import { AN } from './analytics.js';
 import { LEVELS, loadLevel } from './levels/index.js';
 import { fmtTime, fmtMoney, damp, angDiff } from './util.js';
 import { ViewModel } from './viewmodel.js';
@@ -71,7 +72,10 @@ class App {
   }
 
   async boot() {
+    const tSdk = performance.now();
     await SDK.init();
+    this.sdkMs = performance.now() - tSdk;
+    AN.init();
     SDK.loadingStart();
     SDK.hooks.adStart = () => { this.inAd = true; this.audio.setAdMuted(true); };
     SDK.hooks.adEnd = () => { this.inAd = false; this.audio.setAdMuted(false); };
@@ -128,6 +132,7 @@ class App {
     this.audio.setMuted(!!this.save.muted);
     SDK.onSettings((st) => this.audio.setPlatformMuted(st && st.muteAudio));
     this.input = new Input(this.els);
+    AN.device = SDK.deviceType() || (this.input.touch ? 'mobile' : 'desktop');
     this.particles = new Particles(this.scene);
     this.shake = new Shake();
     this.floaters = new Floaters(this.els.fxl);
@@ -139,6 +144,7 @@ class App {
     await this.useLevel(0);
 
     this.bindUI();
+    this.renderPrivacy();
     this.applyOutfit();
     addEventListener('resize', () => this.resize());
     this.resize();
@@ -151,8 +157,10 @@ class App {
     // brand-new player: no menu, no cutscene, no tutorial: straight into the first heist with first-time hints
     const fresh = !this.save.tutDone && !this.save.played && !Object.keys(this.save.best).length;
     if (!this.save.tutDone && !this.save.hintsOn) { this.save.hintsOn = true; SDK.store(this.save); }
+    AN.ev('game_loaded', { load_ms: performance.now(), returning: fresh ? 0 : 1, sdk_ms: this.sdkMs || 0 });
+    this.sessT0 = performance.now(); this.playT = 0;
     this.showMenu();
-    if (fresh) this.start('classic', 0);
+    if (fresh) { AN.ev('first_heist_start', { level: LEVELS[0].id }); this.start('classic', 0); }
     $('loading').classList.add('hidden');
   }
 
@@ -179,8 +187,8 @@ class App {
     click('bPSet', () => this.showSettings());
     click('bSetBack', () => { if (this.setFrom === 'pause') { this.state = 'pause'; this.screen('pause'); } else this.showMenu(); });
     for (const el of document.querySelectorAll('#settings input')) el.addEventListener('input', () => this.readSettings());
-    click('bRestart', () => this.start());
-    click('bPMenu', () => this.showMenu());
+    click('bRestart', () => { this.anFail('restart'); this.start(); });
+    click('bPMenu', () => { this.anFail('menu'); this.showMenu(); });
     click('bRetry', () => this.retry());
     click('bNext', () => {
       if (this.mode === 'daily') this.showMenu();
@@ -205,10 +213,10 @@ class App {
     click('bTrophy', () => this.showTrophies());
     click('bOutfit', () => this.showOutfits());
     click('bOfBack', () => this.showMenu());
-    click('bTut', () => { this.introSeen = false; this.wantIntro = true; this.start('tutorial', 0); });
+    click('bTut', () => { AN.ev('tutorial_open', { from: 'menu' }); this.introSeen = false; this.wantIntro = true; this.start('tutorial', 0); });
     click('bISkip', () => this.endIntro());
     click('bHint', () => this.showHintTip());
-    $('khint').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.hCur && this.hCur !== '_tip') { this.hT = 0; $('khint').classList.add('hidden'); } });
+    $('khint').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.hCur && this.hCur !== '_tip') { AN.ev('hint_dismiss', { id: this.hCur }); this.hT = 0; $('khint').classList.add('hidden'); } });
     click('bINext', () => this.nextIntro());
     $('c').addEventListener('pointerdown', () => { if (this.state === 'intro' && this.introT > 0.6) this.nextIntro(); });
     $('tutSkip').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.game.tut) this.skipTutorial(); });
@@ -243,7 +251,16 @@ class App {
       if (document.hidden && this.state === 'play') this.pause();
       else if (document.hidden) SDK.gameplayStop();
       else if (this.state === 'play' && this.game.state === 'play') SDK.gameplayStart();
+      if (document.hidden) this.anSession('hidden');
     });
+    addEventListener('pagehide', () => { if (this.heistOn()) this.anFail('quit'); this.anSession('pagehide'); });
+    // privacy: toast links + menu footer link + panel
+    click('bPriv', () => this.showPrivacy());
+    click('privMore', () => this.showPrivacy());
+    click('privOpt', () => { AN.setOff(true); $('privt').classList.add('hidden'); this.showPrivacy(); });
+    click('privX', () => $('privt').classList.add('hidden'));
+    click('bPrivTog', () => { AN.setOff(!AN.off()); this.renderPrivacy(); });
+    click('bPrivBack', () => { $('privacy').classList.add('hidden'); });
     this.updateMuteIcon();
   }
 
@@ -756,6 +773,9 @@ class App {
     const intro = this.game.tut && this.tutStep === 0 && !this.introSeen && this.wantIntro;
     this.wantIntro = false;
     if (!intro) SDK.gameplayStart(); // the tutorial intro cutscene starts gameplay when it ends
+    { const auto = this.autoStarted ? 1 : 0; this.autoStarted = false; this.heistT0 = this.time; this.heistLive = true;
+      AN.ev('heist_start', { level: this.level.id, diff: this.diff, mode: this.mode, run_n: this.runs, auto });
+      if (this.mode === 'classic' && this.levelIdx === 1) AN.ev('bank_start', { first: (this.save.played && Object.keys(this.save.best).some((k) => k.startsWith('bank'))) ? 0 : 1, auto }); }
     { const hb = $('bHint'); hb.classList.remove('pulse'); if (this.hintPulse) { this.hintPulse = false; void hb.offsetWidth; hb.classList.add('pulse'); } }
     if (intro) this.beginIntro();
     else this.mapIntro();
@@ -1418,6 +1438,8 @@ class App {
   }
   onBusted() {
     this.state = 'busted';
+    this.heistLive = false;
+    AN.ev('caught', { level: this.level.id, diff: this.diff, t: this.heistSec(), cause: this.game.policeBusted ? 'police' : 'guard', try_n: (this.bustKey === this.level.id ? (this.bustStreak || 0) : 0) + 1 });
     this.audio.siren(false);
     SDK.gameplayStop();
     // one free second chance per day (guard busts only; the police arriving can't be undone)
@@ -1503,6 +1525,9 @@ class App {
     if (!res.daily && this.ghostMsg) $('rBest').textContent += '  ·  ' + this.ghostMsg;
     const tutJustDone = this.game.tut && !this.save.tutDone;
     const firstJob = !this.save.tutDone && this.mode === 'classic';
+    this.heistLive = false;
+    AN.ev('job_complete', { level: this.level.id, diff: this.diff, t: this.heistSec(), stars: nStars, loot_pct: Math.round(res.frac * 100), score: res.score, first: firstJob ? 1 : 0 });
+    if (tutJustDone) AN.ev('tutorial_done', { t: this.heistSec() });
     if (this.game.tut || firstJob) this.save.tutDone = true;
     const freshA = recordRun(this.save, this.runRecord(true, res));
     this.awardXP(true, res.score, res.loot, 'rXP');
@@ -1532,12 +1557,12 @@ class App {
       u.classList.remove('hidden'); u.style.animation = 'none'; void u.offsetWidth; u.style.animation = '';
       clearTimeout(this.unlockT); this.unlockT = setTimeout(() => u.classList.add('hidden'), 2600);
       const btn = $('bNext'), base = btn.textContent; let n = 6;
-      const stop = (e) => { if (e && e.target === btn) return; clearInterval(this.autoNextT); btn.textContent = base; btn.classList.remove('pulse'); removeEventListener('pointerdown', stop, true); removeEventListener('keydown', stop, true); };
+      const stop = (e) => { if (e && e.target === btn) return; if (e) AN.ev('auto_next_cancel', { level: this.level.id }); clearInterval(this.autoNextT); btn.textContent = base; btn.classList.remove('pulse'); removeEventListener('pointerdown', stop, true); removeEventListener('keydown', stop, true); };
       addEventListener('pointerdown', stop, true); addEventListener('keydown', stop, true);
       btn.classList.add('pulse'); btn.textContent = `${base} ${n}`;
       this.autoNextT = setInterval(() => {
         if (this.state !== 'result') { stop(); return; }
-        if (--n <= 0) { stop(); btn.click(); return; }
+        if (--n <= 0) { stop(); this.autoStarted = true; btn.click(); return; }
         btn.textContent = `${base} ${n}`;
       }, 1000);
     }
@@ -1583,6 +1608,7 @@ class App {
     const rdt = Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
     this.time += rdt;
+    if (this.state === 'play') this.playT = (this.playT || 0) + rdt;
     const st = this.state;
     if (st === 'play' || (st === 'busted' && this.game.state === 'caught' && !this.game.endSent)) this.game.update(rdt, false);
     else if (st === 'menu' || st === 'soon' || st === 'intro') this.game.update(rdt, true);
@@ -1611,7 +1637,7 @@ class App {
     this.dust.points.visible = st !== 'menu' && st !== 'soon';
     this.floaters.update(st === 'pause' ? 0 : rdt, this.camera, this.w, this.h);
     this.updateHints(rdt);
-    if (st === 'play') this.updateHud();
+    if (st === 'play') { this.updateHud(); this.maybePrivacyToast(); }
     this.audio.setMuffle(st === 'play' && this.game.slowT > 0.05);
     this.audio.tension = st === 'play' ? this.game.tension : 0;
     this.audio.mode = st === 'menu' || st === 'soon' || st === 'trophies' || st === 'outfits' ? 'menu' : 'game';
@@ -1623,7 +1649,38 @@ class App {
     this.vm.render(this.renderer);
     this.adaptRes(rdt);
   }
+  // ---- analytics helpers (anonymous, see src/analytics.js) ----
+  heistSec() { return this.heistT0 != null ? this.time - this.heistT0 : 0; }
+  heistOn() { return !!this.heistLive && (this.state === 'play' || this.state === 'pause'); }
+  anFail(reason) { if (!this.heistOn()) return; this.heistLive = false; AN.ev('job_fail', { level: this.level.id, t: this.heistSec(), reason }); }
+  anSession(why) {
+    const now = performance.now();
+    if (why === 'hidden' && now - (this.sessSentT || 0) < 1000) return;
+    this.sessSentT = now;
+    AN.ev('session_end', { sess_t: (now - (this.sessT0 || 0)) / 1000, play_t: this.playT || 0, heists: this.runs || 0, state: this.state });
+  }
+  anSpot(by) { AN.once('first_spotted', { t: this.heistSec(), level: this.level ? this.level.id : '', by }); }
+  showPrivacy() {
+    if (this.state === 'play') this.pause();
+    this.renderPrivacy();
+    $('privacy').classList.remove('hidden');
+  }
+  renderPrivacy() {
+    const off = AN.off();
+    $('bPrivTog').textContent = off ? 'ANALYTICS: OFF · TURN ON' : 'ANALYTICS: ON · TURN OFF';
+    $('bPriv').textContent = '🔒 Privacy · Analytics ' + (off ? 'off' : 'on');
+  }
+  maybePrivacyToast() {
+    if (this.privShown || !AN.active() || this.state !== 'play' || (this.input.touch && this.hCur) || this.heistSec() < 8) return;
+    let seen = false; try { seen = localStorage.getItem('safehouseHeist.privSeen') === '1'; } catch (_) {}
+    this.privShown = true;
+    if (seen) return;
+    try { localStorage.setItem('safehouseHeist.privSeen', '1'); } catch (_) {}
+    const t = $('privt'); t.classList.remove('hidden');
+    clearTimeout(this.privT); this.privT = setTimeout(() => t.classList.add('hidden'), 8000);
+  }
   skipTutorial() {
+    AN.ev('tutorial_skip', { step: this.tutStep || 0, t: this.heistSec() });
     this.save.tutDone = true; SDK.store(this.save);
     this.tutStep = TUT_STEPS.length;
     $('tut').classList.add('hidden');
@@ -1659,7 +1716,7 @@ class App {
     const now = performance.now();
     if (!force && now - (this.layT || 0) < 200) return;
     this.layT = now;
-    const MOV = ['obj', 'alarm', 'disgp', 'alarmwhy', 'briefp', 'tut', 'ctr', 'lockpick', 'prompt', 'hint', 'khint'];
+    const MOV = ['obj', 'alarm', 'disgp', 'alarmwhy', 'briefp', 'tut', 'ctr', 'lockpick', 'prompt', 'hint', 'khint', 'privt'];
     if (!this.input.touch) { if (this.layDirty) { for (const id of MOV) { const e = $(id); if (e) { e.style.translate = ''; e._dy = 0; } } this.layDirty = false; } return; }
     this.layDirty = true;
     document.body.classList.toggle('picking', !!(this.game && this.game.picking));

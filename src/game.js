@@ -12,6 +12,7 @@ import { clamp, damp, angDiff, rand, shade } from './util.js';
 import { pickContracts } from './contracts.js';
 import { DIFFS } from './difficulty.js';
 import { mulberry32 } from './util.js';
+import { AN } from './analytics.js';
 
 const PR = 0.3, P_SPEED = 3.7, DASH_V = 11, DASH_T = 0.18, DASH_CD = 0.8, EYE = 1.02, CHASE = 3.2;
 const CONE_N = 20;
@@ -854,7 +855,7 @@ export class Game {
       const L = this.L, cx = clamp(Math.floor(p.x), 0, L.W - 1), cz = clamp(Math.floor(p.z), 0, L.H - 1);
       app.audio.stepSound(L.floor[cz * L.W + cx], p.dashT > 0 ? 1.6 : p.crouch ? 0.35 : 1);
     }
-    if (sp > 0.5) app.hintDone('move');
+    if (sp > 0.5) { app.hintDone('move'); if (!this.anMoved) { this.anMoved = true; AN.once('first_move', { t: app.heistSec() }); } }
 
     // ---- interactions ----
     const sx = this.L.safe.x + 0.5, sz = this.L.safe.y + 0.5;
@@ -1593,7 +1594,7 @@ export class Game {
         d.face = turnTo(d.face, Math.atan2(p.x - d.x, p.z - d.z), 8 * dt);
         this.dogBark(d, dt, d.x, d.z);
         if (playing && sees) this.lastBark = this.time;
-        if (playing && sees && !this.barkedAt) { this.barkedAt = true; this.spotted = true; }
+        if (playing && sees && !this.barkedAt) { this.barkedAt = true; this.spotted = true; this.app.anSpot && this.app.anSpot('dog'); }
         if (d.lostT > 2.5 || hide) d.state = 'heel';
       } else if (d.state === 'barkHide') {
         const h = d.hide;
@@ -1655,7 +1656,7 @@ export class Game {
         this.dogBark(d, dt, d.x, d.z);
         if (d.lostT > 2.5 || hide) { d.state = 'sniff'; d.ci = Math.max(0, this.crumbs.length - 6); d.sniffT = 0; }
         if (playing && sees) this.lastBark = this.time;
-        if (playing && sees && !this.barkedAt) { this.barkedAt = true; this.spotted = true; }
+        if (playing && sees && !this.barkedAt) { this.barkedAt = true; this.spotted = true; this.app.anSpot && this.app.anSpot('dog'); }
         break;
       }
       case 'barkHide': {
@@ -1793,7 +1794,7 @@ export class Game {
     if (g.kind === 'clerk') {
       if (g.state === 'flee' || g.state === 'cower') return;
       g.state = 'flee'; g.susp = 1; g.navGoal = -1;
-      this.spotted = true;
+      this.spotted = true; this.app.anSpot && this.app.anSpot('clerk');
       this.app.audio.play('scream');
       this.app.floaters.spawn('AAAH! A ROBBER!', g.x, 2.0, g.z, 'say alert', 1.2);
       this.app.shake.add(0.12);
@@ -1804,7 +1805,7 @@ export class Game {
     g.state = 'alert'; g.susp = 1; g.lostT = 0; g.radioT = 0; g.radioSaid = false; g.alertAt = this.time;
     if (this.disguiseT > 0) { this.disguiseT = 0; this.app.onDisguise(0); this.app.floaters.spawn("You're not Dave!", g.x, 2.3, g.z, 'say alert', 1.3); }
     if (!this.spotted) this.app.hintDone('cone');
-    this.spotted = true;
+    this.spotted = true; this.app.anSpot && this.app.anSpot('guard');
     this.app.audio.play('alert');
     this.app.floaters.spawn('!', g.x, 2.0, g.z, 'say alert', 0.8);
     if (this.smokesLeft > 0) this.app.hint('smoke');
@@ -2172,7 +2173,7 @@ export class Game {
     if (cam.susp >= 1) {
       cam.susp = 0; cam.cool = 4;
       this.triggerAlarm('The camera triggered the alarm!');
-      this.spotted = true;
+      this.spotted = true; this.app.anSpot && this.app.anSpot('cam');
       this.app.flash('alarm');
       this.app.floaters.spawn('ALARM!', x, 2.0, z, 'alert', 1.2);
       this.app.particles.flash(x, cam.mesh.position.y, z, 0xff3b4e, 1.8);
@@ -2187,6 +2188,7 @@ export class Game {
   }
 
   openSafe() {
+    AN.ev('safe_cracked', { level: this.def.id, t: this.app.heistSec() });
     this.mark('safe', this.L.safe.x + 0.5, this.L.safe.y + 0.5);
     const app = this.app, sx = this.L.safe.x + 0.5, sz = this.L.safe.y + 0.5, v = this.def.values;
     this.safeOpen = true; this.hasStash = true; this.doorT = 0;
@@ -2228,6 +2230,7 @@ export class Game {
     app.hintDone('heavy');
   }
   collect(it) {
+    AN.once('first_item', { t: this.app.heistSec(), type: it.type });
     if ((it.type === 'gold' || it.type === 'art') && !it.bundle) { this.heavy.push(it.type); this.app.onWeight(this.weightMul()); this.app.hint('heavy'); }
     if (it.type !== 'cash' || !it.bundle) this.mark(it.type === 'cash' ? 'cash' : 'loot', it.x, it.z);
     const app = this.app;
@@ -2611,6 +2614,7 @@ export class Game {
   triggerAlarm(why) {
     if (this.alarm || this.state !== 'play') return;
     if (this.tut) { for (const o of this.guards) if (o.state === 'alert') { o.state = 'search'; o.tx = this.player.x; o.tz = this.player.z; } return; }
+    AN.ev('alarm', { level: this.def.id, t: this.app.heistSec(), why: /camera/i.test(why) ? 'cam' : /laser/i.test(why) ? 'laser' : /radio/i.test(why) ? 'radio' : /clerk/i.test(why) ? 'clerk' : /spotlight/i.test(why) ? 'spot' : /safe/i.test(why) ? 'safe' : 'other' });
     this.mark('alarm', this.player.x, this.player.z);
     const app = this.app, ex = this.L.exit;
     this.alarm = true; this.alarmT = this.alarmTotal; this.alarms++; this.spotted = true;
@@ -2771,7 +2775,7 @@ export class Game {
         app.hint('spot');
       }
       if (sp.susp >= 1) {
-        sp.susp = 0; sp.cool = 5; this.spotted = true;
+        sp.susp = 0; sp.cool = 5; this.spotted = true; this.app.anSpot && this.app.anSpot('spot');
         app.flash('alarm'); app.shake.add(0.2);
         this.triggerAlarm('Caught in the spotlight!');
       }
@@ -2811,7 +2815,7 @@ export class Game {
           app.audio.play('zap'); app.flash('red'); app.shake.add(0.3);
           if (app.comicBurst) app.comicBurst(p.x + Math.sin(p.face) * 1.2, 0.9, p.z + Math.cos(p.face) * 1.2, 'ZAP!', 'zap');
           app.particles.burst(p.x, 0.8, p.z, { count: 14, colors: [0xff3040, 0xffffff], speed: 2.5, up: 2, size: 0.04, life: 0.5 });
-          this.spotted = true;
+          this.spotted = true; this.app.anSpot && this.app.anSpot('laser');
           this.triggerAlarm('You tripped a laser!');
         }
       }
@@ -2934,7 +2938,7 @@ export class Game {
         app.particles.burst(d.x + 0.5, 0.72, d.y + 0.5, { count: 4, colors: [0xfff1a8, 0xffffff], speed: 1, up: 1, size: 0.025, life: 0.3 });
         if (pk.pin >= 3) {
           if (pk.slips === 0) this.cleanPick = true;
-          this.stopPick(); this.openDoor(d);
+          this.stopPick(); this.openDoor(d); AN.ev('lock_picked', { level: this.def.id, t: this.app.heistSec() });
           return;
         }
         pk.w *= 0.78; pk.speed *= 1.25; this.newPinZone();

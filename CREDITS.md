@@ -10,6 +10,8 @@ Safehouse Heist is an original game. All content was created for this project.
 
 ## Third-party libraries
 
+- **ByteBrew Web SDK** 1.0.1 (`vendor/bytebrew-web-sdk-1.0.1.min.js`, npm `bytebrew-web-sdk`): anonymous gameplay analytics, loaded only on CrazyGames. License: MIT (`vendor/bytebrew-web-sdk-LICENSE.txt`). See `privacy.html`.
+
 - [three.js](https://github.com/mrdoob/three.js) r187, MIT License, (c) 2010-2025 three.js authors. Bundled into `js/`.
 - [esbuild](https://github.com/evanw/esbuild), MIT License (dev-time bundler only, not shipped).
 - CrazyGames HTML5 SDK v3, loaded from `sdk.crazygames.com` as required by the CrazyGames platform.

@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="6992372a">
+<meta name="build" content="0b781b5a">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=6992372a">
+<link rel="modulepreload" href="./js/main.js?v=0b781b5a">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -687,6 +687,14 @@ body.touch #khint{font-size:13px;padding:6px 28px 8px 9px;gap:7px}body.touch #kh
 #unlockfx{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);z-index:60;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 30px 16px;background:linear-gradient(180deg,#ffe66b,#ffb72e);color:var(--ink);border:5px solid var(--ink);border-radius:18px;box-shadow:6px 8px 0 var(--ink),0 0 60px 20px rgba(255,214,58,.55);pointer-events:none;rotate:-3deg;animation:unlk 2.6s cubic-bezier(.2,1.6,.4,1) forwards}
 #unlockfx small{font-family:var(--disp);font-size:16px;letter-spacing:2px}#unlockfx b{font-family:var(--disp);font-weight:400;font-size:clamp(28px,7vw,52px);line-height:1}
 @keyframes unlk{0%{opacity:0;scale:.3}14%{opacity:1;scale:1.12}22%{scale:1}82%{opacity:1;scale:1}100%{opacity:0;scale:.9}}
+
+/* privacy notice + panel */
+#privacy{z-index:70}#privacy .privp{max-width:min(560px,94vw);max-height:calc(100dvh - 24px);overflow-y:auto;gap:10px}
+#privacy .privtxt{font-family:system-ui,sans-serif;font-size:14px;line-height:1.4;color:#fff6e8;text-align:left}#privacy .privtxt p{margin:0 0 8px}#privacy .privtxt b{color:var(--y)}@media (max-height:480px){#privacy .privtxt{font-size:12px}#privacy .big{font-size:30px}}
+#privt{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:7;max-width:min(92vw,560px);background:rgba(29,33,64,.92);color:#fff6e8;border:2px solid var(--ink);border-radius:12px;padding:7px 30px 8px 12px;font:600 12px/1.35 system-ui,sans-serif;box-shadow:2px 3px 0 var(--ink);pointer-events:auto;animation:khIn .35s ease-out}
+#privt a{white-space:nowrap;color:var(--y);text-decoration:underline;cursor:pointer;font-weight:800}#privt i{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-style:normal;cursor:pointer;opacity:.7;padding:4px}
+@media (orientation:portrait){body.touch #privt{bottom:auto;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 228px)}}
+@media (orientation:landscape){body.touch #privt{bottom:auto;left:50%;transform:translateX(-50%);top:58px;max-width:min(380px,44vw)}}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -780,9 +788,15 @@ body.touch #khint{font-size:13px;padding:6px 28px 8px 9px;gap:7px}body.touch #kh
   <div id="diff"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button><button data-d="ironman">🛡 IRON</button></div>
   <small id="diffInfo"></small>
   <div class="row menurow"><button class="btn s" id="bTrophy">📋 JOBS</button><button class="btn" id="bPlay">PLAY</button><button class="btn s" id="bOutfit">🧰 LOCKER</button></div>
-  <div class="row tutrow"><button id="bTut" class="linkbtn">🎓 TUTORIAL</button><button id="bCtl" class="linkbtn">🎮 Controls</button></div>
+  <div class="row tutrow"><button id="bTut" class="linkbtn">🎓 TUTORIAL</button><button id="bCtl" class="linkbtn">🎮 Controls</button><button id="bPriv" class="linkbtn">🔒 Privacy</button></div>
 </div>
 
+<div id="privacy" class="screen solid hidden"><div class="panel privp"><div class="big o">PRIVACY</div><div class="privtxt"><p><b>Safehouse Heist</b> collects <b>anonymous gameplay statistics</b> through ByteBrew (a CrazyGames analytics partner) so we can see where the game is too hard or confusing and make it better.</p>
+<p><b>What we collect:</b> game events such as a heist starting or ending, being spotted or caught, time played, level, difficulty, device type (mobile / tablet / desktop) and game version.</p>
+<p><b>What we never collect:</b> your name, email, CrazyGames account or user ID, chat, or anything you type.</p>
+<p><b>Device ID:</b> ByteBrew stores a random anonymous ID locally in your browser so sessions from the same device can be counted together. It is not linked to who you are.</p>
+<p><b>Opting out:</b> press <b>Analytics: Off</b> below (or the Privacy link in the main menu). The choice is saved in this browser and nothing more is sent. Clearing your browser data removes the device ID.</p></div><div class="row"><button class="btn s" id="bPrivTog">ANALYTICS: ON · TURN OFF</button><button class="btn" id="bPrivBack">CLOSE</button></div></div></div>
+<div id="privt" class="hidden"><span>📊 Anonymous gameplay stats help us improve the game.</span> <a id="privMore">Privacy</a> · <a id="privOpt">Opt out</a><i id="privX">✕</i></div>
 <div id="pause" class="screen solid hidden"><div class="panel"><div class="big o">PAUSED</div>
   <button class="btn" id="bResume">RESUME</button><button class="btn g hidden" id="bPSkip">🎓 SKIP TUTORIAL</button><div class="row"><button class="btn s" id="bRestart">RESTART</button><button class="btn s" id="bPSet">⚙ SETTINGS</button><button class="btn s" id="bPCtl">🎮 CONTROLS</button><button class="btn s" id="bPMenu">MENU</button></div><div id="pObj" class="o"></div><div id="pTip"></div></div></div>
 
@@ -848,7 +862,7 @@ body.touch #khint{font-size:13px;padding:6px 28px 8px 9px;gap:7px}body.touch #kh
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=6992372a"></script>
+<script type="module" src="./js/main.js?v=0b781b5a"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>
