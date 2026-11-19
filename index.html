@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="ac94be9e">
+<meta name="build" content="8ec3f911">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=ac94be9e">
+<link rel="modulepreload" href="./js/main.js?v=8ec3f911">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -726,6 +726,18 @@ body.touch #ctoast{left:auto!important;right:10px;transform:scale(.62)!important
 @media (max-height:480px){#easyOffer .eo{gap:6px;padding:10px 16px}#easyOffer .eot{font-size:28px}#easyOffer p{font-size:12px}#easyOffer #bEasyYes{min-height:44px;font-size:18px}}
 #setDiff{gap:6px;justify-content:center}#setDiff button{font-family:var(--disp);font-size:15px;padding:6px 14px;border:3px solid var(--ink);border-radius:10px;background:#fff6e8;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink)}#setDiff button.on{background:var(--y)}
 #setDiffNote{font:600 12px system-ui,sans-serif;opacity:.75;text-align:center}.setp .sdl{margin-bottom:-6px}
+
+/* heist 1 quick win */
+#nice{position:absolute;left:12px;top:calc(env(safe-area-inset-top) + 74px);z-index:4;pointer-events:none;font-family:var(--disp);font-size:18px;color:var(--ink);background:var(--y);border:3px solid var(--ink);border-radius:10px;padding:3px 12px 2px;box-shadow:3px 4px 0 var(--ink);rotate:-4deg;white-space:nowrap}
+#nice.go{animation:niceIn 2.2s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes niceIn{0%{opacity:0;scale:.3}10%{opacity:1;scale:1.18}18%{scale:1}85%{opacity:1;translate:0 0}100%{opacity:0;translate:0 -10px}}
+#loot.qwin{animation:qwin .7s cubic-bezier(.2,1.8,.4,1)}#loot.qwin #lootv{color:#ffe66b}
+@keyframes qwin{0%{scale:1}30%{scale:1.22;filter:brightness(1.4) drop-shadow(0 0 12px #ffd23f)}100%{scale:1}}
+body.touch #nice{font-size:12px;padding:2px 8px 1px;border-width:2px;top:calc(env(safe-area-inset-top) + 64px);max-width:150px}
+/* goal tracker in the objective tag */
+#obj .stp{display:flex;align-items:center;gap:6px;font-size:11px;letter-spacing:1px;opacity:.8;line-height:1;margin-bottom:2px}
+#obj .stp i{display:flex;gap:3px}#obj .stp b{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--ink);background:transparent}#obj .stp b.d{background:#2fbf7a}#obj .stp b.c{background:var(--hot)}
+#obj .stp em{font-style:normal}body.touch #obj .stp{display:inline-flex;vertical-align:middle;font-size:10px;margin:0 6px 2px 0;gap:4px}body.touch #obj .stp em{display:none}body.touch #obj{padding-left:28px!important}body.touch #obj .stp b{width:6px;height:6px}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -738,7 +750,7 @@ body.touch #ctoast{left:auto!important;right:10px;transform:scale(.62)!important
 <div id="fxl"></div>
 <div id="flash"></div>
 <div id="hud" class="hidden">
-  <div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootplus"></span><span id="lootp">0%</span><span id="weight" class="hidden"></span></div><div class="bar"><div id="lootbar"></div></div></div>
+  <div id="nice" class="hidden"></div><div id="loot" class="pill o"><div class="row"><svg viewBox="0 0 24 24"><path fill="#c9a063" d="M6 8h12l2 12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path fill="#a47d45" d="M9 4h6l-1 4h-4z"/><text x="12" y="19" text-anchor="middle" font-size="9" font-weight="900" fill="#5a3f1c">$</text></svg><span id="lootv">$0</span><span id="lootplus"></span><span id="lootp">0%</span><span id="weight" class="hidden"></span></div><div class="bar"><div id="lootbar"></div></div></div>
   <div id="obj" class="pill o">Crack the safe!</div>
   <div id="sneakp" class="pill o hidden">🦶 SNEAKING</div>
   <div id="disgp" class="pill o hidden">🕴 DISGUISED</div>
@@ -896,7 +908,7 @@ body.touch #ctoast{left:auto!important;right:10px;transform:scale(.62)!important
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=ac94be9e"></script>
+<script type="module" src="./js/main.js?v=8ec3f911"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

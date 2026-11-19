@@ -472,6 +472,7 @@ export class Game {
     this.nopeT = 0; this.tension = 0; this.catcher = null; this.fovKick = 0; this.cineInit = false; this.slowT = 0; this.fovPunch = 0; this.kickP = 0; this.kickR = 0;
     this.daily = this.app.mode === 'daily' ? this.app.daily : null;
     this.tut = this.app.mode === 'tutorial';
+    this.firstWin = false;
     this.D = this.tut ? { ...TUT_DIFF } : this.daily ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
     // first heists (Safe House, Bank, Jewelry) on Easy/Normal: rookie assist, shorter/slower guard vision and a longer grace before you're seen
     this.assist = !this.tut && !this.daily && this.app.mode === 'classic' && (this.app.levelIdx || 0) <= 2 && (this.app.diff === 'easy' || this.app.diff === 'normal');
@@ -2260,6 +2261,12 @@ export class Game {
     this.player.bagV += 4; this.juice(0, 1, it.type === 'cash' ? -1.2 : -3, it.type === 'cash' ? 0 : -0.015, 0);
     squash(this.player.c, 1.12);
     app.onLoot(false);
+    // heist 1: the first pickup is a celebrated quick win
+    if (!this.firstWin && this.def.id === 'safehouse' && !this.tut && !this.daily) {
+      this.firstWin = true;
+      AN.once('first_win', { t: app.heistSec(), value: it.value });
+      app.quickWin && app.quickWin(it, p.x + fx * 1.2, p.z + fz * 1.2);
+    }
   }
 
   updateLoot(dt, playing) {
@@ -2996,7 +3003,12 @@ export class Game {
   updateObjective() {
     const closed = this.doors.find((d) => !d.open && d.type !== 'lock'), lock = this.doors.find((d) => !d.open && d.type === 'lock');
     const t = this.hasStash ? (this.L.van ? 'Escape to the van!' : 'Escape through the roof hatch!') : closed && !this.hasKey ? 'Find the keycard!' : closed ? 'Open the vault door!' : lock ? 'Pick the lock!' : `Crack the ${this.def.safeName || 'safe'}!`;
-    if (t !== this.objText) { this.objText = t; this.app.setObjective(t); }
+    // goal tracker: step n of N for this heist's route (keycard -> vault door -> lock -> safe -> escape)
+    const hasKD = this.doors.some((d) => d.type !== 'lock'), hasLk = this.doors.some((d) => d.type === 'lock');
+    const steps = [...(hasKD ? ['key', 'vault'] : []), ...(hasLk ? ['lock'] : []), 'safe', 'escape'];
+    const cur = this.hasStash ? 'escape' : closed && !this.hasKey ? 'key' : closed ? 'vault' : lock ? 'lock' : 'safe';
+    const si = Math.max(0, steps.indexOf(cur));
+    if (t !== this.objText || si !== this.objStep) { this.objText = t; this.objStep = si; this.app.setObjective(t, si, steps.length); }
   }
 
   checkContracts(end) {

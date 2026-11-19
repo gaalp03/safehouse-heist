@@ -1220,9 +1220,12 @@ class App {
       ring.classList.remove('hidden');
     } else ring.classList.add('hidden');
   }
-  setObjective(t) {
+  setObjective(t, i, n) {
     const o = $('obj');
-    o.textContent = t;
+    if (n > 1 && !(this.game && this.game.tut)) {
+      o.innerHTML = `<span class="stp"><em>STEP ${i + 1}/${n}</em><i>${Array.from({ length: n }, (_, k) => `<b class="${k < i ? 'd' : k === i ? 'c' : ''}"></b>`).join('')}</i></span>`;
+      o.appendChild(document.createTextNode(t));
+    } else o.textContent = t;
     o.classList.remove('pop'); void o.offsetWidth; o.classList.add('pop');
   }
   // picked-up loot flies from where it was into the cash counter (screen space, DOM icons)
@@ -1705,6 +1708,16 @@ class App {
     const o = $('easyOffer');
     o.classList.remove('hidden'); o.style.animation = 'none'; void o.offsetWidth; o.style.animation = '';
     this.audio.play('click');
+  }
+  // heist 1 quick win: sound, gold burst, cash counter pop and a short "Nice!" tag beside the cash counter (screen edge)
+  quickWin(it, x, z) {
+    this.audio.play('jackpot'); this.audio.play('star', 2);
+    this.particles.burst(x, 1.0, z, { count: 22, colors: [0xffd23f, 0xfff1a8, 0x9df59f, 0xffffff], speed: 2.6, up: 2.6, size: 0.045, life: 0.9 });
+    this.particles.burst(x, 1.1, z, { count: 10, colors: [0x6fcf7a, 0x9be39a, 0x4fae5a], speed: 1.8, up: 2.2, size: 0.11, life: 1.3, shape: 'bill', gravity: 3, drag: 2.5 });
+    this.shake.add(0.12);
+    const l = $('loot'); l.classList.remove('qwin'); void l.offsetWidth; l.classList.add('qwin');
+    const n = $('nice'); n.textContent = 'NICE! First score 💰'; n.classList.remove('hidden', 'go'); void n.offsetWidth; n.classList.add('go');
+    clearTimeout(this.niceT); this.niceT = setTimeout(() => n.classList.add('hidden'), 2200);
   }
   // after a catch in the first heists: a clear stealth reminder (always shown, not a one-time hint)
   stealthTip() {
