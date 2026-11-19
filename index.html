@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="73c1de8f">
+<meta name="build" content="5fedecb1">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=73c1de8f">
+<link rel="modulepreload" href="./js/main.js?v=5fedecb1">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -700,6 +700,24 @@ body.touch #khint{font-size:13px;padding:6px 28px 8px 9px;gap:7px}body.touch #kh
 @media (max-height:520px) and (min-aspect-ratio:4/3){#mfoot{right:auto;left:96px}#menu #selGoal{display:none}#menu .tutrow .btn,#menu .tutrow button{font-size:13px;min-height:34px;padding:5px 12px 4px}#menu .menurow .btn.s{min-height:38px;padding:6px 14px 5px;font-size:15px}}
 #mfoot{position:fixed;right:calc(2px + env(safe-area-inset-right));bottom:calc(1px + env(safe-area-inset-bottom));z-index:3;line-height:1}#menu .footlink{font:600 11px/1.2 system-ui,sans-serif;background:none;border:0;padding:4px 8px;color:#fff6e8;opacity:.55;text-decoration:underline;cursor:pointer;min-height:24px}#menu .footlink:hover{opacity:.9}
 #khint.warn{border-color:#ffd23a;background:rgba(60,30,20,.94);box-shadow:3px 4px 0 var(--ink),0 0 18px 4px rgba(255,200,40,.45)}#khint.warn .kb{animation-duration:9s}
+
+/* phones: keep the centre of the view clear: toasts/cards/banners small and at the top or bottom edge */
+body.touch #ctoast{top:calc(env(safe-area-inset-top) + 146px)!important;margin-top:0!important;transform:translateX(-50%) scale(.62);transform-origin:top center;max-width:150vw}
+body.touch #ctoast .brief,body.touch #ctoast .stargoal{display:none}
+body.touch #ctoast .intel{width:min(560px,150vw)}
+@media (orientation:landscape){body.touch #ctoast{top:auto!important;bottom:calc(env(safe-area-inset-bottom) + 6px);transform:translateX(-50%) scale(.55);transform-origin:bottom center}}
+body.touch #gostamp{top:calc(env(safe-area-inset-top) + 64px);scale:.55;transform-origin:top center}
+body.touch #alarmwhy{font-size:12px;padding:4px 10px;outline-width:2px;border-width:3px}
+@media (orientation:portrait){body.touch #alarmwhy{top:calc(env(safe-area-inset-top) + 190px)}body.touch #hint{top:calc(env(safe-area-inset-top) + 228px);bottom:auto}}
+@media (orientation:landscape){body.touch #alarmwhy{top:auto;bottom:calc(env(safe-area-inset-bottom) + 8px)}}
+@media (orientation:landscape) and (max-height:480px){body.touch #khint{font-size:12px;padding:5px 26px 7px 8px}body.touch #tut span{font-size:11px}}
+@media (orientation:portrait){
+body.touch #ctoast.card-intel{display:none!important}
+body.touch #khint,body.touch #hint,body.touch #privt,body.touch #alarmwhy{left:auto!important;right:10px!important;transform:none!important;max-width:calc(100vw - 182px)!important;width:auto!important;white-space:normal}
+body.touch #khint{flex-wrap:wrap;top:calc(env(safe-area-inset-top) + 150px)!important;font-size:12px}
+body.touch #alarmwhy{top:calc(env(safe-area-inset-top) + 150px)}
+body.touch #ctoast{left:auto!important;right:10px;transform:scale(.62)!important;transform-origin:top right}
+}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -868,7 +886,7 @@ body.touch #khint{font-size:13px;padding:6px 28px 8px 9px;gap:7px}body.touch #kh
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=73c1de8f"></script>
+<script type="module" src="./js/main.js?v=5fedecb1"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>

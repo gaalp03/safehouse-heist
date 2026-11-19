@@ -738,6 +738,7 @@ class App {
     this.startT = this.time;
     this.screen(null);
     this.hQ.length = 0;
+    if (this.hCur && this.hCur !== '_tip') { this.hCur = null; $('khint').classList.add('hidden'); }
     this.lastLoot = -1; this.lastSec = -1;
     this.onLoot(false, true);
     this.onCoins(this.game.coinsLeft);
@@ -790,6 +791,13 @@ class App {
     setTimeout(() => {
       const el = $('mm'); if (!el || this.state !== 'play' || !el.animate) return;
       const r = el.getBoundingClientRect(); if (!r.width) return;
+      if (this.input.touch) { // phones: keep the centre clear, just flash a gold ring round the minimap where it is
+        const ring = document.createElement('div'); ring.className = 'mmring'; document.body.appendChild(ring);
+        Object.assign(ring.style, { left: (r.left - 7) + 'px', top: (r.top - 7) + 'px', width: (r.width + 14) + 'px', height: (r.height + 14) + 'px' });
+        ring.animate([{ opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 1, offset: 0.9 }, { opacity: 0 }], { duration: 2600 }).onfinish = () => ring.remove();
+        el.animate([{ scale: 1 }, { scale: 1.08, offset: 0.15 }, { scale: 1, offset: 0.3 }, { scale: 1 }], { duration: 2600 });
+        return;
+      }
       const s = Math.min(3, (Math.min(this.w, this.h) * 0.62) / r.width), dx = this.w / 2 - (r.left + r.width / 2), dy = this.h * 0.45 - (r.top + r.height / 2);
       const C = `translate(${dx}px,${dy}px) scale(${s})`, C0 = `translate(${dx}px,${dy}px) scale(${s * 0.7})`;
       // one calm reveal: pop in at the centre, a gold streak runs round the frame for 3s, then it glides into the corner
@@ -1736,7 +1744,7 @@ class App {
     const now = performance.now();
     if (!force && now - (this.layT || 0) < 200) return;
     this.layT = now;
-    const MOV = ['obj', 'alarm', 'disgp', 'alarmwhy', 'briefp', 'tut', 'ctr', 'lockpick', 'prompt', 'hint', 'khint', 'privt'];
+    const MOV = ['obj', 'alarm', 'disgp', 'alarmwhy', 'briefp', 'tut', 'ctr', 'lockpick', 'prompt', 'hint', 'khint', 'privt', 'ctoast'];
     if (!this.input.touch) { if (this.layDirty) { for (const id of MOV) { const e = $(id); if (e) { e.style.translate = ''; e._dy = 0; } } this.layDirty = false; } return; }
     this.layDirty = true;
     document.body.classList.toggle('picking', !!(this.game && this.game.picking));
