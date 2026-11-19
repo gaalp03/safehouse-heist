@@ -26,6 +26,7 @@ const pinIdx = (k) => (/^lvl\d+$/.test(k) ? +k.slice(3) - 1 : undefined);
 // first-time control hints: [desktop keys, touch keys, text, touch text?]. Shown once each, the first time the action is needed
 const KH = {
   move: ['{move}', '◀ LEFT SIDE', 'Move · click & mouse to look', 'Drag left to move · right to look'],
+  stealth: ['{sneak}', '🦶 SNEAK', 'Stay OUT of the yellow cones · sneak, wait for them to turn, hit from BEHIND'],
   dash: ['{dash}', 'DASH', 'Dash · fast but noisy'],
   sneak: ['{sneak}', '🦶 SNEAK', 'Sneak · quiet, hides behind cover'],
   cone: ['', '', '👁 Stay out of the vision cones'],
@@ -773,6 +774,7 @@ class App {
     const intro = this.game.tut && this.tutStep === 0 && !this.introSeen && this.wantIntro;
     this.wantIntro = false;
     if (!intro) SDK.gameplayStart(); // the tutorial intro cutscene starts gameplay when it ends
+    if (this.pendingStealth && !this.game.tut) this.stealthTip();
     { const auto = this.autoStarted ? 1 : 0; this.autoStarted = false; this.heistT0 = this.time; this.heistLive = true;
       AN.ev('heist_start', { level: this.level.id, diff: this.diff, mode: this.mode, run_n: this.runs, auto });
       if (this.mode === 'classic' && this.levelIdx === 1) AN.ev('bank_start', { first: (this.save.played && Object.keys(this.save.best).some((k) => k.startsWith('bank'))) ? 0 : 1, auto }); }
@@ -1093,11 +1095,14 @@ class App {
     this.clearMug();
     if (this.freeRevOk && !this.game.revived) {
       if (this.preBust) { const keep = JSON.parse(this.preBust); for (const k of Object.keys(this.save)) delete this.save[k]; Object.assign(this.save, keep); }
-      this.save.freeRev = dayKeyNow(); this.freeRevOk = false; SDK.store(this.save);
+      if (!this.assistRev) this.save.freeRev = dayKeyNow();
+      if (this.assistRev) AN.ev('free_retry', { level: this.level.id, t: this.heistSec() });
+      this.freeRevOk = false; SDK.store(this.save);
       this.game.revive();
       this.state = 'play'; this.last = performance.now(); this.screen(null);
       this.input.requestLock();
-      this.announce('💪 Second chance! You shook him off. Next free one tomorrow');
+      this.announce(this.assistRev ? '💪 Back on your feet! You shook him off' : '💪 Second chance! You shook him off. Next free one tomorrow');
+      this.stealthTip();
       SDK.gameplayStart();
       return;
     }
@@ -1153,16 +1158,17 @@ class App {
       if (this.hT <= 0 || (this.state !== 'play' && this.state !== 'pause') || this.game.state !== 'play') { this.hCur = null; el.classList.add('hidden'); }
     } else if (this.hQ.length && this.state === 'play' && this.game.state === 'play' && !(this.game.arrT != null && this.game.arrT < 0.8)) {
       const id = this.hQ.shift();
-      if (this.hDone.has(id) && id !== 'stash') return;
+      if (this.hDone.has(id) && id !== 'stash' && id !== 'stealth') return;
       const h = KH[id], t = this.input.touch, keys = t ? h[1] : h[0];
       this.hCur = id;
-      (this.save.khs = this.save.khs || {})[id] = 1; SDK.store(this.save);
+      if (id !== 'stealth') { (this.save.khs = this.save.khs || {})[id] = 1; SDK.store(this.save); }
       el.querySelector('.kk').innerHTML = keys ? (t ? keys.split(' · ').map((k) => '<kbd>' + k + '</kbd>').join(' ') : this.input.fmt(keys.replace(/\b(HOLD) /g, '$1&nbsp;'), true)) : '';
       el.querySelector('.kt').textContent = (t && h[3]) || h[2];
       el.classList.remove('hidden', 'ok');
       el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
       const bar = el.querySelector('.kb'); bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = '';
-      this.hT = 7;
+      this.hT = id === 'stealth' ? 9 : 7;
+      el.classList.toggle('warn', id === 'stealth');
     }
   }
   setPrompt(kind, prog = 0) {
@@ -1432,7 +1438,7 @@ class App {
     };
     const lv = this.level.tips || [];
     const cause = g.bustCause || 'cone';
-    if (g.tut) return C[cause] || C.cone;
+    if (g.tut || g.assist) return C[cause] || C.cone;
     if ((cause === 'cone' || cause === 'los') && lv.length && Math.random() < 0.5) return 'Tip: ' + this.input.fmt(lv[(Math.random() * lv.length) | 0].replace(/\{(\w+)\}/g, (m, a) => (t ? ({ sneak: 'the 🦶 button', hit: 'HIT' }[a] || m) : m)));
     return C[cause] || C.cone;
   }
@@ -1444,9 +1450,15 @@ class App {
     SDK.gameplayStop();
     // one free second chance per day (guard busts only; the police arriving can't be undone)
     this.freeRevOk = this.mode !== 'daily' && !this.game.revived && !this.game.policeBusted && this.save.freeRev !== dayKeyNow();
+    // rookie heists: one free retry on the spot every attempt (does not use up the daily second chance)
+    this.assistRev = !!this.game.assist && !this.game.revived && !this.game.policeBusted;
+    if (this.assistRev) this.freeRevOk = true;
+    this.save.catches = (this.save.catches || 0) + 1;
+    this.pendingStealth = !!this.game.assist || this.save.catches <= 3;
     const adRev = ADS_ENABLED && SDK.available && !this.game.revived && !this.game.policeBusted;
     $('bRevive').classList.toggle('hidden', !(this.freeRevOk || adRev));
-    $('bRevive').innerHTML = this.freeRevOk ? '▶ SECOND CHANCE <small>free · 1 per day</small>' : '▶ SECOND CHANCE';
+    $('bRevive').innerHTML = this.assistRev ? '▶ TRY AGAIN FROM HERE <small>free</small>' : this.freeRevOk ? '▶ SECOND CHANCE <small>free · 1 per day</small>' : '▶ SECOND CHANCE';
+    $('bRevive').classList.toggle('pulse', !!this.assistRev);
     const tipTxt = (this.game.hasStash && this.mode !== 'daily' && this.levelIdx + 1 < LEVELS.length && !this.levelUnlocked(this.levelIdx + 1)
       ? `So close! You had the stash: get it all the way back to the ${this.game.L.van ? 'van' : 'exit'} to unlock ${LEVELS[this.levelIdx + 1].name}. ` : '') + this.bustTip();
     $('bustTip').textContent = tipTxt;
@@ -1648,6 +1660,14 @@ class App {
     this.vm.visible = st === 'outfits' || (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding && !(this.game.player.venting && (this.game.player.venting.k || 0) > 0.12) && !(this.game.arrT != null && this.game.arrT < 0.6);
     this.vm.render(this.renderer);
     this.adaptRes(rdt);
+  }
+  // after a catch in the first heists: a clear stealth reminder (always shown, not a one-time hint)
+  stealthTip() {
+    this.pendingStealth = false;
+    this.hShown.delete('stealth'); this.hDone.delete('stealth');
+    const i = this.hQ.indexOf('stealth'); if (i >= 0) this.hQ.splice(i, 1);
+    if (this.hCur && this.hCur !== '_tip') { this.hT = 0; }
+    this.hQ.unshift('stealth');
   }
   // ---- analytics helpers (anonymous, see src/analytics.js) ----
   heistSec() { return this.heistT0 != null ? this.time - this.heistT0 : 0; }

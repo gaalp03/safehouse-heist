@@ -473,6 +473,9 @@ export class Game {
     this.daily = this.app.mode === 'daily' ? this.app.daily : null;
     this.tut = this.app.mode === 'tutorial';
     this.D = this.tut ? { ...DIFFS.easy, label: 'Normal', mult: 1, susp: 0.5, coins: 5, smoke: 2, safeAlarm: false } : this.daily ? DIFFS.normal : DIFFS[this.app.diff] || DIFFS.normal;
+    // first heists (Safe House, Bank, Jewelry) on Easy/Normal: rookie assist, shorter/slower guard vision and a longer grace before you're seen
+    this.assist = !this.tut && !this.daily && this.app.mode === 'classic' && (this.app.levelIdx || 0) <= 2 && (this.app.diff === 'easy' || this.app.diff === 'normal');
+    if (this.assist) { const D = this.D; this.D = { ...D, range: D.range * 0.78, fov: (D.fov || 1) * 0.85, speed: D.speed * 0.85, susp: D.susp * 0.5, decay: (D.decay || 1) * 1.6, camR: (D.camR || 1) * 0.85, camRate: (D.camRate || 1) * 0.6, camSweep: (D.camSweep || 1) * 0.8, noise: (D.noise || 1) * 0.8, alarm: D.alarm + 20, radio: (D.radio || 2.6) * 1.5 }; }
     this.tutCheck = null; this.tutAt = null; this.tutRetries = 0;
     this.lookTotal = 0;
     this.lootTotal = this.baseLootTotal;
