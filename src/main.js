@@ -217,6 +217,23 @@ class App {
     click('bTut', () => { AN.ev('tutorial_open', { from: 'menu' }); this.introSeen = false; this.wantIntro = true; this.start('tutorial', 0); });
     click('bISkip', () => this.endIntro());
     click('bHint', () => this.showHintTip());
+    click('bEasyYes', () => {
+      $('easyOffer').classList.add('hidden');
+      AN.ev('easy_offer_accepted', { level: this.level.id, from: this.diff });
+      this.save.easyOffer = 'accepted'; this.diff = 'easy'; this.save.diff = 'easy'; this.bustStreak = 0; SDK.store(this.save);
+      this.start('classic', this.levelIdx);
+    });
+    click('bEasyNo', () => {
+      $('easyOffer').classList.add('hidden');
+      AN.ev('easy_offer_declined', { level: this.level.id, diff: this.diff });
+      this.save.easyOffer = 'declined'; SDK.store(this.save);
+    });
+    for (const b of document.querySelectorAll('#setDiff button')) b.addEventListener('click', (e) => {
+      e.stopPropagation(); this.audio.play('click');
+      const d = b.dataset.d; this.save.diff = d; SDK.store(this.save);
+      if (this.setFrom === 'pause') this.diffNext = d; else this.diff = d; // mid-heist: takes effect on the next heist
+      this.renderSetDiff();
+    });
     $('khint').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (this.hCur && this.hCur !== '_tip') { AN.ev('hint_dismiss', { id: this.hCur }); this.hT = 0; $('khint').classList.add('hidden'); } });
     click('bINext', () => this.nextIntro());
     $('c').addEventListener('pointerdown', () => { if (this.state === 'intro' && this.introT > 0.6) this.nextIntro(); });
@@ -326,6 +343,7 @@ class App {
     this.input.joyEnd();
   }
   showMenu() {
+    $('easyOffer').classList.add('hidden');
     { const m = document.querySelector('meta[name=build]'), v = $('ver'); if (v && m) v.textContent = 'build ' + m.content; }
     this.lastTutLevel = null;
     // daily login bonus: cash for the Locker, growing with consecutive days
@@ -416,7 +434,7 @@ class App {
       clearTimeout(this.dropT); this.dropT = setTimeout(() => city.classList.remove('drop'), 1500); }
     this.renderSel();
     if (this.diff === 'ironman' && !this.ironUnlocked()) this.diff = 'normal';
-    $('diffInfo').textContent = { easy: 'Easy · guards see less, move slower and forget you fast · wide lockpick zone · 5 coins, 2 smokes · police in 70s',
+    $('diffInfo').textContent = { easy: 'Easy · relaxed: guards & cameras see much less, move slower and barely notice you · free retry every time · 5 coins, 2 smokes · police in 100s',
       normal: 'Normal · the intended heist', hard: 'Hard · sharp-eyed, faster guards · quick cameras · tight lockpick · noise carries · short knockouts · police in 30s',
       ironman: 'Ironman · Hard, but harsher: 1 coin, no smoke, police in 15s · ×2.5 score' }[this.diff] || '';
     for (const el of document.querySelectorAll('#diff button')) { el.classList.toggle('on', el.dataset.d === this.diff); if (el.dataset.d === 'ironman') { el.classList.toggle('lock', !this.ironUnlocked()); el.title = this.ironUnlocked() ? 'Ironman: x2.5 score, 1 coin, no smoke, 15s police' : 'Escape any heist on Hard to unlock'; } }
@@ -717,6 +735,7 @@ class App {
   }
 
   async start(mode, idx) {
+    if (this.diffNext) { this.diff = this.diffNext; this.diffNext = null; }
     if (mode) this.mode = mode;
     if (!this.mode) this.mode = 'classic';
     if (!mode && this.mode === 'tutorial' && this.save.tutDone) this.mode = 'classic';
@@ -738,6 +757,7 @@ class App {
     this.startT = this.time;
     this.screen(null);
     this.hQ.length = 0;
+    $('easyOffer').classList.add('hidden');
     if (this.hCur && this.hCur !== '_tip') { this.hCur = null; $('khint').classList.add('hidden'); }
     this.lastLoot = -1; this.lastSec = -1;
     this.onLoot(false, true);
@@ -1051,6 +1071,7 @@ class App {
     const s = this.settings();
     $('sSens').value = s.sens; $('sFov').value = s.fov; $('sMus').value = s.music; $('sSfx').value = s.sfx;
     $('sInv').checked = s.invert; $('sShake').checked = s.shake;
+    this.renderSetDiff();
     this.readSettings(true);
     this.screen('settings');
   }
@@ -1459,7 +1480,7 @@ class App {
     // one free second chance per day (guard busts only; the police arriving can't be undone)
     this.freeRevOk = this.mode !== 'daily' && !this.game.revived && !this.game.policeBusted && this.save.freeRev !== dayKeyNow();
     // rookie heists: one free retry on the spot every attempt (does not use up the daily second chance)
-    this.assistRev = !!this.game.assist && !this.game.revived && !this.game.policeBusted;
+    this.assistRev = !!(this.game.assist || this.game.D.freeRetry) && !this.game.revived && !this.game.policeBusted;
     if (this.assistRev) this.freeRevOk = true;
     this.save.catches = (this.save.catches || 0) + 1;
     this.pendingStealth = !!this.game.assist || this.save.catches <= 3;
@@ -1481,6 +1502,12 @@ class App {
     // repeated busts on the same heist: offer Easy instead of letting frustration build
     this.bustStreak = this.bustKey === this.level.id ? (this.bustStreak || 0) + 1 : 1; this.bustKey = this.level.id;
     $('bEasy').classList.toggle('hidden', !(this.mode === 'classic' && this.bustStreak >= 3 && (this.diff === 'normal' || this.diff === 'hard')));
+    // 2nd fail on the same heist, first 3 heists only, once per player ever: friendly "Too hard? Try EASY" offer
+    if (this.mode === 'classic' && this.levelIdx <= 2 && this.bustStreak >= 2 && (this.diff === 'normal' || this.diff === 'hard') && !this.save.easyOffer) {
+      this.save.easyOffer = 'shown';
+      AN.ev('easy_offer_shown', { level: this.level.id, diff: this.diff, fails: this.bustStreak });
+      clearTimeout(this.easyT); this.easyT = setTimeout(() => { if (this.state === 'busted') this.showEasyOffer(); }, 900);
+    }
     SDK.store(this.save);
     const jt = this.mode === 'tutorial' ? '' : this.jobsToast(recordJobs(this.save, this.runRecord(false)));
     if (this.lostStreak) { const c = $('bCash'); c.textContent = (c.textContent ? c.textContent + ' · ' : '') + `🔥 ${this.lostStreak}-escape streak lost`; this.lostStreak = 0; }
@@ -1668,6 +1695,16 @@ class App {
     this.vm.visible = st === 'outfits' || (st === 'play' || st === 'busted' || st === 'pause') && (this.game.state === 'play' || this.game.state === 'caught') && !this.game.player.hiding && !(this.game.player.venting && (this.game.player.venting.k || 0) > 0.12) && !(this.game.arrT != null && this.game.arrT < 0.6);
     this.vm.render(this.renderer);
     this.adaptRes(rdt);
+  }
+  renderSetDiff() {
+    const cur = this.diffNext || this.diff;
+    for (const b of document.querySelectorAll('#setDiff button')) b.classList.toggle('on', b.dataset.d === cur);
+    $('setDiffNote').textContent = (this.setFrom === 'pause' ? 'Applies from your next heist · ' : '') + ({ easy: 'relaxed guards, free retry every time', normal: 'the intended heist', hard: 'sharp-eyed guards, police in 30s' }[cur] || '');
+  }
+  showEasyOffer() {
+    const o = $('easyOffer');
+    o.classList.remove('hidden'); o.style.animation = 'none'; void o.offsetWidth; o.style.animation = '';
+    this.audio.play('click');
   }
   // after a catch in the first heists: a clear stealth reminder (always shown, not a one-time hint)
   stealthTip() {

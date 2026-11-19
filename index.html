@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="build" content="5fedecb1">
+<meta name="build" content="ac94be9e">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Safehouse Heist</title>
 <link rel="icon" href="data:,">
-<link rel="modulepreload" href="./js/main.js?v=5fedecb1">
+<link rel="modulepreload" href="./js/main.js?v=ac94be9e">
 <style>
 :root{--ink:#1c1330;--y:#ffc94a;--g:#4fe0a0;--r:#ff5a6a;--b:#7b5cff;--w:#fff6e8;--panel:#2c2048}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
@@ -718,6 +718,14 @@ body.touch #khint{flex-wrap:wrap;top:calc(env(safe-area-inset-top) + 150px)!impo
 body.touch #alarmwhy{top:calc(env(safe-area-inset-top) + 150px)}
 body.touch #ctoast{left:auto!important;right:10px;transform:scale(.62)!important;transform-origin:top right}
 }
+
+#easyOffer{position:fixed;inset:0;z-index:65;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(18,12,32,.62);animation:khIn .3s ease-out}
+#easyOffer .eo{max-width:min(440px,94vw);max-height:calc(100dvh - 24px);overflow-y:auto;background:linear-gradient(180deg,#7ff0b9,#41c98d);color:var(--ink);border:5px solid var(--ink);border-radius:22px;box-shadow:6px 8px 0 var(--ink);padding:18px 22px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;rotate:-1deg}
+#easyOffer .eoh{font-family:var(--disp);font-size:24px}#easyOffer .eot{font-family:var(--disp);font-size:38px;line-height:1}#easyOffer .eot b{font-weight:400;color:#fff;text-shadow:0 3px 0 var(--ink),2px 0 0 var(--ink),-2px 0 0 var(--ink)}
+#easyOffer p{margin:0;font:700 15px/1.35 system-ui,sans-serif}#easyOffer .btn{width:100%;max-width:320px}#easyOffer #bEasyYes{font-size:22px;min-height:56px}#easyOffer small{font:600 12px system-ui,sans-serif;opacity:.75}
+@media (max-height:480px){#easyOffer .eo{gap:6px;padding:10px 16px}#easyOffer .eot{font-size:28px}#easyOffer p{font-size:12px}#easyOffer #bEasyYes{min-height:44px;font-size:18px}}
+#setDiff{gap:6px;justify-content:center}#setDiff button{font-family:var(--disp);font-size:15px;padding:6px 14px;border:3px solid var(--ink);border-radius:10px;background:#fff6e8;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 var(--ink)}#setDiff button.on{background:var(--y)}
+#setDiffNote{font:600 12px system-ui,sans-serif;opacity:.75;text-align:center}.setp .sdl{margin-bottom:-6px}
 </style>
 <script src="https://sdk.crazygames.com/crazygames-sdk-v3.js"></script>
 </head>
@@ -815,6 +823,7 @@ body.touch #ctoast{left:auto!important;right:10px;transform:scale(.62)!important
   <div id="mfoot"><button id="bPriv" class="footlink">🔒 Privacy</button></div>
 </div>
 
+<div id="easyOffer" class="hidden"><div class="eo"><div class="eoh">😅 Too hard?</div><div class="eot">Try <b>EASY MODE</b></div><p>Guards and cameras see much less, move slower and barely notice you. Police come much later, and you always get a free retry on the spot.</p><button class="btn g" id="bEasyYes">😌 SWITCH TO EASY</button><button class="btn s" id="bEasyNo">KEEP TRYING</button><small>You can change this anytime in Settings.</small></div></div>
 <div id="privacy" class="screen solid hidden"><div class="panel privp"><div class="big o">PRIVACY</div><div class="privtxt"><p><b>Safehouse Heist</b> collects <b>anonymous gameplay statistics</b> through ByteBrew (a CrazyGames analytics partner) so we can see where the game is too hard or confusing and make it better.</p>
 <p><b>What we collect:</b> game events such as a heist starting or ending, being spotted or caught, time played, level, difficulty, device type (mobile / tablet / desktop) and game version.</p>
 <p><b>What we never collect:</b> your name, email, CrazyGames account or user ID, chat, or anything you type.</p>
@@ -869,6 +878,7 @@ body.touch #ctoast{left:auto!important;right:10px;transform:scale(.62)!important
   <label>Music volume <b id="vMus"></b><input id="sMus" type="range" min="0" max="1" step="0.05"></label>
   <label>Sound effects <b id="vSfx"></b><input id="sSfx" type="range" min="0" max="1" step="0.05"></label>
   <div class="row chk"><label><input id="sInv" type="checkbox"> Invert look Y</label><label><input id="sShake" type="checkbox"> Shake &amp; flashes</label></div>
+  <label class="sdl">Difficulty</label><div id="setDiff" class="row"><button data-d="easy">EASY</button><button data-d="normal">NORMAL</button><button data-d="hard">HARD</button></div><small id="setDiffNote"></small>
   <button class="btn" id="bSetBack">DONE</button>
 </div></div>
 <div id="trophies" class="screen solid hidden"><div class="panel tr">
@@ -886,7 +896,7 @@ body.touch #ctoast{left:auto!important;right:10px;transform:scale(.62)!important
   <button class="btn" id="bSoonBack">BACK</button>
 </div></div>
 
-<script type="module" src="./js/main.js?v=5fedecb1"></script>
+<script type="module" src="./js/main.js?v=ac94be9e"></script>
 <div id="intro" class="hidden"><div id="iDisg" class="pill o hidden"></div><div class="lb t"></div><div class="lb b"></div>
   <div class="icard"><small></small><b></b><span></span><div class="ikeys"></div><i class="ibar"><i></i></i></div>
   <div class="irow"><button class="btn s" id="bISkip">SKIP</button><button class="btn g" id="bINext">NEXT ▶</button></div>
