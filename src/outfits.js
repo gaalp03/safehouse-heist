@@ -17,14 +17,28 @@ export const OUTFITS = [
   { id: 'lucky', name: 'Lucky Cat', sleeve: 0xffc23a, glove: 0xf4f1ea, bar: 0xe8303e, band: 0xe8303e, ach: 'cats' },
   { id: 'royal', name: 'Royal', sleeve: 0x6a4ad8, glove: 0xd9b45a, bar: 0xe8b33a, band: 0xd9b45a, need: 6 },
   { id: 'golden', name: 'Golden Boy', sleeve: 0xe8b33a, glove: 0xf2d48a, bar: 0xffd75a, band: 0xffffff, need: 10 },
+  // Golden Heist exclusives: one per calendar day (rotating), earned only by finishing that day's Golden Heist
+  { id: 'g_crew', name: 'Golden Crew', sleeve: 0xd9a52a, glove: 0x2a2c3d, bar: 0xffe07a, band: 0x2a2c3d, gold: true },
+  { id: 'g_mask', name: 'Gilded Mask', sleeve: 0x1e1a2a, glove: 0xe8b33a, bar: 0xffd75a, band: 0xe8b33a, gold: true },
+  { id: 'g_rose', name: 'Rose Gold', sleeve: 0xe8a09a, glove: 0xf6d2b8, bar: 0xffc9a8, band: 0xb76e79, gold: true },
+  { id: 'g_leaf', name: 'Gold Leaf', sleeve: 0x2f5a3a, glove: 0xe8b33a, bar: 0xffd75a, band: 0xf2e6c0, gold: true },
+  { id: 'g_champ', name: 'Champagne', sleeve: 0xf2e2b8, glove: 0xb08a4a, bar: 0xffe9b0, band: 0x8a5a2a, gold: true },
+  { id: 'g_sun', name: 'Sunburst', sleeve: 0xff9a2a, glove: 0xffd75a, bar: 0xfff1a8, band: 0xe8303e, gold: true },
+  { id: 'g_rush', name: 'Gold Rush', sleeve: 0x5a3a26, glove: 0xffd75a, bar: 0xe8b33a, band: 0xfff1a8, gold: true },
 ];
+// today's Golden Heist reward, seeded by the local calendar date
+export function goldenOfDay(d = new Date()) {
+  const G = OUTFITS.filter((o) => o.gold), day = Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() / 864e5 + 0.5);
+  return G[((day * 5 + 3) % G.length + G.length) % G.length];
+}
 export const colorsOf = (o) => ({
   sleeve: o.sleeve, sleeve2: shade(o.sleeve, 0.85), cuff: shade(o.sleeve, 0.66), glove: o.glove, glove2: shade(o.glove, 1.35) || 0x3a3d52,
   bar: o.bar, barHi: shade(o.bar, 1.35), band: o.band,
 });
 export function unlocked(o, save) {
+  if (o.gold) return !!(save.goldOut || {})[o.id];
   const ach = save.ach || {}, n = Object.keys(ach).length;
   if (o.ach) return !!ach[o.ach];
   return !o.need || n >= o.need;
 }
-export const needText = (o, ACH) => (o.ach ? `Achievement: ${(ACH.find((a) => a.id === o.ach) || {}).name}` : `${o.need} ${o.need === 1 ? "trophy" : "trophies"}`);
+export const needText = (o, ACH) => (o.gold ? 'Golden Heist exclusive (only on its day)' : o.ach ? `Achievement: ${(ACH.find((a) => a.id === o.ach) || {}).name}` : `${o.need} ${o.need === 1 ? "trophy" : "trophies"}`);

@@ -3030,7 +3030,7 @@ export class Game {
     return {
       loot: this.lootGot, total: this.lootTotal, frac, time: this.time, ghost, kos: this.kos, stars,
       timeBonus, ghostBonus: ghost ? 1000 : 0, contracts: this.contracts, contractBonus,
-      diff: this.daily ? 'Daily ' + this.daily.label : this.D.label, mult: this.D.mult, daily: !!this.daily,
+      diff: this.daily ? 'Golden ' + this.daily.label : this.D.label, mult: this.D.mult, daily: !!this.daily,
       score: Math.round((this.lootGot + timeBonus + (ghost ? 1000 : 0) + contractBonus) * this.D.mult),
     };
   }

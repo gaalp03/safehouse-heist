@@ -16,7 +16,7 @@ import { todaysJobs, recordJobs, jobDef, JOB_CASH, JOB_BONUS } from './jobs.js';
 import { GEAR, gearLv, nextPrice, gearMods } from './gear.js';
 import { todaysDaily, prevDayKey, nextDailyIn, dayKey as dayKeyNow, MUTATORS, weekInfo } from './daily.js';
 import { ACH, recordRun, blankStats } from './achievements.js';
-import { OUTFITS, colorsOf, unlocked, needText } from './outfits.js';
+import { OUTFITS, colorsOf, unlocked, needText, goldenOfDay } from './outfits.js';
 import { TUT_STEPS } from './tutorial.js';
 import { ACTIONS, keyLabel } from './input.js';
 import { INTRO, SHOT_T } from './intro.js';
@@ -145,6 +145,7 @@ class App {
     await this.useLevel(0);
 
     this.bindUI();
+    setInterval(() => { if (this.state === 'menu' || this.state === 'result' || this.state === 'busted') this.tickTeasers(); }, 20000);
     this.renderPrivacy();
     this.applyOutfit();
     addEventListener('resize', () => this.resize());
@@ -353,6 +354,7 @@ class App {
         lg.n = lg.last === prevDayKey() ? lg.n + 1 : 1; lg.last = today; this.save.login = lg;
         const amt = 500 * Math.min(lg.n, 7);
         this.save.cash = (this.save.cash || 0) + amt; SDK.store(this.save);
+        AN.ev('daily_reward_claim', { streak_day: lg.n, cash: amt });
         const el = $('bonus'); el.querySelector('b').textContent = '+' + fmtMoney(amt);
         const d7 = ((lg.n - 1) % 7) + 1;
         el.querySelector('.days').innerHTML = [1, 2, 3, 4, 5, 6, 7].map((d) => `<i class="${d < d7 ? 'on' : d === d7 ? 'now' : ''}">${d === 7 ? '🧤' : d}</i>`).join('');
@@ -444,8 +446,10 @@ class App {
     const db = (this.save.daily || {})[this.daily.key];
     $('dMut').textContent = this.daily.mutator.name;
     { const n = new Date(); $('dArt').innerHTML = `<span style="font-size:20px">${n.getDate()}</span>`; }
-    $('dDesc').textContent = this.daily.mutator.desc + ' · ' + LEVELS[this.daily.level].name;
+    { const go = goldenOfDay(), own = (this.save.goldOut || {})[go.id];
+      $('dDesc').textContent = this.daily.mutator.desc + ' · ' + LEVELS[this.daily.level].name + ' · 💰 double cash · ' + (own ? `✔ ${go.name} outfit earned` : `🏅 today only: ${go.name} outfit`); }
     $('dBest').textContent = (db ? 'Today ' + fmtMoney(db.score) : this.daily.label) + ((this.save.streak && this.save.streak.n > 1 && (this.save.streak.last === this.daily.key || this.save.streak.last === prevDayKey())) ? ` · 🔥${this.save.streak.n}` : '');
+    this.renderStreak(); this.tickTeasers();
     this.screen('menu');
   }
   runRecord(win, res) {
@@ -557,7 +561,7 @@ class App {
     this.sel = k;
     for (const id of ['lvl1', 'lvl2', 'lvl3', 'lvl4', 'lvl5', 'lvl6', 'lvl7', 'lvl8', 'lvl9', 'lvl10', 'lvl11', 'lvl12', 'daily']) $(id).classList.toggle('on', id === k);
     const el = $(k), locked = this.pinLocked(k);
-    $('selName').textContent = k === 'daily' ? 'Daily: ' + $('dMut').textContent : el.querySelector('.t').textContent;
+    $('selName').textContent = k === 'daily' ? '✨ Golden Heist: ' + $('dMut').textContent : el.querySelector('.t').textContent;
     const st = el.querySelector('.stars');
     $('selStars').innerHTML = st ? st.innerHTML : '';
     const dPlayed = !!(this.save.daily || {})[this.daily && this.daily.key];
@@ -775,8 +779,9 @@ class App {
     this.lastTutLevel = this.game.tut ? this.level.id : null;
     clearTimeout(this.whyT); $('alarmwhy').classList.add('hidden');
     if (this.mode === 'daily') {
+      AN.ev('golden_heist_start', { level: this.level.id, mut: this.daily.mutator.id, reward: goldenOfDay().id });
       const t = $('ctoast');
-      t.className = 'o card-daily'; t.innerHTML = `<small>DAILY CHALLENGE · ${this.daily.label}</small>${this.daily.mutator.name}<b>${this.daily.mutator.desc}</b>`;
+      t.className = 'o card-daily'; t.innerHTML = `<small>✨ GOLDEN HEIST · ${this.daily.label}</small>${this.daily.mutator.name}<b>${this.daily.mutator.desc}</b>`;
       t.classList.remove('hidden'); t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
       clearTimeout(this.ctT); this.ctT = setTimeout(() => t.classList.add('hidden'), 3200);
     } else if (fresh && this.mode === 'classic' && this.save.tutDone) {
@@ -1516,6 +1521,7 @@ class App {
     if (this.lostStreak) { const c = $('bCash'); c.textContent = (c.textContent ? c.textContent + ' · ' : '') + `🔥 ${this.lostStreak}-escape streak lost`; this.lostStreak = 0; }
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).concat(jt ? [jt] : []).join('<br>');
     this.chipify('bAch');
+    $('bGoal').innerHTML = this.nextGoal(); this.tickTeasers();
     this.screen('busted');
     this.drawRecap('bMap', false);
   }
@@ -1569,7 +1575,7 @@ class App {
     $('rScore').textContent = '$0';
     $('rCtr').innerHTML = res.contracts.map((c) => `<li class="${c.st === 'ok' ? 'ok' : 'no'}">${c.st === 'ok' ? '✔' : '✖'} ${c.text}<b>${c.st === 'ok' ? '+' + fmtMoney(c.bonus) : '—'}</b></li>`).join('');
     $('rCtrTotal').textContent = 'Contracts done (all time): ' + (this.save.contracts || 0);
-    $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day streak · next Daily in ${nextDailyIn()}` : '');
+    $('rBest').textContent = (newBest ? 'NEW BEST!' : 'Best ' + fmtMoney(bestScore)) + ' · ' + res.diff + (res.daily ? ` · 🔥${this.save.streak.n} day Golden streak` : '');
     $('rMult').textContent = res.mult === 1 ? '' : `${res.diff} ×${res.mult}`;
     $('rBest').classList.toggle('new', newBest);
     if (!res.daily && this.ghostMsg) $('rBest').textContent += '  ·  ' + this.ghostMsg;
@@ -1584,11 +1590,19 @@ class App {
     const jt = this.jobsToast(recordJobs(this.save, this.runRecord(true, res)));
     const hs = this.mode === 'tutorial' ? 0 : (this.save.hot = (this.save.hot || 0) + 1), hb = Math.min(0.5, 0.1 * Math.max(0, hs - 1)), extra = Math.round(res.score * hb);
     const hot = this.mode === 'classic' && this.levelIdx === this.hotTarget() ? res.score : 0;
-    this.save.cash = (this.save.cash || 0) + res.score + extra + hot;
-    $('rCash').textContent = `💰 +${fmtMoney(res.score + extra + hot)} to your stash${hot ? ' (🎯 hot target ×2)' : ''}${extra ? ` (🔥 streak ${hs}: +${Math.round(hb * 100)}%)` : ''} · ${fmtMoney(this.save.cash)}${this.canAffordGear() ? ' · 🧰 new gear!' : ''}`;
-    const newOut = OUTFITS.filter((o) => o.id !== 'classic' && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
+    const gold = res.daily ? res.score : 0; // Golden Heist pays double
+    this.save.cash = (this.save.cash || 0) + res.score + extra + hot + gold;
+    let goldNew = null;
+    if (res.daily) {
+      const go = goldenOfDay(), got = (this.save.goldOut = this.save.goldOut || {});
+      if (!got[go.id]) { got[go.id] = dayKeyNow(); goldNew = go; }
+      AN.ev('golden_heist_complete', { level: this.level.id, mut: this.daily.mutator.id, reward: go.id, new_reward: goldNew ? 1 : 0, score: res.score, stars: nStars });
+    }
+    $('rCash').textContent = `💰 +${fmtMoney(res.score + extra + hot + gold)} to your stash${gold ? ' (✨ Golden Heist ×2)' : ''}${hot ? ' (🎯 hot target ×2)' : ''}${extra ? ` (🔥 streak ${hs}: +${Math.round(hb * 100)}%)` : ''} · ${fmtMoney(this.save.cash)}${this.canAffordGear() ? ' · 🧰 new gear!' : ''}`;
+    const newOut = OUTFITS.filter((o) => o.id !== 'classic' && !o.gold && unlocked(o, this.save) && !(this.save.seenOut || []).includes(o.id));
     this.save.seenOut = OUTFITS.filter((o) => unlocked(o, this.save)).map((o) => o.id);
     this.showAchToast(freshA);
+    if (goldNew) setTimeout(() => { $('rAch').innerHTML = `<span class="unlock">✨ Exclusive reward: <b>${goldNew.name}</b> outfit (only obtainable today!)</span>` + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); this.chipify('rAch'); }, 0);
     if (firstJob) { $('rAch').innerHTML = '🎉 <b>First job done!</b> Contracts, difficulty, Jobs and the Daily are open now.' + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); }
     if (tutJustDone) { $('rAch').innerHTML = '🎓 <b>Tutorial complete!</b> Contracts, difficulty and the Daily are yours now.' + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); }
     // next heist: label the button, and celebrate a fresh unlock
@@ -1622,6 +1636,7 @@ class App {
     if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
     this.chipify('rAch');
+    $('rGoal').innerHTML = this.nextGoal(); this.tickTeasers();
     this.screen('result');
     this.drawRecap('rMap', true);
     const stars = $('rStars').children;
@@ -1718,6 +1733,29 @@ class App {
     const l = $('loot'); l.classList.remove('qwin'); void l.offsetWidth; l.classList.add('qwin');
     const n = $('nice'); n.textContent = 'NICE! First score 💰'; n.classList.remove('hidden', 'go'); void n.offsetWidth; n.classList.add('go');
     clearTimeout(this.niceT); this.niceT = setTimeout(() => n.classList.add('hidden'), 2200);
+  }
+  // retention: tomorrow teaser (live countdown), login streak strip, next unlock goal
+  tickTeasers() {
+    const go = goldenOfDay(new Date(Date.now() + 864e5));
+    for (const el of document.querySelectorAll('.tmrw:not(.mtmrw)')) el.innerHTML = `⏰ <b>Tomorrow:</b> new Golden Heist + exclusive <b>${go.name}</b> outfit · in ${nextDailyIn()}`;
+    // menu: one compact line = login streak + tomorrow's Golden Heist teaser
+    const lg = this.save.login || { last: '', n: 0 }, on = this.save.tutDone && lg.n > 0 && lg.last === dayKeyNow();
+    const m = document.querySelector('.mtmrw');
+    if (m) m.innerHTML = (on ? `<span class="sk">🔥 Day ${lg.n}${[1, 2, 3, 4, 5, 6, 7].map((d) => `<i class="${d <= ((lg.n - 1) % 7) + 1 ? 'on' : ''}"></i>`).join('')}</span> ` : '') + `⏰ <b>Tomorrow</b>${on ? ` +${fmtMoney(500 * Math.min(lg.n + 1, 7))} ·` : ':'} new Golden Heist + <b>${go.name}</b> outfit · ${nextDailyIn()}`;
+  }
+  renderStreak() {
+    const lg = this.save.login || { last: '', n: 0 }, el = $('streak');
+    if (!el || true) return; // streak now lives in the menu's tomorrow line (tickTeasers)
+    const on = this.save.tutDone && lg.n > 0 && (lg.last === dayKeyNow() || lg.last === prevDayKey());
+    el.classList.toggle('hidden', !on);
+    if (!on) return;
+    const d7 = ((lg.n - 1) % 7) + 1, next = Math.min(lg.n + 1, 7);
+    el.innerHTML = `<b>🔥 Day ${lg.n}</b><span class="days">${[1, 2, 3, 4, 5, 6, 7].map((d) => `<i class="${d <= d7 ? 'on' : ''}">${d === 7 ? '🧤' : d}</i>`).join('')}</span><small>Tomorrow: +${fmtMoney(500 * next)}${d7 < 7 ? ' · day 7: Gold Chain' : ''}</small>`;
+  }
+  nextGoal() {
+    for (let i = 1; i < LEVELS.length; i++) if (!this.levelUnlocked(i)) return `🔓 Next unlock: <b>${LEVELS[i].name}</b> · 1 heist away (escape ${LEVELS[i - 1].name})`;
+    const n = Object.keys(this.save.ach || {}).length, o = OUTFITS.filter((x) => x.need && !x.gold && n < x.need).sort((a, b) => a.need - b.need)[0];
+    return o ? `🧤 Next unlock: <b>${o.name}</b> outfit · ${o.need - n} more troph${o.need - n === 1 ? 'y' : 'ies'}` : '';
   }
   // after a catch in the first heists: a clear stealth reminder (always shown, not a one-time hint)
   stealthTip() {
