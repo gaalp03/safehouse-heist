@@ -155,7 +155,6 @@ class App {
     this.renderer.setAnimationLoop(() => this.frame());
 
     SDK.loadingStop();
-    setTimeout(() => this.audio.loadSamples(), 300);
     // brand-new player: no menu, no cutscene, no tutorial: straight into the first heist with first-time hints
     const fresh = !this.save.tutDone && !this.save.played && !Object.keys(this.save.best).length;
     if (!this.save.tutDone && !this.save.hintsOn) { this.save.hintsOn = true; SDK.store(this.save); }
@@ -163,6 +162,14 @@ class App {
     this.sessT0 = performance.now(); this.playT = 0;
     this.showMenu();
     if (fresh) { AN.ev('first_heist_start', { level: LEVELS[0].id }); this.start('classic', 0); }
+    else if (this.save.tutDone) {
+      // returning player: no menu stop, continue straight into their next heist (pause > Menu for the map)
+      const bonus = !$('bonus').classList.contains('hidden') && $('bonus').querySelector('b').textContent;
+      $('bonus').classList.add('hidden');
+      const i = this.continueIdx();
+      AN.ev('continue_start', { level: LEVELS[i].id });
+      this.start('classic', i).then(() => { if (bonus) setTimeout(() => this.announce(`🔥 Day ${(this.save.login || {}).n || 1} login bonus ${bonus}`), 1600); });
+    }
     $('loading').classList.add('hidden');
   }
 
@@ -450,6 +457,7 @@ class App {
       $('dDesc').textContent = this.daily.mutator.desc + ' · ' + LEVELS[this.daily.level].name + ' · 💰 double cash · ' + (own ? `✔ ${go.name} outfit earned` : `🏅 today only: ${go.name} outfit`); }
     $('dBest').textContent = (db ? 'Today ' + fmtMoney(db.score) : this.daily.label) + ((this.save.streak && this.save.streak.n > 1 && (this.save.streak.last === this.daily.key || this.save.streak.last === prevDayKey())) ? ` · 🔥${this.save.streak.n}` : '');
     this.renderStreak(); this.tickTeasers();
+    this.queueSamples(2500);
     this.screen('menu');
   }
   runRecord(win, res) {
@@ -800,6 +808,7 @@ class App {
     const intro = this.game.tut && this.tutStep === 0 && !this.introSeen && this.wantIntro;
     this.wantIntro = false;
     if (!intro) SDK.gameplayStart(); // the tutorial intro cutscene starts gameplay when it ends
+    this.queueSamples(1200);
     if (this.pendingStealth && !this.game.tut) this.stealthTip();
     { const auto = this.autoStarted ? 1 : 0; this.autoStarted = false; this.heistT0 = this.time; this.heistLive = true;
       AN.ev('heist_start', { level: this.level.id, diff: this.diff, mode: this.mode, run_n: this.runs, auto });
@@ -1481,6 +1490,7 @@ class App {
   }
   onBusted() {
     this.state = 'busted';
+    this.sessEsc = 0;
     this.heistLive = false;
     AN.ev('caught', { level: this.level.id, diff: this.diff, t: this.heistSec(), cause: this.game.policeBusted ? 'police' : 'guard', try_n: (this.bustKey === this.level.id ? (this.bustStreak || 0) : 0) + 1 });
     this.audio.siren(false);
@@ -1514,6 +1524,7 @@ class App {
     if (this.mode === 'classic' && this.levelIdx <= 2 && this.bustStreak >= 2 && (this.diff === 'normal' || this.diff === 'hard') && !this.save.easyOffer) {
       this.save.easyOffer = 'shown';
       AN.ev('easy_offer_shown', { level: this.level.id, diff: this.diff, fails: this.bustStreak });
+      this.pendingEasy = true;
       clearTimeout(this.easyT); this.easyT = setTimeout(() => { if (this.state === 'busted') this.showEasyOffer(); }, 900);
     }
     SDK.store(this.save);
@@ -1522,6 +1533,9 @@ class App {
     $('bAch').innerHTML = fresh.map((a) => `🏆 ${a.icon} ${a.name} unlocked!`).concat(jt ? [jt] : []).join('<br>');
     this.chipify('bAch');
     $('bGoal').innerHTML = this.nextGoal(); this.tickTeasers();
+    if (this.autoStop) this.autoStop();
+    if (!this.pendingEasy) this.autoGo(!$('bRevive').classList.contains('hidden') ? $('bRevive') : $('bBRetry'), 3, 'bust');
+    this.pendingEasy = false;
     this.screen('busted');
     this.drawRecap('bMap', false);
   }
@@ -1615,28 +1629,26 @@ class App {
       setTimeout(() => { if (this.state === 'result') { this.audio.play('unlock'); this.shake.add(0.15); } }, 1500);
     }
     // first job (or the tutorial) done: big unlock moment, then roll straight into the next heist
-    clearInterval(this.autoNextT);
+    if (this.autoStop) this.autoStop();
     if ((firstJob || tutJustDone) && nextOk) {
       const u = $('unlockfx'); u.querySelector('b').textContent = LEVELS[ni].name.toUpperCase();
       u.classList.remove('hidden'); u.style.animation = 'none'; void u.offsetWidth; u.style.animation = '';
       clearTimeout(this.unlockT); this.unlockT = setTimeout(() => u.classList.add('hidden'), 2600);
-      const btn = $('bNext'), base = btn.textContent; let n = 6;
-      const stop = (e) => { if (e && e.target === btn) return; if (e) AN.ev('auto_next_cancel', { level: this.level.id }); clearInterval(this.autoNextT); btn.textContent = base; btn.classList.remove('pulse'); removeEventListener('pointerdown', stop, true); removeEventListener('keydown', stop, true); };
-      addEventListener('pointerdown', stop, true); addEventListener('keydown', stop, true);
-      btn.classList.add('pulse'); btn.textContent = `${base} ${n}`;
-      this.autoNextT = setInterval(() => {
-        if (this.state !== 'result') { stop(); return; }
-        if (--n <= 0) { stop(); this.autoStarted = true; btn.click(); return; }
-        btn.textContent = `${base} ${n}`;
-      }, 1000);
     }
+    if (!res.daily) {
+      this.sessEsc = (this.sessEsc || 0) + 1;
+      const k = this.sessEsc % 3 || 3;
+      if (k === 3) { this.save.cash = (this.save.cash || 0) + 1500; SDK.store(this.save); AN.ev('session_goal', { n: this.sessEsc }); $('rAch').innerHTML = `<span class="unlock">🎯 Session goal: 3 escapes in a row! +${fmtMoney(1500)}</span>` + ($('rAch').innerHTML ? '<br>' + $('rAch').innerHTML : ''); $('rAch').classList.remove('hidden'); this.chipify('rAch'); }
+      this.sessGoalTxt = k < 3 ? `🎯 Session goal: ${k}/3 escapes in a row → +${fmtMoney(1500)}` : '';
+    } else this.sessGoalTxt = '';
+    if (nextOk) this.autoGo($('bNext'), (firstJob || tutJustDone) ? 4 : 3, 'win');
     this.nextWasLocked = false;
     if (this.justMastered) { $('rAch').innerHTML = `<span class="unlock">🏅 Heist mastered! +$2,000 bonus</span><br>` + $('rAch').innerHTML; $('rAch').classList.remove('hidden'); this.justMastered = false; }
     if (jt) { $('rAch').innerHTML += ($('rAch').innerHTML ? '<br>' : '') + jt; $('rAch').classList.remove('hidden'); }
     if (newOut.length) $('rAch').innerHTML += `<br>🧤 New outfit: <b>${newOut.map((o) => o.name).join(', ')}</b>`, $('rAch').classList.remove('hidden');
     SDK.store(this.save);
     this.chipify('rAch');
-    $('rGoal').innerHTML = this.nextGoal(); this.tickTeasers();
+    $('rGoal').innerHTML = [this.sessGoalTxt, this.nextGoal()].filter(Boolean).join('<br>'); this.tickTeasers();
     this.screen('result');
     this.drawRecap('rMap', true);
     const stars = $('rStars').children;
@@ -1756,6 +1768,38 @@ class App {
     for (let i = 1; i < LEVELS.length; i++) if (!this.levelUnlocked(i)) return `🔓 Next unlock: <b>${LEVELS[i].name}</b> · 1 heist away (escape ${LEVELS[i - 1].name})`;
     const n = Object.keys(this.save.ach || {}).length, o = OUTFITS.filter((x) => x.need && !x.gold && n < x.need).sort((a, b) => a.need - b.need)[0];
     return o ? `🧤 Next unlock: <b>${o.name}</b> outfit · ${o.need - n} more troph${o.need - n === 1 ? 'y' : 'ies'}` : '';
+  }
+  // first unlocked heist not yet escaped (any difficulty), else the last one picked on the map
+  continueIdx() {
+    const b = this.save.best, esc = (id) => b[id] || b[id + '_easy'] || b[id + '_hard'] || b[id + '_ironman'];
+    for (let i = 0; i < LEVELS.length; i++) if (this.levelUnlocked(i) && !esc(LEVELS[i].id)) return i;
+    const s = pinIdx(this.save.sel || 'lvl1');
+    return s != null && this.levelUnlocked(s) ? s : 0;
+  }
+  queueSamples(ms) {
+    if (this.samplesQ) return;
+    this.samplesQ = true;
+    setTimeout(() => this.audio.loadSamples(), ms);
+  }
+  // auto-continue: a short visible countdown on the main end-screen button; any tap/key elsewhere cancels it
+  autoGo(btn, secs, why) {
+    clearInterval(this.autoNextT);
+    const base = btn.innerHTML, st = this.state; let n = secs;
+    const stop = (e) => {
+      if (e && (e.target === btn || btn.contains(e.target))) return;
+      if (e) AN.ev('auto_next_cancel', { level: this.level.id, why });
+      clearInterval(this.autoNextT); this.autoStop = null; btn.innerHTML = base; btn.classList.remove('pulse', 'autogo');
+      removeEventListener('pointerdown', stop, true); removeEventListener('keydown', stop, true);
+    };
+    this.autoStop = stop;
+    addEventListener('pointerdown', stop, true); addEventListener('keydown', stop, true);
+    const show = () => { btn.innerHTML = `${base} <span class="ago">${n}</span>`; };
+    btn.classList.add('pulse', 'autogo'); show();
+    this.autoNextT = setInterval(() => {
+      if (this.state !== st) { stop(); return; }
+      if (--n <= 0) { stop(); this.autoStarted = true; btn.click(); return; }
+      show();
+    }, 1000);
   }
   // after a catch in the first heists: a clear stealth reminder (always shown, not a one-time hint)
   stealthTip() {
