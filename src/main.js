@@ -82,6 +82,9 @@ class App {
     SDK.hooks.adEnd = () => { this.inAd = false; this.audio.setAdMuted(false); };
     this.save = SDK.load();
     this.save.best = this.save.best || {};
+    // distinct days played (drives the come-back outfit unlocks)
+    { const today = dayKeyNow();
+      if (this.save.lastDay !== today) { this.save.dayN = (this.save.dayN || 0) + 1; this.save.lastDay = today; this.newDay = true; SDK.store(this.save); } }
     this.diff = DIFFS[this.save.diff] ? this.save.diff : 'normal';
 
     const dev = SDK.deviceType();
@@ -141,11 +144,12 @@ class App {
     this.rain = new Rain(this.scene); this.boltK = 0;
     this.applySettings();
     this.game = new Game(this);
-    this.levelIdx = 0;
-    await this.useLevel(0);
+    // build the heist the player will actually start in (returning players continue where they left off)
+    this.levelIdx = this.save.tutDone ? this.continueIdx() : 0;
+    await this.useLevel(this.levelIdx);
 
     this.bindUI();
-    setInterval(() => { if (this.state === 'menu' || this.state === 'result' || this.state === 'busted') this.tickTeasers(); }, 20000);
+    setInterval(() => { if (this.state === 'menu' || this.state === 'result' || this.state === 'busted' || this.state === 'pause') this.tickTeasers(); }, 20000);
     this.renderPrivacy();
     this.applyOutfit();
     addEventListener('resize', () => this.resize());
@@ -161,6 +165,11 @@ class App {
     AN.ev('game_loaded', { load_ms: performance.now(), returning: fresh ? 0 : 1, sdk_ms: this.sdkMs || 0 });
     this.sessT0 = performance.now(); this.playT = 0;
     this.showMenu();
+    if (this.newDay && (this.save.dayN || 0) >= 2) {
+      AN.ev('return_day', { day_n: this.save.dayN });
+      const o = OUTFITS.find((x) => x.days === this.save.dayN);
+      if (o) { AN.ev('return_reward', { day_n: this.save.dayN, reward: o.id }); setTimeout(() => this.announce(`🎁 Welcome back! ${o.name} outfit unlocked`), 4200); }
+    }
     if (fresh) { AN.ev('first_heist_start', { level: LEVELS[0].id }); this.start('classic', 0); }
     else if (this.save.tutDone) {
       // returning player: no menu stop, continue straight into their next heist (pause > Menu for the map)
@@ -277,9 +286,9 @@ class App {
       if (document.hidden && this.state === 'play') this.pause();
       else if (document.hidden) SDK.gameplayStop();
       else if (this.state === 'play' && this.game.state === 'play') SDK.gameplayStart();
-      if (document.hidden) this.anSession('hidden');
+      if (document.hidden) { this.anSession('hidden'); try { SDK.store(this.save); } catch (_) {} }
     });
-    addEventListener('pagehide', () => { if (this.heistOn()) this.anFail('quit'); this.anSession('pagehide'); });
+    addEventListener('pagehide', () => { if (this.heistOn()) this.anFail('quit'); this.anSession('pagehide'); try { SDK.store(this.save); } catch (_) {} });
     // privacy: toast links + menu footer link + panel
     click('bPriv', () => this.showPrivacy());
     click('privMore', () => this.showPrivacy());
@@ -1104,6 +1113,7 @@ class App {
     this.state = 'pause';
     SDK.gameplayStop();
     $('pObj').textContent = '🎯 ' + (this.game.objText || '');
+    this.tickTeasers();
     $('pTip').textContent = this.game.tut ? '' : '💡 HINT: ' + (this.lastTip && this.lastTipLevel === this.level.id ? this.lastTip : this.bustTip()).replace(/^Tip: /, '') + (this.input.touch ? '' : `  (press ${this.input.label('hint')} in game)`);
     $('bPSkip').classList.toggle('hidden', !(this.game.tut && this.tutStep < TUT_STEPS.length));
     this.screen('pause');
@@ -1749,11 +1759,24 @@ class App {
   // retention: tomorrow teaser (live countdown), login streak strip, next unlock goal
   tickTeasers() {
     const go = goldenOfDay(new Date(Date.now() + 864e5));
-    for (const el of document.querySelectorAll('.tmrw:not(.mtmrw)')) el.innerHTML = `⏰ <b>Tomorrow:</b> new Golden Heist + exclusive <b>${go.name}</b> outfit · in ${nextDailyIn()}`;
+    const card = this.tomorrowCard(go);
+    for (const el of document.querySelectorAll('.tmrw:not(.mtmrw)')) el.innerHTML = card;
     // menu: one compact line = login streak + tomorrow's Golden Heist teaser
     const lg = this.save.login || { last: '', n: 0 }, on = this.save.tutDone && lg.n > 0 && lg.last === dayKeyNow();
     const m = document.querySelector('.mtmrw');
-    if (m) m.innerHTML = (on ? `<span class="sk">🔥 Day ${lg.n}${[1, 2, 3, 4, 5, 6, 7].map((d) => `<i class="${d <= ((lg.n - 1) % 7) + 1 ? 'on' : ''}"></i>`).join('')}</span> ` : '') + `⏰ <b>Tomorrow</b>${on ? ` +${fmtMoney(500 * Math.min(lg.n + 1, 7))} ·` : ':'} new Golden Heist + <b>${go.name}</b> outfit · ${nextDailyIn()}`;
+    const ul = this.nextDayUnlock();
+    if (m) m.innerHTML = (ul ? `🎁 <b>Tomorrow unlocks ${ul.name}</b> · ` : '') + (on ? `<span class="sk">🔥 Day ${lg.n}${[1, 2, 3, 4, 5, 6, 7].map((d) => `<i class="${d <= ((lg.n - 1) % 7) + 1 ? 'on' : ''}"></i>`).join('')}</span> ` : '') + `⏰ <b>Tomorrow</b>${on ? ` +${fmtMoney(500 * Math.min(lg.n + 1, 7))} ·` : ':'} new Golden Heist + <b>${go.name}</b> outfit · ${nextDailyIn()}`;
+  }
+  // the outfit that playing tomorrow unlocks (if any)
+  nextDayUnlock() { const n = this.save.dayN || 0; return OUTFITS.find((x) => x.days === n + 1) || null; }
+  tomorrowCard(go) {
+    const lg = this.save.login || { last: '', n: 0 }, streak = lg.last === dayKeyNow() ? lg.n + 1 : 1, ul = this.nextDayUnlock();
+    const sw = (o) => `<i class="sw" style="background:#${o.sleeve.toString(16).padStart(6, '0')};border-color:#${o.bar.toString(16).padStart(6, '0')}"></i>`;
+    const rows = [];
+    if (ul) rows.push(`${sw(ul)}<span><b>${ul.name}</b> outfit unlocks</span>`);
+    rows.push(`${sw(go)}<span>New ✨ Golden Heist · <b>${go.name}</b> outfit</span>`);
+    rows.push(`<i class="sw fire">🔥</i><span>Day ${streak} streak bonus · <b>+${fmtMoney(500 * Math.min(streak, 7))}</b></span>`);
+    return `<div class="tcard"><div class="tch">🎁 COME BACK TOMORROW <em>${nextDailyIn()}</em></div>${rows.map((r) => `<div class="tcr">${r}</div>`).join('')}</div>`;
   }
   renderStreak() {
     const lg = this.save.login || { last: '', n: 0 }, el = $('streak');

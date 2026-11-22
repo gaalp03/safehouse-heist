@@ -16,6 +16,15 @@ export const SDK = {
   hooks: { adStart: () => {}, adEnd: () => {} },
 
   async init() {
+    // the SDK script loads async (it must not block the page): wait for it briefly if it is still on its way
+    if (!window.CrazyGames && !window.__cgSdk && document.querySelector('script[src*="crazygames-sdk"]')) {
+      await new Promise((res) => { const t0 = performance.now(); const w = () => (window.CrazyGames || window.__cgSdk || performance.now() - t0 > 2500 ? res() : setTimeout(w, 25)); w(); });
+      if (!window.CrazyGames && !window.__cgSdk) { // still loading: attach whenever it arrives (late-attach path)
+        const el = document.querySelector('script[src*="crazygames-sdk"]');
+        if (el) el.addEventListener('load', () => { this.init(); }, { once: true });
+        return;
+      }
+    }
     let cg;
     try { cg = window.CrazyGames && window.CrazyGames.SDK; } catch (_) { cg = null; }
     if (!cg || typeof cg.init !== 'function') return;

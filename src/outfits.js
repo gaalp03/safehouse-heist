@@ -17,6 +17,9 @@ export const OUTFITS = [
   { id: 'lucky', name: 'Lucky Cat', sleeve: 0xffc23a, glove: 0xf4f1ea, bar: 0xe8303e, band: 0xe8303e, ach: 'cats' },
   { id: 'royal', name: 'Royal', sleeve: 0x6a4ad8, glove: 0xd9b45a, bar: 0xe8b33a, band: 0xd9b45a, need: 6 },
   { id: 'golden', name: 'Golden Boy', sleeve: 0xe8b33a, glove: 0xf2d48a, bar: 0xffd75a, band: 0xffffff, need: 10 },
+  // come-back rewards: unlocked by playing on 2 / 4 different days
+  { id: 'l_owl', name: 'Night Owl', sleeve: 0x3a2f6a, glove: 0x1a1630, bar: 0xb48cff, band: 0xffd75a, days: 2 },
+  { id: 'l_fox', name: 'Silver Fox', sleeve: 0x9aa3b2, glove: 0x2a2c3d, bar: 0xff8a2a, band: 0xf4f1ea, days: 4 },
   // Golden Heist exclusives: one per calendar day (rotating), earned only by finishing that day's Golden Heist
   { id: 'g_crew', name: 'Golden Crew', sleeve: 0xd9a52a, glove: 0x2a2c3d, bar: 0xffe07a, band: 0x2a2c3d, gold: true },
   { id: 'g_mask', name: 'Gilded Mask', sleeve: 0x1e1a2a, glove: 0xe8b33a, bar: 0xffd75a, band: 0xe8b33a, gold: true },
@@ -37,8 +40,9 @@ export const colorsOf = (o) => ({
 });
 export function unlocked(o, save) {
   if (o.gold) return !!(save.goldOut || {})[o.id];
+  if (o.days) return (save.dayN || 0) >= o.days;
   const ach = save.ach || {}, n = Object.keys(ach).length;
   if (o.ach) return !!ach[o.ach];
   return !o.need || n >= o.need;
 }
-export const needText = (o, ACH) => (o.gold ? 'Golden Heist exclusive (only on its day)' : o.ach ? `Achievement: ${(ACH.find((a) => a.id === o.ach) || {}).name}` : `${o.need} ${o.need === 1 ? "trophy" : "trophies"}`);
+export const needText = (o, ACH) => (o.days ? `Play on ${o.days} different days` : o.gold ? 'Golden Heist exclusive (only on its day)' : o.ach ? `Achievement: ${(ACH.find((a) => a.id === o.ach) || {}).name}` : `${o.need} ${o.need === 1 ? "trophy" : "trophies"}`);
